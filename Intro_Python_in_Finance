@@ -1,1 +1,180 @@
+1) Importing matplotlib and pyplot
+
+# Plot two lines of varying colors 
+plt.plot(days, prices1, color='red')
+plt.plot(days, prices2, color='green')
+
+# Add labels
+plt.xlabel('Days')
+plt.ylabel('Prices, $')
+plt.title('Stock Prices Over Time')
+plt.show()
+
+2) Comparing two histograms (alpha refers to transparency)
+
+# Plot stock_A and stock_B histograms
+plt.hist(stock_A, bins=100, alpha=0.4, label='Stock A')
+plt.hist(stock_B, bins=100, alpha=0.4, label='Stock B')
+
+# Add the legend
+plt.legend()
+
+# Display the plot
+plt.show()
+
+3) WORK SAMPLE: S&P 100
+Stocks in the S&P 100 are selected to represent sector balance and market capitalization
+
+# First four items of names
+print(names[0:4])
+# Print information on last company
+print(names[-1])
+print(prices[-1])
+print(earnings[-1])
+print(sectors[-1])
+
+# Import numpy as np
+import numpy as np
+# Convert lists to arrays
+prices_array = np.array(prices)
+earnings_array = np.array(earnings)
+# Calculate P/E ratio 
+pe = prices_array / earnings_array
+print(pe)
+
+# Create boolean array
+boolean_array = (sectors == 'Consumer Staples')
+# Subset sector-specific data
+cs_names = names[boolean_array]
+cs_pe = pe[boolean_array]
+# Display sector names
+print(cs_names)
+print(cs_pe)
+
+# Calculate mean and standard deviation
+cs_pe_mean = np.mean(cs_pe)
+cs_pe_std = np.std(cs_pe)
+print(cs_pe_mean)
+print(cs_pe_std)
+
+import matplotlib.pyplot as plt
+# Make a scatterplot
+plt.scatter(it_id, it_pe, color='red', label='IT')
+plt.scatter(cs_id, cs_pe, color='green', label='CS')
+# Add legend
+plt.legend()
+# Add labels
+plt.xlabel('Company ID')
+plt.ylabel('P/E Ratio')
+plt.show()
+
+# Import matplotlib.pyplot with the alias plt
+import matplotlib.pyplot as plt
+# Plot histogram 
+plt.hist(it_pe, bins=8)
+# Add x-label
+plt.xlabel('P/E ratio')
+# Add y-label
+plt.ylabel('Frequency')
+# Show plot
+plt.show()
+
+# Identify P/E ratio within it_pe that is > 50
+outlier_price = it_pe[it_pe > 50]
+# Identify it_names that have PE ratio > 50
+outlier_name = it_names[it_pe > 50]
+# Display results
+print("In 2017, " + str(outlier_name[0]) + " had an abnormally high P/E ratio of " + str(round(outlier_price[0], 2)) + ".")
+
+4) Creating datetimes for dates
+
+import datetime
+# Date and time now
+now = datetime.datetime.now()
+print(now)
+# Flash crash May 28, 1962
+flash_crash = datetime.datetime(1962, 5, 28)
+print(flash_crash)
+# Black Monday Oct 19, 1987
+black_monday = datetime.datetime(1987, 10, 19)
+print(black_monday)
+
+5) Datetimes from strings
+
+crash_text = "Friday the 13th, Oct, 1989"
+
+# Create a format string mapping the text
+crash_format_str = "%A the %dth, %b, %Y"
+min_crash = datetime.datetime.strptime(crash_text, crash_format_str)
+print(min_crash)
+recession_text = "07/03/90"
+# Create format string
+recession_format_str = "%m/%d/%y"
+# Create datetime from text using format string
+nineties_rec = datetime.datetime.strptime(recession_text, recession_format_str)
+print(nineties_rec)
+
+6) Converting format with datetimes
+
+org_text = "Sep 16 1992"
+
+# Format string for original text
+org_format = "%b %d %Y"
+# Create datetime for Black Wednesday
+black_wednesday = datetime.datetime.strptime(org_text, org_format)
+print(black_wednesday)
+# New format: 'Wednesday, September 16, 1992'
+new_format = "%A, %B %d, %Y"
+# String in new format
+new_text = black_wednesday.strftime(new_format)
+print(new_text)
+
+7) Accessing datetime attributes
+
+# March 10, 2000 Tech Bubble Crash
+tech_bubble = datetime(2000, 3, 10)
+# Access the year
+yr  = tech_bubble.year
+# Access the month
+mth = tech_bubble.month
+# Access the day
+day = tech_bubble.day
+print(f"Year: {yr}, Month: {mth}, Day: {day}")
+
+8) Comparing datetimes (Return True/False)
+
+# Lehman Brothers before Morgan Stanley?
+lehman_first = lehman < morgan_stanley
+print(f"It is {lehman_first} that Lehman Brothers declared bankruptcy first.") 
+# Goldman Sachs after TARP?
+tarp_first = goldman_sachs > tarp
+print(f"It is {tarp_first} that TARP was approved first.")
+# Goldman Sachs and Morgan Stanley same day?
+same_time = goldman_sachs == morgan_stanley
+print(f"It is {same_time} that Morgan Stanley and Goldman Sachs acted simultaneously")
+
+9) Making relative datetimes
+
+from datetime import datetime, timedelta
+
+# TARP passed Oct 3 2008
+tarp = datetime(2008, 10, 3)
+# Seven days before TARP
+week_before = tarp - timedelta(days = 7)
+# One week after TARP
+week_after = tarp + timedelta(weeks = 1)
+# One year after TARP
+year_after = tarp + timedelta(weeks = 52)
+
+10) Creating and accessing dictionaries
+
+cusip_lookup = {}
+# Alphabet
+cusip_lookup['38259P706'] = 'GOOG'
+# Apple
+cusip_lookup['037833100'] = 'AAPL'
+# Lookup Apple
+cusip_lookup['037833100']
+
+11)
 
