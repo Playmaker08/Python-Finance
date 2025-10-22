@@ -176,5 +176,118 @@ cusip_lookup['037833100'] = 'AAPL'
 # Lookup Apple
 cusip_lookup['037833100']
 
-11)
+11) Negating with Boolean operators
+
+print(closing_prices)
+
+# Assigning True if we need to get the prices
+not_prices = not closing_prices
+print(not_prices)
+# Get prices if market is closed and we don't have prices
+get_prices = not (market_closed and not_prices)
+print(get_prices)
+
+12) Controlling loop execution
+Used a controlled while loop to collect trade surplus data from a dictionary using datetime, while loops, continue statements and break statements.
+
+# Loop while true
+while True:
+    net_exports = nea.get(query_date, -1)
+    query_date = datetime(query_date.year - 1, 1, 1)
+    # Skip if net exports are not positive
+    if net_exports < 0:
+        continue   
+    surplus_years.append(query_date)
+    # Check if 5 years have been collected
+    if len(surplus_years) == 5:
+        # Stop the loop
+        break
+print(surplus_years)
+
+13) Creating DataFrames
+
+# Create a list of lists
+data = [['APPL', 105.00, '2015/12/31'],
+        ['APPL', 117.05, '2017/12/01'],
+        ['APPL', 289.80, '2019/12/27']]
+# Define the column names
+columns = ['Sym', 'Price', 'Date']
+# Create a DataFrame with the data and column names
+positions = pd.DataFrame(data=data, columns=columns)
+print(positions)
+
+14) Reading market history
+
+# Read the data
+stocks = pd.read_csv('pcdg.csv')
+# Look at the data
+print(stocks)
+
+15) Accessing using names
+
+# Cash and Securities for October 3rd
+print(ledger.loc['2020-10-03', ['Cash', 'Securities']])
+# Balance for October 1st and 3rd
+print(ledger.loc[['2020-10-01', '2020-10-03'], 'Balance'])
+# All columns for October 1st
+print(ledger.loc['2020-10-01', :])
+# Balance for all dates
+print(ledger.loc[:, 'Balance'])
+
+16) Median prices
+
+# Get the median of the opening prices
+med_open = prices.loc[:, 'OPEN'].median()
+# Get the median of the closing prices
+med_close = prices.loc[:, 'CLOSE'].median()
+if med_open > med_close:
+    print("Trending down.")
+
+17) Creating new columns
+Personal consumption expenditures (PCE) are a measurement of consumer consumption useful in judging the state and direction of the economy. Pretend that you are a financial analyst at an investment fund tasked with calculating PCE. PCE is the sum of consumption by consumers of durable goods (PCDG), non-durable goods (PCND), and services (PCESV).
+
+# Use the list pcesv to create the column PCESV
+pce['PCESV'] = pcesv
+# Use the DataFrame pcnd to create the column PCND
+pce['PCND'] = pcnd
+# Create column for PCDG using Pandas read_csv
+pce['PCDG'] = pd.read_csv('pcdg.csv', index_col='DATE')
+# Create a column PCE by adding values from other columns
+pce['PCE'] = pce['PCDG'] + pce['PCND'] + pce['PCESV']
+pce.head()
+
+18) Dropping columns from DataFrame
+
+columns_to_drop = ['PCDG', 'PCND', 'PCESV']
+# Print the current columns of the DataFrame pce
+print(pce.columns)
+# Create new_pce by dropping columns_to_drop from pce
+new_pce = pce.drop(columns=columns_to_drop)
+# Print the columns of the new DataFrame
+print(new_pce.columns)
+# Drop the columns in_place in the original DataFrame
+pce.drop(columns=columns_to_drop, inplace=True)
+# Print the columns of the DataFrame pce
+print(pce.columns)
+
+19) Peek at top and bottom & Describe
+
+# Peak at top five rows
+alphabet.head()
+# Peak at top seven rows.
+alphabet.head(7)
+# Peak at last row.
+alphabet.tail(1)
+# Get stats for all numeric columns
+alphabet.describe()
+# Get stats for integer columns only
+alphabet.describe(include='int')
+# Stats with percentiles for %30, %50, and %60
+alphabet.describe(percentiles=[.3, .5, .6])
+
+20)
+
+
+
+20)
 
