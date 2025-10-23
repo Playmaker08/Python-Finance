@@ -285,9 +285,167 @@ alphabet.describe(include='int')
 # Stats with percentiles for %30, %50, and %60
 alphabet.describe(percentiles=[.3, .5, .6])
 
-20)
+20) Filtering stock data
 
+# Mask for large enough daily high
+high_mask = alphabet.high > 500
+# Filter using the mask
+alphabet.loc[high_mask]
+# Mask for specific volume
+volume_mask = alphabet.volume == 1771271
+# Filter using the mask
+alphabet.loc[volume_mask]
+# Mask rows whose volume is not 1997999
+volume_mask = alphabet.volume != 1997999
+# Filter using the mask
+alphabet.loc[volume_mask]
 
+21) Selecting data from data range
 
-20)
+# Calculate the mask for one week
+mask = (alphabet['date'] >= start_date) & (alphabet['date'] <= end_date)
+# Use the mask to get the data for one week
+df = alphabet[mask]
+# Look at result
+print(df)
+
+22) Making a line plot
+
+# Plot the daily high price
+alphabet2w.plot(y='high', rot=90, title='High Daily Prices')
+
+23) Choose kind of plot
+
+# Plot daily trade volume
+alphabet2w.plot(y='volume', rot=90, title='Alphabet Daily Volume')
+# Plot daily trade volume
+alphabet2w.plot(y='volume', kind='bar', title='Alphabet Daily Volume')
+# Plot daily trade volume
+alphabet2w.plot(y='volume', kind='hist', title='Alphabet Daily Volume')
+
+24) Growth and rate of return
+
+# Calculate the future value for the first investment
+future_value = 100*(1 + 0.06)**(30)
+print("Future Value of Investment: " + str(round(future_value, 2)))
+
+25) Compound interest
+
+# Predefined variables
+initial_investment = 100
+growth_periods = 30
+growth_rate = 0.06
+# Calculate the value for the investment compounded once per year
+compound_periods_1 = 1
+investment_1 = initial_investment*(1 + growth_rate / compound_periods_1)**(compound_periods_1*growth_periods)
+print("Investment 1: " + str(round(investment_1, 2)))
+# Calculate the value for the investment compounded quarterly
+compound_periods_2 = 4
+investment_2 = initial_investment*(1 + growth_rate / compound_periods_2)**(compound_periods_2*growth_periods)
+print("Investment 2: " + str(round(investment_2, 2)))
+# Calculate the value for the investment compounded monthly
+compound_periods_3 = 12
+investment_3 = initial_investment*(1 + growth_rate / compound_periods_3)**(compound_periods_3*growth_periods)
+print("Investment 3: " + str(round(investment_3, 2)))
+
+26) Discount factors and depreciation
+
+# Calculate the future value
+initial_investment = 100
+growth_rate = -0.05
+growth_periods = 10
+future_value = initial_investment*(1 + growth_rate)**(growth_periods)
+print("Future value: " + str(round(future_value, 2)))
+# Calculate the discount factor
+discount_factor = 1/((1 + growth_rate)**(growth_periods))
+print("Discount factor: " + str(round(discount_factor, 2)))
+# Derive the initial value of the investment
+initial_investment_again = future_value * discount_factor
+print("Initial value: " + str(round(initial_investment_again, 2)))
+
+27) Present value
+
+The .pv(rate, nper, pmt, fv) function, for example, allows you to calculate the present value of an investment as before with a few simple parameters:
+rate: The rate of return of the investment
+nper: The lifespan of the investment
+pmt: The (fixed) payment at the beginning or end of each period (which is 0 in our example)
+fv: The future value of the investment
+
+# Import numpy as np
+import numpy as np
+# Calculate investment_1
+investment_1 = np.pv(rate=0.03, nper=15, pmt=0, fv=10000)
+# Note that the present value returned is negative, so we multiply the result by -1
+print("Investment 1 is worth " + str(round(-investment_1, 2)) + " in today's dollars")
+# Calculate investment_2
+investment_2 = np.pv(rate=0.05, nper=10, pmt=0, fv=10000)
+print("Investment 2 is worth " + str(round(-investment_2, 2)) + " in today's dollars")
+
+28) Future value
+
+import numpy as np
+# Calculate investment_1
+investment_1 = np.fv(rate=0.05, nper=15, pmt=0, pv=-10000)
+print("Investment 1 will yield a total of $" + str(round(investment_1, 2)) + " in 15 years")
+# Calculate investment_2
+investment_2 = np.fv(rate=0.08, nper=15, pmt=0, pv=-10000)
+print("Investment 2 will yield a total of $" + str(round(investment_2, 2)) + " in 15 years")
+
+29) Adjusting future values for inflation
+
+import numpy as np
+# Calculate investment_1
+investment_1 = np.fv(rate=0.08, nper=10, pmt=0, pv=-10000)
+print("Investment 1 will yield a total of $" + str(round(investment_1, 2)) + " in 10 years")
+# Calculate investment_2
+investment_1_discounted = np.pv(rate=0.03, nper=10, pmt=0, fv=investment_1)
+print("After adjusting for inflation, investment 1 is worth $" + str(round(-investment_1_discounted, 2)) + " in today's dollars")
+
+30) Discounting cash flows
+
+You can use numpy's net present value function numpy.npv(rate, values) to calculate the net present value of a series of cash flows. You can create these cash flows by using a numpy.array([...]) of values.
+
+import numpy as np
+# Predefined array of cash flows
+cash_flows = np.array([100, 100, 100, 100, 100])
+# Calculate investment_1
+investment_1 = np.npv(rate=0.03, values=cash_flows)
+print("Investment 1's net present value is $"+str(round(investment_1,2))+" in today's dollars")
+# Calculate investment_2
+investment_2 = np.npv(rate=0.05, values=cash_flows)
+print("Investment 2's net present value is $"+str(round(investment_2,2))+" in today's dollars")
+# Calculate investment_3
+investment_3 = np.npv(rate=0.07, values=cash_flows)
+print("Investment 3's net present value is $"+str(round(investment_3,2))+" in today's dollars")
+
+31) Initial project costs
+
+import numpy as np
+# Create an array of cash flows for project 1
+cash_flows_1 = np.array([-250, 100, 200, 300, 400])
+# Create an array of cash flows for project 2
+cash_flows_2 = np.array([-250, 300, -250, 300, 300])
+# Calculate the net present value of project 1
+investment_1 = np.npv(rate=0.03, values=cash_flows_1)
+print("The net present value of Investment 1 is worth $" + str(round(investment_1, 2)) + " in today's dollars")
+# Calculate the net present value of project 2
+investment_2 = np.npv(rate=0.03, values=cash_flows_2)
+print("The net present value of Investment 2 is worth $" + str(round(investment_2, 2)) + " in today's dollars")
+
+32) Diminishing cash flows
+
+Remember how compounded returns grow rapidly over time? Well, it works in the reverse, too. Compounded discount factors over time will quickly shrink a number towards zero.
+
+import numpy as np
+# Calculate investment_1
+investment_1 = np.pv(rate=0.03, nper=30, pmt=0, fv=100)
+print("Investment 1 is worth $" + str(round(-investment_1, 2)) + " in today's dollars")
+# Calculate investment_2
+investment_2 = np.pv(rate=0.03, nper=50, pmt=0, fv=100)
+print("Investment 2 is worth $" + str(round(-investment_2, 2)) + " in today's dollars")
+# Calculate investment_3
+investment_3 = np.pv(rate=0.03, nper=100, pmt=0, fv=100)
+print("Investment 3 is worth $" + str(round(-investment_3, 2)) + " in today's dollars")
+
+33) 
 
