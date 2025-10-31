@@ -1339,8 +1339,6 @@ plt.show()
 
 71) Random walk
 
-In the last video, you have seen how to generate a random walk of returns, and how to convert this random return series into a random stock price path. In this exercise, you'll build your own random walk by drawing random numbers from the normal distribution with the help of numpy.
-
 # Set seed here
 seed(42)
 # Create random_walk
@@ -1351,6 +1349,8 @@ random_walk = pd.Series(random_walk)
 random_prices = random_walk.add(1).cumprod()
 # Plot random_prices here
 random_prices.mul(1000).plot()
+In the last video, you have seen how to generate a random walk of returns, and how to convert this random return series into a random stock price path. In this exercise, you'll build your own random walk by drawing random numbers from the normal distribution with the help of numpy.
+
 plt.show();
 
 In the last video, you have also seen how to create a random walk of returns by sampling from actual returns, and how to use this random sample to create a random stock price path. In this exercise, you'll build a random walk using historical returns from Facebook's stock price since IPO through the end of May 31, 2017. Then you'll simulate an alternative random price path in the next exercise.
