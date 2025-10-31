@@ -571,5 +571,365 @@ periodic_mortgage_payment = -1*np.pmt(mortgage_rate_periodic, mortgage_payment_p
 print("Monthly Mortgage Payment: " + str(round(periodic_mortgage_payment, 2)))
 => A higher down payment means a smaller mortgage loan, and a lower payment.
 
-40)
+40) Calculating interest and principal payments
 
+Due to the size of the mortgage loan, you begin the mortgage in the initial period by paying mostly interest and retaining very little principal, or equity that goes towards the ownership of your home. This means that if you were to stop paying your mortgage and sell your home after only a few years, the bank would actually own most of the home because what you paid was mostly interest, and very little principal.
+
+# Calculate the amount of the first loan payment that will go towards interest
+initial_interest_payment = mortgage_loan*mortgage_rate_periodic
+print("Initial Interest Payment: " + str(round(initial_interest_payment, 2)))
+
+# Calculate the amount of the first loan payment that will go towards principal
+initial_principal_payment = periodic_mortgage_payment - initial_interest_payment
+print("Initial Principal Payment: " + str(round(initial_principal_payment, 2)))
+
+41) Simulating periodic payments (I)
+
+You have all the tools you'll need to simulate the mortgage payments over time. Every time a mortgage payment is made, the following payment will have a slightly lower percentage, which is used to pay off interest. This means that more of the remainder will go towards the portion of the home that you own instead of the bank. This is important to determine how much you will gain from selling the home before paying off your mortgage, or to determine when your mortgage is underwater.
+
+# Loop through each mortgage payment period
+for i in range(0, mortgage_payment_periods):
+    
+    # Handle the case for the first iteration
+    if i == 0:
+        previous_principal_remaining = mortgage_loan
+    else:
+        previous_principal_remaining = principal_remaining[i-1]
+        
+    # Calculate the interest and principal payments
+    interest_payment = round(previous_principal_remaining*mortgage_rate_periodic, 2)
+    principal_payment = round(periodic_mortgage_payment - interest_payment, 2)
+    
+    # Catch the case where all principal is paid off in the final period
+    if previous_principal_remaining - principal_payment < 0:
+        principal_payment = previous_principal_remaining
+        
+    # Collect the principal remaining values in an array
+    principal_remaining[i] = previous_principal_remaining - principal_payment
+    
+    # Print the payments for the first few periods
+    print_payments(i, interest_payment, principal_payment, principal_remaining)
+=> Output: <script.py> output:
+    Period 0: Interest Paid: 1966.43 | Principal Paid: 974.7 | Remaining Balance: 639025.3
+    Period 1: Interest Paid: 1963.43 | Principal Paid: 977.7 | Remaining Balance: 638047.6000000001
+    Period 2: Interest Paid: 1960.43 | Principal Paid: 980.7 | Remaining Balance: 637066.9000000001
+    Period 3: Interest Paid: 1957.41 | Principal Paid: 983.72 | Remaining Balance: 636083.1800000002
+    Period 4: Interest Paid: 1954.39 | Principal Paid: 986.74 | Remaining Balance: 635096.4400000002
+    Period 5: Interest Paid: 1951.36 | Principal Paid: 989.77 | Remaining Balance: 634106.6700000002
+
+42) Simulating periodic payments (II)
+
+You have decided to extend your program from the previous exercise to store the principal and interest payments made at each period, and to plot the results instead of simply printing them. For this example, the plotting code is already done, so you just need to finish the logic inside the for loop and the initialization of the variables which will be updated at each iteration.
+
+# Loop through each mortgage payment period
+for i in range(0, mortgage_payment_periods): 
+    # Handle the case for the first iteration
+    if i == 0:
+        previous_principal_remaining = mortgage_loan
+    else:
+        previous_principal_remaining = principal_remaining[i-1]
+    # Calculate the interest based on the previous principal
+    interest_payment = round(previous_principal_remaining*mortgage_rate_periodic, 2)
+    principal_payment = round(periodic_mortgage_payment - interest_payment, 2)
+    # Catch the case where all principal is paid off in the final period
+    if previous_principal_remaining - principal_payment < 0:
+        principal_payment = previous_principal_remaining 
+    # Collect the historical values
+    interest_paid[i] = interest_payment
+    principal_paid[i] = principal_payment
+    principal_remaining[i] = previous_principal_remaining - principal_payment    
+# Plot the interest vs principal
+plt.plot(interest_paid, color="red")
+plt.plot(principal_paid, color="blue")
+plt.legend(handles=[interest_plot, principal_plot], loc=2)
+plt.show()
+
+43) Cumulative payments and home equity
+
+You are faithfully paying your mortgage each month, but it's difficult to tell how much of the house you actually own and how much interest you have paid in total over the years. Use np.cumsum() to add up all the interest payments and also to add up all the principal payments over time to see how your ownership changes over time.
+
+import numpy as np
+# Calculate the cumulative home equity (principal) over time
+cumulative_home_equity = np.cumsum(principal_paid)
+# Calculate the cumulative interest paid over time
+cumulative_interest_paid = np.cumsum(interest_paid)
+# Calculate your percentage home equity over time
+cumulative_percent_owned = down_payment_percent + (cumulative_home_equity/home_value)
+print(cumulative_percent_owned)
+# Plot the cumulative interest paid vs equity accumulated
+plt.plot(cumulative_interest_paid, color='red')
+plt.plot(cumulative_home_equity, color='blue')
+plt.legend(handles=[interest_plot, principal_plot], loc=2)
+plt.show()
+=> Output: <script.py> output:
+    [0.20121838 0.2024405  0.20366638 0.20489603 0.20612945 0.20736666
+     0.20860768 0.2098525  0.21110115 0.21235364 0.21360998 0.21487017
+     0.21613424 0.21740219 0.21867404 0.21994979 0.22122946 0.22251308
+     0.22380063 0.22509214 0.22638761 0.22768706 0.22899051 0.23029796
+     0.23160944 0.23292494 0.23424448 0.23556808 0.23689574 0.23822748
+     0.23956331 0.24090325 0.2422473  0.24359549 0.24494781 0.2463043
+     0.24766495 0.24902979 0.25039881 0.25177205 0.2531495  0.25453119
+     0.25591711 0.2573073  0.25870176 0.2601005  0.26150354 0.26291089
+     0.26432256 0.26573857 0.26715894 0.26858366 0.27001276 0.27144626
+     0.27288416 0.27432649 0.27577324 0.27722444 0.27868009 0.28014021
+     0.28160483 0.28307394 0.28454756 0.28602571 0.28750841 0.28899566
+     0.29048749 0.29198389 0.29348489 0.2949905  0.29650074 0.29801563
+     0.29953516 0.30105936 0.30258825 0.30412184 0.30566014 0.30720316
+     0.30875093 0.31030345 0.31186074 0.31342281 0.31498969 0.31656138
+     0.3181379  0.31971926 0.32130549 0.32289659 0.32449258 0.32609346
+     0.32769928 0.32931001 0.3309257  0.33254635 0.33417199 0.33580261
+     0.33743825 0.33907891 0.34072461 0.34237538 0.34403121 0.34569214
+     0.34735816 0.3490293  0.35070558 0.352387   0.3540736  0.35576538
+     0.35746235 0.35916454 0.36087196 0.36258463 0.36430255 0.36602575
+     0.36775425 0.36948806 0.3712272  0.37297169 0.37472152 0.37647674
+     0.37823735 0.38000338 0.38177483 0.38355171 0.38533406 0.38712189
+     0.38891521 0.39071404 0.39251839 0.39432829 0.39614375 0.39796479
+     0.39979143 0.40162368 0.40346155 0.40530508 0.40715426 0.40900914
+     0.4108697  0.41273599 0.41460801 0.41648579 0.41836933 0.42025865
+     0.42215379 0.42405474 0.42596154 0.42787419 0.42979272 0.43171715
+     0.43364749 0.43558376 0.43752599 0.43947417 0.44142835 0.44338852
+     0.44535472 0.44732696 0.44930526 0.45128964 0.45328011 0.4552767
+     0.45727942 0.4592883  0.46130335 0.4633246  0.46535205 0.46738574
+     0.46942568 0.47147187 0.47352436 0.47558316 0.47764829 0.47971975
+     0.48179758 0.48388179 0.4859724  0.48806944 0.49017293 0.49228288
+     0.4943993  0.49652224 0.49865169 0.50078769 0.50293025 0.5050794
+     0.50723515 0.50939753 0.51156654 0.51374221 0.51592458 0.51811365
+     0.52030945 0.52251199 0.5247213  0.5269374  0.52916031 0.53139005
+     0.53362664 0.5358701  0.53812045 0.54037771 0.54264191 0.54491308
+     0.54719121 0.54947635 0.55176851 0.55406771 0.55637398 0.55868733
+     0.56100779 0.56333538 0.56567011 0.56801203 0.57036114 0.57271746
+     0.57508104 0.57745187 0.57982999 0.58221541 0.58460816 0.58700826
+     0.58941574 0.59183061 0.59425291 0.59668265 0.59911985 0.60156454
+     0.60401674 0.60647648 0.60894378 0.61141865 0.61390113 0.61639124
+     0.618889   0.62139444 0.62390756 0.62642841 0.62895701 0.63149338
+     0.63403754 0.63658951 0.63914933 0.64171701 0.64429259 0.64687608
+     0.6494675  0.65206689 0.65467426 0.65728965 0.65991308 0.66254455
+     0.66518411 0.66783179 0.6704876  0.67315158 0.67582374 0.6785041
+     0.6811927  0.68388956 0.68659471 0.68930818 0.69202998 0.69476014
+     0.69749869 0.70024565 0.70300105 0.70576493 0.70853729 0.71131816
+     0.71410759 0.71690559 0.71971218 0.72252739 0.72535125 0.72818379
+     0.73102504 0.73387501 0.73673375 0.73960126 0.74247759 0.74536275
+     0.74825678 0.7511597  0.75407154 0.75699233 0.75992209 0.76286085
+     0.76580864 0.76876549 0.77173143 0.77470648 0.77769066 0.78068403
+     0.78368658 0.78669835 0.78971939 0.7927497  0.79578933 0.79883829
+     0.80189663 0.80496436 0.80804153 0.81112814 0.81422424 0.81732985
+     0.820445   0.82356973 0.82670405 0.829848   0.83300161 0.83616491
+     0.83933794 0.84252071 0.84571326 0.84891563 0.85212783 0.8553499
+     0.85858188 0.86182378 0.86507564 0.86833749 0.87160936 0.87489129
+     0.8781833  0.88148543 0.8847977  0.88812015 0.89145281 0.89479571
+     0.89814887 0.90151235 0.90488615 0.90827032 0.9116649  0.9150699
+     0.91848536 0.92191131 0.9253478  0.92879484 0.93225248 0.93572072
+     0.93919964 0.94268924 0.94618956 0.94970064 0.9532225  0.95675519
+     0.96029872 0.96385315 0.9674185  0.9709948  0.97458209 0.9781804
+     0.98178978 0.98541024 0.98904183 0.99268456 0.9963385  1.        ]
+
+44) Rising housing prices
+
+Home values have been rising steadily each year, and this is a rather large investment for you. Calculate your home equity value over time given a steady growth rate of 0.25% per month. A repeated array of this growth rate (with a length equal to the number of mortgage payment periods) is already stored for you in an object called growth_array.
+
+import numpy as np
+# Calculate the cumulative growth over time
+cumulative_growth_forecast = np.cumprod(1+growth_array)
+# Forecast the home value over time
+home_value_forecast = home_value*cumulative_growth_forecast
+# Forecast the home equity value owned over time
+cumulative_home_value_owned = cumulative_percent_owned*home_value_forecast
+# Plot the home value vs equity accumulated
+plt.plot(home_value_forecast, color='red')
+plt.plot(cumulative_home_value_owned, color='blue')
+plt.legend(handles=[homevalue_plot, homeequity_plot], loc=2)
+plt.show()
+
+45) Falling housing prices and underwater mortgages
+
+Unfortunately, you are also well aware that home prices don't always rise. An underwater mortgage is when the remaining amount you owe on your mortgage is actually higher than the value of the house itself. In this exercise, you will calculate the worst case scenario where home prices drop steadily at the rate of 0.45% per month. To speed things up, the cumulative drop in home prices has already been forecasted and stored for you in a variable called cumulative_decline_forecast, which is an array of multiplicative discount factors compared to today's price - no need to add 1 to the rate array.
+
+import numpy as np
+import pandas as pd
+# Cumulative drop in home value over time as a ratio
+cumulative_decline_forecast = np.cumprod(1+decline_array)
+# Forecast the home value over time
+home_value_forecast = home_value*cumulative_decline_forecast
+# Find all periods where your mortgage is underwater
+underwater = principal_remaining > home_value_forecast
+pd.value_counts(underwater)
+# Plot the home value vs principal remaining
+plt.plot(home_value_forecast, color='red')
+plt.plot(principal_remaining, color='blue')
+plt.legend(handles=[homevalue_plot, principal_plot], loc=2)
+plt.show()
+
+*** PROJECT: BUDGET APPLICATION
+
+Summary: Build a personal budgeting application that models life in a high-cost city (NYC) on an entry-level Data Scientist salary of $85,000, netting ~70% after state and local taxes. The app will forecast evolving income and expenses—especially rent and food—by applying constant growth-rate compounding (e.g., inflation) and projecting salary progression over time. Core methods include cumulative growth modeling (compounding via cumulative products) and translating forecasted growth rates into dollar values from a chosen baseline. Deliverables: a forward-looking cash-flow plan, sensitivity to inflation/salary scenarios, and clear year-over-year projections to support strict budgeting and long-term financial planning.
+
+A) Salary and taxes
+
+You just got a new job as an entry-level Data Scientist at a technology company in New York City with a decent starting salary of $85,000 per year.
+Unfortunately, after state and local taxes, you can expect to be sending roughly 30% back to the government each year.
+You will need to calculate your monthly take home pay after taxes in order to begin budgeting.
+
+# Enter your annual salary
+salary = 85000
+# Assume a tax rate of 30%
+tax_rate = 0.30
+# Calculate your salary after taxes
+salary_after_taxes = salary*(1 - tax_rate)
+print("Salary after taxes: " + str(round(salary_after_taxes, 2)))
+# Calculate your monthly salary after taxes
+monthly_takehome_salary = salary_after_taxes / 12
+print("Monthly takehome salary: " + str(round(monthly_takehome_salary, 2)))
+
+B) Monthly expenses and savings
+
+In order to make it in New York City, you have decided to split a two-bedroom apartment with a friend. You will have to budget for rent, food and entertainment, but it's also a good idea to allocate an amount for unforeseen expenses each month. This unforeseen expenses budget could be used for anything ranging from new clothes or electronics to doctor appointments.
+
+Set up your monthly budget as follows:
+Rent: $1200 / month (Includes utilities)
+Food: $30 / day (On average. Includes groceries and eating out.)
+Entertainment: $200 / month (Movies, drinks, museums, parties…)
+Unforeseen Expenses: 250 / month (Stay safe, and don't drop your phone!)
+For this application, assume an average of 30 days per month. Whatever is left after your paying your monthly expenses will go into your savings account each month.
+
+# Enter your monthly rent
+monthly_rent = 1200
+# Enter your daily food budget
+daily_food_budget = 30
+# Calculate your monthly food budget assuming 30 days per month
+monthly_food_budget = daily_food_budget * 30
+# Set your monthly entertainment budget
+monthly_entertainment_budget = 200
+# Allocate funds for unforeseen expenses, just in case
+monthly_unforeseen_expenses = 250
+# Next, calculate your total monthly expenses
+monthly_expenses = monthly_rent + monthly_food_budget + monthly_entertainment_budget + monthly_unforeseen_expenses
+print("Monthly expenses: " + str(round(monthly_expenses, 2)))
+# Finally, calculate your monthly take-home savings
+monthly_savings = monthly_takehome_salary - monthly_expenses
+print("Monthly savings: " + str(round(monthly_savings, 2)))
+
+C) Forecast salary growth and cost of living
+
+Due to both inflation and increased productivity from experience, you can expect your salary to grow at different rates depending on your job. Now, since you are working in a growing and in-demand career field as a Data Scientist, you can assume a steady growth in your annual salary every year based on performance.
+You can assume an annual salary growth rate of 5%, which means if you start at $85,000 per year, you can expect to earn over $176,000 per year after 15 years. After taxes, assuming your tax rate hasn't changed, that works out to roughly $125,000 per year, which is not unreasonable for a Data Scientist. In fact, you might even make it to that level in a few years! But just to be safe, you should be conservative with your projections.
+For this application, assume all inflation and salary growth happens in smaller increments on a monthly basis instead of just one large increase at the end of each year.
+
+import numpy as np
+# Create monthly forecasts up to 15 years from now
+forecast_months = 12*15
+# Set your annual salary growth rate
+annual_salary_growth = 0.05
+# Calculate your equivalent monthly salary growth rate
+monthly_salary_growth = (1+annual_salary_growth)**(1/12) - 1
+# Forecast the cumulative growth of your salary
+cumulative_salary_growth_forecast = np.cumprod(np.repeat(1 + monthly_salary_growth, forecast_months))
+# Calculate the actual salary forecast
+salary_forecast = monthly_takehome_salary*cumulative_salary_growth_forecast
+# Plot the forecasted salary
+plt.plot(salary_forecast, color='blue')
+plt.show()
+
+D) Forecast growing expenses due to inflation
+
+You will also assume your monthly expenses will rise by an average of 2.5% per year due to inflation. This will lead to higher cost of living over time, paying for the same expenses each year but at a higher price. Luckily, your salary is growing faster than inflation, which means you should have more money going into savings each month.
+The monthly_expenses and forecast_months variables from the previous exercise are available.
+
+import numpy as np
+# Set the annual inflation rate
+annual_inflation = 0.025
+# Calculate the equivalent monthly inflation rate
+monthly_inflation = (1+annual_inflation)**(1/12) - 1
+# Forecast cumulative inflation over time
+cumulative_inflation_forecast = np.cumprod(np.repeat(1 + monthly_inflation, forecast_months))
+# Calculate your forecasted expenses
+expenses_forecast = monthly_expenses*cumulative_inflation_forecast
+# Plot the forecasted expenses
+plt.plot(expenses_forecast, color='red')
+plt.show()
+
+E) Calculate your net worth
+
+Now that you have forecasted your savings and salary over time while taking career progression and inflation into account, you have constructed a time-series which you can use to calculate your cash flows. For this example, all you need to do is subtract your forecasted monthly expenses from your forecasted monthly salary. The remaining cash flow will go straight into your savings account for each month. You want to project your cumulative savings over time to see how effective your budgeting process will be given your projections.
+salary_forecast and expenses_forecast from the previous exercises are available.
+
+import numpy as np
+# Calculate your savings for each month
+savings_forecast = salary_forecast - expenses_forecast
+# Calculate your cumulative savings over time
+cumulative_savings = np.cumsum(savings_forecast)
+# Print the final cumulative savings after 15 years
+final_net_worth = cumulative_savings[-1]
+print("Your final net worth: " + str(round(final_net_worth, 2)))
+# Plot the forecasted savings
+plt.plot(cumulative_savings, color='blue')
+plt.show()
+
+F) So you want to be a millionaire?
+
+Your projections show that you can accumulate over $700,000 in just 15 years by following a strict budget and growing your salary steadily over time. But you want to be a millionaire in 15 years, retire young, sip margaritas and travel for the rest of your life. In order to do that, you're going to need to invest. Remember the .pmt() function from numpy? You can use this function to calculate how much you need to save each month in order to accumulate your desired wealth over time. You still have a lot to learn about the stock market, but your financial advisor told you that you can earn anywhere from 5-10% per year on your capital on average by investing in a low cost index fund. You know that the stock market doesn't always go up, but you will assume a modest 7% return per year, which has been the average annual return in the US stock market from 1950-2009.
+The forecast_months variable from the previous exercise is available.
+
+import numpy as np
+# Set the annual investment return to 7%
+investment_rate_annual = 0.07
+# Calculate the monthly investment return
+investment_rate_monthly = (1+investment_rate_annual)**(1/12) - 1
+# Calculate your required monthly investment to amass $1M
+required_investment_monthly = np.pmt(rate=investment_rate_monthly, nper=forecast_months, pv=0, fv=-1000000)
+print("You will have to invest $" + str(round(required_investment_monthly, 2)) + " per month to amass $1M over 15 years")
+
+G) Investing a percentage of your income (I)
+
+Unfortunately, you really can't afford to save $3,000 per month in order to amass $1,000,000 after only 15 years. But what you can do is start slowly, investing a small percentage of your take-home income each month, which should grow over time as your income grows as well. In this exercise, you will lay the foundations to simulate this investing process over time.
+The salary_forecast and expenses_forecast variables are available from the previous exercise.
+The cash_flow_forecast is also available, and is an array of your forecasted salary minus your forecasted expenses. The monthly_investment_percentage variable is already set to 0.30.
+
+import numpy as np
+# Calculate your monthly deposit into your investment account
+investment_deposit_forecast = cash_flow_forecast * monthly_investment_percentage
+# The rest goes into your savings account
+savings_forecast_new = cash_flow_forecast * (1 - monthly_investment_percentage)
+# Calculate your cumulative savings over time
+cumulative_savings_new = np.cumsum(savings_forecast_new)
+# Plot your forecasted monthly savings vs investments
+plt.plot(investment_deposit_forecast, color='red')
+plt.plot(savings_forecast_new, color='blue')
+plt.legend(handles=[investments_plot, savings_plot], loc=2)
+plt.show()
+
+H) Investing a percentage of your income (II)
+
+To finish up your investment simulation, you will need to loop through each time period, calculate the growth of any investments you have already made, add your new monthly deposit, and calculate your net worth at each point in time.
+Cumulative savings (cumulative_savings_new) from the previous exercise is available, and investment_portfolio and net_worth are pre-allocated empty numpy arrays of length equal to forecast_months.
+
+import numpy as np
+# Loop through each forecast period
+for i in range(forecast_months):
+    # Find the previous investment deposit amount
+    if i == 0: 
+        previous_investment = 0
+    else:
+        previous_investment = investment_portfolio[i-1]
+    # Calculate the value of your previous investments, which have grown
+    previous_investment_growth = previous_investment*(1 + investment_rate_monthly)
+    # Add your new deposit to your investment portfolio
+    investment_portfolio[i] =  previous_investment_growth + investment_deposit_forecast[i]
+    # Calculate your net worth at each point in time
+    net_worth[i] = investment_portfolio[i] + cumulative_savings_new[i]
+# Plot your forecasted cumulative savings vs investments and net worth
+plot_investments(investment_portfolio, cumulative_savings_new, net_worth)
+
+I) Inflation-adjusted net worth
+
+By saving 30% per year, your simulation shows that you can accumulate $896,962.66. Not quite a millionaire, but not bad at all! For the sake of simplicity, let's assume you were able to save $900,000 by following your budget. But what if you retire 15 years from now? What is $900,000 going to be truly worth 15 years from now?
+
+import numpy as np
+# Set your future net worth
+future_net_worth = 900000
+# Set the annual inflation rate to 2.5%
+annual_inflation = 0.025
+# Calculate the present value of your terminal wealth over 15 years
+inflation_adjusted_net_worth = np.pv(rate=annual_inflation, nper=15, pmt=0, fv=-1*future_net_worth)
+print("Your inflation-adjusted net worth: $" + str(round(inflation_adjusted_net_worth, 2)))
+
+46)
