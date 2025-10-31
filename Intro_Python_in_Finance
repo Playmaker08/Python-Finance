@@ -1786,5 +1786,729 @@ with pd.ExcelWriter('data.xls') as writer:
     data.to_excel(writer, sheet_name='data')
     returns.to_excel(writer, sheet_name='returns')
 
-73)
+73) Load all listing data and iterate over key-value dictionary pairs
+
+You already know that a pd.DataFrame() object is a two-dimensional labeled data structure. As you saw in the video, the pd.concat() function is used to concatenate, or vertically combine, two or more DataFrames. You can also use broadcasting to add new columns to DataFrames.
+
+# Import the NYSE and NASDAQ listings
+nyse = pd.read_excel('listings.xlsx', sheet_name='nyse', na_values='n/a')
+nasdaq = pd.read_excel('listings.xlsx', sheet_name='nasdaq', na_values='n/a')
+# Inspect nyse and nasdaq
+nyse.info()
+nasdaq.info()
+# Add Exchange reference columns
+nyse['Exchange'] = 'NYSE'
+nasdaq['Exchange'] = 'NASDAQ'
+# Concatenate DataFrames  
+combined_listings = pd.concat([nyse, nasdaq])
+
+74) Automate the loading and combining of data from multiple Excel worksheets
+
+You are now ready to automate the import process of listing information from all three exchanges in the Excel file listings.xlsx by implementing a for loop. Let's look at what you'll do:
+1. Retrieve the sheet names of a pd.ExcelFile() object using its sheet_names attribute.
+2. Create an empty list.
+3. Write a for loop that iterates through these sheet names to read the data from the corresponding sheet name in the Excel file into a variable. Add a reference column, if desired. Append the contents of this variable to the list with each iteration.
+4. Concatenate the DataFrames in the list.
+As always, refer to the previous exercises in this chapter or the pandas documentation if you need any help. pandas has been imported as pd.
+
+# Create the pd.ExcelFile() object
+xls = pd.ExcelFile('listings.xlsx')
+# Extract the sheet names from xls
+exchanges = xls.sheet_names
+# Create an empty list: listings
+listings = []
+# Import the data
+for exchange in exchanges:
+    listing = pd.read_excel(xls, sheet_name=exchange, na_values='n/a')
+    listing['Exchange'] = exchange
+    listings.append(listing)
+# Concatenate the listings: listing_data
+listing_data = pd.concat(listings)
+# Inspect the results
+listing_data.info()
+
+75) Get stock data for a single company
+
+DataReader offers the data source 'iex'. To experiment with the data outside DataCamp environment, you will need an IEX Cloud account. IEX limits access to stock price series to the last five years. Retrieving stock price data from IEX is simple after importing the DataReader package and using the start and/or end arguments in form date(YYYY, MM, DD):
+stock_data = DataReader(ticker, data_source, start, end)
+
+# Import DataReader
+from pandas_datareader.data import DataReader
+# Import date
+from datetime import date
+# Set start and end dates
+start = date(2016, 1, 1)
+end = date(2016, 12, 31)
+# Set the ticker
+ticker = 'AAPL'
+# Set the data source
+data_source = 'iex'
+# Import the stock prices
+stock_prices = DataReader(ticker, data_source, start, end)
+# Display and inspect the result
+print(stock_prices.head())
+stock_prices.info()
+
+76) Visualize a stock price trend
+
+Google Finance has deprecated their API but DataReader now makes available the data source 'iex'. To experiment with the data outside DataCamp environment, you will need an IEX Cloud account. The most important change to the functionality is the limitation of the data to the last five years. The DataFrame returned by the DataReader has the same columns, but in lower case. The matplotlib.pyplot package is essential to visualizing stock price trends in Python.
+
+# Import matplotlib.pyplot
+import matplotlib.pyplot as plt
+# Set start and end dates
+start = date(2016, 1, 1)
+end = date(2016, 12, 31)
+# Set the ticker and data_source
+ticker = 'FB'
+data_source = 'iex'
+# Import the data using DataReader
+stock_prices = DataReader(ticker, data_source, start, end)
+# Plot close
+stock_prices['close'].plot(title=ticker)
+# Show the plot
+plt.show()
+
+77) Visualize the long-term oil price trend
+
+In the previous video, you learned how to retrieve data from the Federal Reserve Economic Data (FRED) portal. Here, you will use this new data source to visualize the oil price trend over the last 50 years, specifically, the Spot Crude Oil Price: West Texas Intermediate (WTI). DataReader, date, pandas as pd, and matplotlib.pyplot as plt have been imported.
+
+# Set start date
+start = date(1968, 1, 1)
+# Set series code
+series = 'WTISPLC'
+# Import the data
+oil_price = DataReader(series, 'fred', start=start)
+# Inspect the price of oil
+oil_price.info()
+# Plot the price of oil
+oil_price.plot(title='Oil Price')
+# Show the plot
+plt.show()
+
+78) Compare labor market participation and unemployment rates
+
+Two economic data series in FRED are the Civilian Unemployment Rate ('UNRATE') and the Civilian Labor Force Participation Rate ('CIVPART'). These rates highlight two important aspects of the US labor market: the share of the civilian population that is currently unemployed or seeking employment, and the share of those active in the labor market that are in fact employed.
+This means that the numbers indicate both the size of the labor market relative to the total population, as well as the size of unemployment relative to the labor market.
+
+# Set the start date
+start = date(1950, 1, 1)
+# Define the series codes
+series = ['UNRATE', 'CIVPART']
+# Import the data
+econ_data = DataReader(series, 'fred', start)
+# Assign new column labels
+econ_data.columns = ['Unemployment Rate', 'Participation Rate']
+# Plot econ_data
+econ_data.plot(subplots=True, title='Labor Market')
+# Show the plot
+plt.show()
+
+79) Compare bond and stock performance
+
+Bonds and stocks are the most important investment alternatives. Now that you can import data from both the Federal Reserve and Yahoo! Finance, you can compare the performance of both asset classes. You'll be using a Total Return Index for each class, which accounts for returns due to both price increases and payments like interest or dividends.
+For bonds, you'll use the Bank of America Merrill Lynch US High Yield Total Return Index Value ('BAMLHYH0A0HYM2TRIV'). For stocks, you'll use the S&P 500 Index ('SP500'). Both are available for the past 10 years from the Federal Reserve's FRED service.
+
+# Set the start date
+start = date(2008, 1, 1)
+# Set the series codes
+series = ['BAMLHYH0A0HYM2TRIV', 'SP500']
+# Import the data
+data = DataReader(series, 'fred', start)
+# Plot the results
+data.plot(subplots=True, title='Performance Comparison')
+# Show the plot
+plt.show()
+
+80) Select the top 5 listed consumer companies
+
+As you have just learned, it is possible to filter stocks based on criteria with the sort_values() method and an argument that specifies the column to filter by. Additionally, you can include the argument ascending=False to sort entries from highest to lowest.
+Here, you will use this function to find out the five most valuable companies in the Consumer Services sector. This is measured with market capitalization, or the combined value of all shares in a company. pandas has been imported as pd, as has the listings DataFrame from the first chapter. As a refresher, it contains data from the AMEX, NYSE, and NASDAQ.
+
+# Select companies in Consumer Services
+consumer_services = listings[listings.Sector == 'Consumer Services']
+# Sort consumer_services by market cap
+consumer_services2 = consumer_services.sort_values('Market Capitalization', ascending=False)
+# Display first 5 rows of designated columns
+print(consumer_services2[['Company Name', 'Exchange', 'Market Capitalization']].head())
+
+81) Get the ticker of the largest consumer services company
+
+Instead of indexing your data with a conditional expression, you can also filter by certain values with .loc[row_selector, column_selector]. Additionally, you can use .set_index() to set a particular column with unique values as the index of a DataFrame, and .idxmax() to return the index of the maximum value.
+In this exercise, you will apply these methods of selecting companies to find the most valuable consumer services company on any of the three exchanges, and use its ticker to plot its stock price trend. DataReader, date, pandas as pd, and matplotlib.pyplot as plt have been imported, as has the listings DataFrame from the last exercise.
+
+# Set the index of listings to Stock Symbol
+listings_ss = listings.set_index('Stock Symbol')
+# Get ticker of the largest Consumer Services company
+ticker = listings_ss.loc[listings_ss.Sector == 'Consumer Services', 'Market Capitalization'].idxmax()
+# Set the start date
+start = date(2015, 1, 1)
+# Import the stock data
+data = DataReader(ticker, 'yahoo', start)
+# Plot close and volume
+data[['close', 'volume']].plot(secondary_y='volume', title=ticker)
+# Show the plot
+plt.show()
+
+82) Get the largest consumer company listed after 1998
+
+You can filter your data by even more conditions by enclosing each condition in parentheses and using logical operators like & and |.
+Here, you will find out which company is the largest consumer services company that went public after Amazon did in 1997. The data is contained in the column 'IPO Year'; an Initial Public Offering (IPO) is a financial term that describes the first time that the stock of a private company is offered to the public.
+
+# Set Stock Symbol as the index
+listings = listings.set_index('Stock Symbol')
+# Get ticker of the largest consumer services company listed after 1997
+ticker = listings.loc[(listings.Sector == 'Consumer Services') & (listings['IPO Year'] > 1998), 'Market Capitalization'].idxmax()
+# Set the start date
+start = date(2015, 1, 1)
+# Import the stock data
+data = DataReader(ticker, 'yahoo', start)
+# Plot close and volume
+data[['close', 'volume']].plot(secondary_y='volume', title=ticker)
+# Show the plot
+plt.show()
+
+83) Get data for the 3 largest financial companies
+
+A pd.MultiIndex() object has more than one identifier per row. This allows you to get the data based on criteria for multiple companies at once.
+Let's apply this new skill to get the stock prices for the largest companies in the financial sector. DataReader, date, pandas as pd, and matplotlib.pyplot as plt have been imported, as has the listings DataFrame from the last exercise.
+
+# Set Stock Symbol as the index
+listings_ss = listings.set_index('Stock Symbol')
+# Get ticker of 3 largest finance companies
+top_3_companies = listings_ss.loc[listings_ss.Sector == 'Finance', 'Market Capitalization'].nlargest(n=3)
+# Convert index to list
+top_3_tickers = top_3_companies.index.tolist()
+# Set start date
+start = date(2015, 1, 1)
+# Set end date
+end = date(2020, 4, 1)
+# Import stock data
+result = DataReader(top_3_tickers, 'iex', start, end)
+# Apply stack method 
+data = result.stack()
+# Unstack and inspect result
+data['close'].unstack().info()
+
+84) List the poorest and richest countries worldwide
+
+The values of numerical variables are numbers. They can be described by measures of central tendency, or the most typical value in a dataset, and dispersion, which represents the spread of a distribution.
+In the next few exercises, you will use these statistics to explore the data in 'per_capita_income.csv', which contains the average income earned per person in a given country. The first step in analyzing aspects of the global income distribution is to inspect and familiarize yourself with the data.
+
+# Import the data
+income = pd.read_csv('per_capita_income.csv')
+# Inspect the result
+income.info()
+# Sort the data by income
+income = income.sort_values('Income per Capita', ascending=False)
+# Display the first and last five rows
+print(income.head())
+print(income.tail())
+=> Output: <script.py> output:
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 184 entries, 0 to 183
+    Data columns (total 2 columns):
+     #   Column             Non-Null Count  Dtype  
+    ---  ------             --------------  -----  
+     0   Country            184 non-null    object 
+     1   Income per Capita  184 non-null    float64
+    dtypes: float64(1), object(1)
+    memory usage: 3.0+ KB
+                   Country  Income per Capita
+    133              Qatar         141542.663
+    97    Macao SAR, China         111496.629
+    96          Luxembourg         102051.680
+    144          Singapore          85382.302
+    23   Brunei Darussalam          78369.291
+                          Country  Income per Capita
+    121                     Niger            955.483
+    94                    Liberia            835.367
+    37           Congo, Dem. Rep.            784.365
+    26                    Burundi            727.151
+    31   Central African Republic            618.753
+
+85) Global incomes: Central tendency
+
+# Calculate the mean
+print(income['Income per Capita'].mean())
+# Calculate the median
+print(income['Income per Capita'].median())
+# Create the new column
+income['Income per Capita (,000)'] = income['Income per Capita'] // 1000
+# Calculate the mode of the new column
+income['Income per Capita (,000)'].mode()
+
+86) Global incomes: Dispersion
+
+A quantile is a measure of dispersion created by dividing a frequency distribution of a DataFrame into even groups. You can return values at the given quantile q of a DataFrame df with the command df.quantile(q); likewise, supplying a list as q will return a value for each given quantile.
+Here, you will continue your analysis of global income distribution using two measures of dispersion: the standard deviation, or square root of variance, and the interquartile range (IQR).
+
+# Calculate mean
+mean = income['Income per Capita'].mean()
+# Calculate standard deviation 
+std = income['Income per Capita'].std()
+# Calculate and print lower and upper bounds
+bounds = [mean - std, mean + std]
+print(bounds)
+# Calculate and print first and third quartiles
+quantiles = income['Income per Capita'].quantile([.25, .75])
+print(quantiles)
+# Calculate and print IQR
+iqr = quantiles[.75] - quantiles[.25]
+print(iqr)
+
+87) Deciles of the global income distribution
+
+A decile is a special kind of quantile obtained by dividing the distribution of a particular dataset by ten. Deciles (as well as any other kind of quantile) can be created by supplying the following numpy function to .quantile(), where start is the beginning of the interval (inclusive), stop is the end of the interval (exclusive), and step is the spacing between any two adjacent values:
+np.arange(start, stop, step)
+As you saw in the video, a standard bar graph is a great way to visualize the distribution of data. You can create one by adding kind='bar' as an argument to .plot().
+
+# Generate range of deciles
+quantiles = np.arange(.1, .91, .1)
+# Print them
+print(quantiles)
+# Calculate deciles for 'Income per Capita'
+deciles = income['Income per Capita'].quantile(quantiles)
+# Print them
+print(deciles)
+# Plot deciles as a bar chart
+deciles.plot(kind='bar', title='Global Income per Capita - Deciles')
+# Make sure to use the tight layout!
+plt.tight_layout()
+# Show the plot
+plt.show()
+=> <script.py> output:
+    [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
+    0.1     1805.906
+    0.2     3177.256
+    0.3     5506.323
+    0.4     8510.730
+    0.5    11620.933
+    0.6    15790.369
+    0.7    22563.076
+    0.8    32517.694
+    0.9    47377.887
+    Name: Income per Capita, dtype: float64
+
+88) Visualizing international income distribution
+
+# Import seaborn and matplotlib
+import seaborn as sns
+import matplotlib.pyplot as plt
+# Print the summary statistics for income
+print(income.describe())
+# Plot a basic histogram of income per capita
+sns.distplot(income['Income per Capita'])
+# Show the plot
+plt.show()
+# Plot a rugplot
+sns.distplot(income['Income per Capita'], bins=50, kde=False, rug=True)
+# Show the plot
+plt.show()
+
+89) Growth rates in Brazil, China, and the US
+
+It's time to extend your analysis beyond the levels of international per capita income to the growth rates. The 'income_growth.csv' file contains the growth rates of per capita income over the last 40 years for Brazil, China, and the US.
+You will plot the distribution of the historical growth rates for each country on the same chart using a KDE plot to faciliate visual comparison of the ranges of growth that these markets have experienced over this time period.
+
+# Load the file into growth
+growth = pd.read_csv('income_growth.csv', parse_dates=['DATE']).set_index('DATE')
+# Inspect the summary statistics for the growth rates
+growth.describe()
+# Iterate over the three columns
+for column in growth.columns:
+    sns.distplot(growth[column], hist=False, label=column)
+# Show the plot
+plt.show()
+
+90) Highlighting values in the distribution
+
+Sometimes it is necessary to manipulate your data in order to create a better visualization. Two methods that can take care of missing values are .dropna() and .fillna(). You can also remove outliers by filtering entries that are over or under a certain percentile by applying a condition using .quantile() to a particular column.
+You also saw in the video how to emphasize a particular value in a plot by adding a vertical line at position x across the axes:
+Axes.axvline(x=0, color=None, ...)
+
+# Create inc_per_capita
+inc_per_capita = income['Income per Capita']
+# Filter out incomes above the 95th percentile
+inc_per_capita = inc_per_capita[inc_per_capita < inc_per_capita.quantile(.95)]
+# Plot histogram and assign to ax
+ax = sns.distplot(inc_per_capita)
+# Highlight mean
+ax.axvline(inc_per_capita.mean(), color='b')
+# Highlight median
+ax.axvline(inc_per_capita.median(), color='g')
+# Show the plot
+plt.show()
+
+91) Companies by sector on all exchanges
+
+A categorical variable is a variable that is one of a limited number of values based on some qualitative property. A frequency distribution is a representation of the number of times that a categorical variable occurs.
+Think back to the stock exchange data from the earlier chapters. The .mean() function isn't very helpful for understanding the frequency of 'Sector' values such as 'Technology' and 'Finance', whereas .value_counts() and .nunique() are.
+In this exercise, you will compare the distribution of listings in the AMEX, NASDAQ, and NYSE per sector. pandas as pd and matplotlib.pyplot as plt have been imported, and the listings information from previous exercises has been loaded into a dictionary listings for which the keys are 'amex', 'nasdaq', and 'nyse'.
+
+# Create the list exchanges
+exchanges = ['amex', 'nasdaq', 'nyse']
+# Iterate over exchanges then plot and show result
+for exchange in exchanges:
+    sectors = listings[exchange].Sector.value_counts()
+    # Sort in descending order and plot
+    sectors.sort_values(ascending=False).plot(kind='bar')
+    # Show the plot
+    plt.show()
+
+92) Technology IPOs by year on all exchanges
+
+Each company in the listings dictionary has an IPO year between 1972 and 2017. Therefore, in this context, it is appropriate to consider the 'IPO Year' column of each sheet as a categorical variable with a well-defined order even though it is of dtype float64.
+Here you will combine data from all three exchanges and plot the distribution of IPO years for companies in the Technology sector. pandas as pd and matplotlib.pyplot as plt have been imported, and the listings dictionary from the previous exercise is in your workspace.
+
+# Create lists
+exchanges = ['amex', 'nasdaq', 'nyse']
+all_listings = []
+# Use for loop to create listing_data
+for exchange in exchanges:
+    all_listings.append(listings[exchange])
+# Combine DataFrames
+listing_data = pd.concat(all_listings)
+# Select tech companies
+tech_companies = listing_data[listing_data.Sector == 'Technology']
+# Create ipo_years
+ipo_years = tech_companies['IPO Year']
+# Drop missing values and convert to int
+ipo_years = ipo_years.dropna().astype(int)
+# Count values, sort ascending by year, and create a bar plot
+ipo_years.value_counts(ascending=True).plot(kind='bar', title='Tech IPOs by Year')
+# Rotate xticks and show result
+plt.xticks(rotation=45)
+# Show the plot
+plt.show()
+
+93) Median market capitalization by sector
+
+Aggregate data is data combined from several measurements. As you learned in the video, the .groupby() function is helpful in aggregating your data by a specific category. You have seen previously that the market capitalization data has large outliers. To get a more robust summary of the market value of companies in each sector, you will calculate the median market capitalization by sector. pandas as pd and matplotlib.pyplot as plt have been imported, and the NYSE stock exchange listings are available in your workspace as the DataFrame nyse.
+
+# Inspect NYSE data
+nyse.info()
+# Create market_cap_m
+nyse['market_cap_m'] = nyse['Market Capitalization'].div(1e6)
+# Drop market cap column
+nyse = nyse.drop('Market Capitalization', axis=1)
+# Group nyse by sector
+mcap_by_sector = nyse.groupby('Sector')
+# Calculate median
+median_mcap_by_sector = mcap_by_sector.market_cap_m.median()
+# Plot and show as horizontal bar chart
+median_mcap_by_sector.plot(kind='barh', title='NYSE - Median Market Capitalization')
+# Add the label
+plt.xlabel('USD mn')
+# Show the plot
+plt.show()
+=> Output: <script.py> output:
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 3147 entries, 0 to 3146
+    Data columns (total 7 columns):
+     #   Column                 Non-Null Count  Dtype  
+    ---  ------                 --------------  -----  
+     0   Stock Symbol           3147 non-null   object 
+     1   Company Name           3147 non-null   object 
+     2   Last Sale              3079 non-null   float64
+     3   Market Capitalization  3147 non-null   float64
+     4   IPO Year               1361 non-null   float64
+     5   Sector                 2177 non-null   object 
+     6   Industry               2177 non-null   object 
+    dtypes: float64(3), object(4)
+    memory usage: 172.2+ KB
+
+94) Median market capitalization by IPO year
+
+In the last lesson of the previous chapter, you created a timeline for the number of IPOs per year for technology companies.
+Let's now analyze how market capitalization has evolved for different IPO years. You can combine data from all three exchanges to get a more comprehensive view.
+
+# Inspect listings
+listings.info()
+# Show listings head
+print(listings.head())
+# Create market_cap_m
+listings['market_cap_m'] = listings['Market Capitalization'].div(1e6)
+# Select companies with IPO after 1985
+listings = listings[listings['IPO Year'] > 1985]
+# Drop missing values and convert to integers
+listings['IPO Year'] = listings['IPO Year'].dropna().astype(int)
+# Calculate the median market cap by IPO Year and sort the index
+ipo_by_year = listings.groupby('IPO Year').market_cap_m.median().sort_index()
+# Plot results as a bar chart
+ipo_by_year.plot(kind='bar')
+# Show the plot
+plt.show()
+=> Output: <script.py> output:
+    <class 'pandas.core.frame.DataFrame'>
+    Int64Index: 6674 entries, 0 to 3146
+    Data columns (total 8 columns):
+     #   Column                 Non-Null Count  Dtype  
+    ---  ------                 --------------  -----  
+     0   exchange               6674 non-null   object 
+     1   Stock Symbol           6674 non-null   object 
+     2   Company Name           6674 non-null   object 
+     3   Last Sale              6590 non-null   float64
+     4   Market Capitalization  6674 non-null   float64
+     5   IPO Year               2852 non-null   float64
+     6   Sector                 5182 non-null   object 
+     7   Industry               5182 non-null   object 
+    dtypes: float64(3), object(5)
+    memory usage: 469.3+ KB
+      exchange    Stock Symbol                                       Company Name  Last Sale  Market Capitalization  IPO Year                 Sector               Industry
+    0     amex            XXII                            22nd Century Group, Inc       1.33              1.206e+08       NaN  Consumer Non-Durables  Farming/Seeds/Milling
+    1     amex             FAX              Aberdeen Asia-Pacific Income Fund Inc       5.00              1.266e+09    1986.0                    NaN                    NaN
+    2     amex             IAF                 Aberdeen Australia Equity Fund Inc       6.15              1.399e+08       NaN                    NaN                    NaN
+    3     amex              CH                          Aberdeen Chile Fund, Inc.       7.22              6.756e+07       NaN                    NaN                    NaN
+    4     amex  ABE             Aberdeen Emerging Markets Smaller Company Oppo...      13.36              1.288e+08       NaN                    NaN                    NaN
+
+95) All summary statistics by sector
+
+You can apply the various summary statistics that you have learned about in the last chapter to a groupby object to obtain the result on a per-category basis. This includes the .describe() function, which provides several insights all at once!
+Here, you will practice this with the NASDAQ listings. pandas has been imported as pd, and the NASDAQ stock exchange listings data is available in your workspace in the nasdaq DataFrame.
+
+# Inspect NASDAQ data
+nasdaq.info()
+# Create market_cap_m
+nasdaq['market_cap_m'] = nasdaq['Market Capitalization'].div(1e6)
+# Drop the Market Capitalization column
+nasdaq.drop('Market Capitalization', axis=1, inplace=True)
+# Group nasdaq by Sector
+nasdaq_by_sector = nasdaq.groupby('Sector')
+# Create summary statistics by sector
+summary = nasdaq_by_sector.describe()
+# Print the summary
+print(summary)
+# Unstack 
+summary = summary.unstack()
+# Print the summary again
+print(summary)
+=> Output: <script.py> output:
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 3167 entries, 0 to 3166
+    Data columns (total 7 columns):
+     #   Column                 Non-Null Count  Dtype  
+    ---  ------                 --------------  -----  
+     0   Stock Symbol           3167 non-null   object 
+     1   Company Name           3167 non-null   object 
+     2   Last Sale              3165 non-null   float64
+     3   Market Capitalization  3167 non-null   float64
+     4   IPO Year               1386 non-null   float64
+     5   Sector                 2767 non-null   object 
+     6   Industry               2767 non-null   object 
+    dtypes: float64(3), object(4)
+    memory usage: 173.3+ KB
+                          Last Sale                                  ... market_cap_m                                       
+                              count    mean      std    min     25%  ...          min     25%      50%       75%         max
+    Sector                                                           ...                                                    
+    Basic Industries           78.0  21.598   29.010  0.034   2.633  ...          0.0  42.870  150.385   721.203    7976.835
+    Capital Goods             172.0  26.189   36.597  0.150   4.380  ...          0.0  68.474  293.801  1031.733   49614.833
+    Consumer Durables          88.0  24.363   44.399  0.050   3.750  ...          0.0  41.234  177.594   669.008   13620.923
+    Consumer Non-Durables     103.0  25.750   34.670  0.200   3.880  ...          0.0  47.796  229.931  1149.086  111367.949
+    Consumer Services         348.0  34.917   67.416  0.049   6.825  ...          0.0  79.945  524.152  2463.644  422138.531
+    Energy                     65.0  15.497   22.952  0.133   1.960  ...          0.0  53.604  182.428   728.109    9468.719
+    Finance                   627.0  29.644   61.447  0.075  10.735  ...          0.0  49.512  205.477   732.084   39372.419
+    Health Care               645.0  19.463   46.933  0.008   2.120  ...          0.0  38.035  173.823   662.945  118927.211
+    Miscellaneous              89.0  46.094  186.952  0.838   3.570  ...          0.0  63.959  228.096  1544.483   85496.046
+    Public Utilities           66.0  18.644   19.307  0.253   5.332  ...          0.0  91.844  378.996  1115.589   52930.714
+    Technology                433.0  31.100   63.762  0.180   5.100  ...          0.0  85.610  600.721  2464.720  740024.467
+    Transportation             52.0  28.097   30.627  0.230   3.640  ...          0.0  68.540  479.777  1724.087   43005.669
+    
+    [12 rows x 24 columns]
+                         Sector               
+    Last Sale     count  Basic Industries             78.000
+                         Capital Goods               172.000
+                         Consumer Durables            88.000
+                         Consumer Non-Durables       103.000
+                         Consumer Services           348.000
+                                                     ...    
+    market_cap_m  max    Health Care              118927.211
+                         Miscellaneous             85496.046
+                         Public Utilities          52930.714
+                         Technology               740024.467
+                         Transportation            43005.669
+    Length: 288, dtype: float64
+
+96) Company value by exchange and sector
+
+You can generate more fine-grained summaries of your data by providing a list of columns inside .groupby() and/or applying a statistical method such as .mean() directly to one or more numerical columns.
+Here, you will calculate the median market capitalization for each sector, differentiated by the exchange that the companies are listed on. You will also use .unstack() to pivot the exchange labels from the rows into the columns. It's a good idea to inspect listings in your console before starting the exercise!
+
+# Group listings by Sector and Exchange
+by_sector_exchange = listings.groupby(['Sector', 'Exchange'])
+# Calculate the median market cap
+mcap_by_sector_exchange = by_sector_exchange.market_cap_m.median()
+# Display the head of the result
+print(mcap_by_sector_exchange.head())
+# Unstack mcap_by_sector_exchange
+mcap_unstacked = mcap_by_sector_exchange.unstack()
+# Plot as a bar chart
+mcap_unstacked.plot(kind='bar', title='Median Market Capitalization by Exchange')
+# Set the y label
+plt.ylabel('USD mn')
+# Show the plot
+plt.show()
+=> Output: <script.py> output:
+    Sector            Exchange
+    Basic Industries  amex         148.565
+                      nasdaq       150.385
+                      nyse        2450.240
+    Capital Goods     amex          49.596
+                      nasdaq       293.801
+    Name: market_cap_m, dtype: float64
+
+97) Calculate several metrics by sector and exchange
+
+The .agg() function allows you to aggregate your data in even more ways. Providing a list of names of statistical methods calculates more than one summary statistic at once. You can provide new names for the aggregated columns using the rename method, which takes a dictionary argument where the keys are the names of the metrics you computes and the values are your desired new names. In this exercise, you will calculate the mean, median, and standard deviation of market capitalizations in millions of USD. pandas as pd and matplotlib.pyplot as plt have been imported, and the listings DataFrame, with reference column 'Exchange' is available in your workspace.
+
+# Create market_cap_m
+listings['market_cap_m'] = listings['Market Capitalization'].div(1e6)
+# Group listing by both Sector and Exchange
+by_sector_exchange = listings.groupby(['Sector', 'Exchange'])
+# Subset market_cap_m of by_sector_exchange
+bse_mcm = by_sector_exchange['market_cap_m']
+# Calculate mean, median, and std in summary
+summary = bse_mcm.agg(['mean', 'median', 'std']).rename(columns={'mean': 'Average', 
+                                                                 'median': 'Median', 
+                                                                 'std':'Standard Deviation'})
+# Print the summary
+print(summary)
+=> Output: <script.py> output:
+                                      Average    Median  Standard Deviation
+    Sector                Exchange                                         
+    Basic Industries      amex        391.646   148.565             605.308
+                          nasdaq      724.900   150.385            1445.545
+                          nyse       9590.515  2450.240           24845.470
+    Capital Goods         amex        113.944    49.596             161.947
+                          nasdaq     1511.237   293.801            4829.847
+                          nyse      10166.901  3215.113           20254.615
+    Consumer Durables     amex        234.446    18.337             441.813
+                          nasdaq      839.803   177.594            1907.605
+                          nyse       5854.122  2982.585            8996.673
+    Consumer Non-Durables amex       8868.469    60.087           31715.735
+                          nasdaq     3104.051   229.931           12998.095
+                          nyse      17798.582  4701.718           36608.580
+    Consumer Services     amex        229.955    44.143             435.806
+                          nasdaq     5582.344   524.152           26492.248
+                          nyse       6766.358  1784.206           18693.685
+    Energy                amex       1090.152    50.964            4783.382
+                          nasdaq      826.608   182.428            1568.870
+                          nyse      12915.331  1838.884           36689.704
+    Finance               amex        747.535   238.609            1305.761
+                          nasdaq     1044.090   205.477            2874.796
+                          nyse      13880.683  2177.155           32350.816
+    Health Care           amex        120.016    42.764             227.188
+                          nasdaq     1758.709   173.823            8767.259
+                          nyse      28562.817  5879.060           51863.140
+    Miscellaneous         amex         67.551    59.131              39.544
+                          nasdaq     3445.656   228.096           11461.047
+                          nyse      18594.166  3734.556           50001.909
+    Public Utilities      amex       2676.119    83.283            4490.753
+                          nasdaq     2357.865   378.996            8729.065
+                          nyse      13412.555  4087.368           29139.152
+    Technology            amex         59.553    39.681              49.184
+                          nasdaq    10883.434   600.721           62279.405
+                          nyse       9790.157  2077.509           26136.431
+    Transportation        amex        265.490   265.490                 NaN
+                          nasdaq     2869.660   479.777            6915.407
+                          nyse       8491.577   798.216           18281.190
+
+98) Plot IPO timeline for all exchanges using countplot()
+
+To create a basic visualization of the number of observations per category in a dataset, the seaborn countplot() function is usually the way to go:
+seaborn.countplot(x=None, hue=None, data=None, ...)
+The x parameter contains the names of the variables in the data argument, which is the DataFrame to be plotted. hue identifies an additional categorical variable with color.
+
+# Select IPOs after 2000
+listings = listings[listings['IPO Year'] > 2000]
+# Convert IPO Year to integer
+listings['IPO Year'] = listings['IPO Year'].astype(int)
+# Create a countplot
+sns.countplot(x='IPO Year', hue='Exchange', data=listings)
+# Rotate xticks and show result
+plt.xticks(rotation=45)
+# Show the plot
+plt.show()
+
+99) Global median per capita income over time
+
+The seaborn barplot() function shows point estimates and confidence intervals as rectangular bars; the default function displays the mean, but it can also represent another summary statistic if you pass a particular numpy function to its estimator parameter:
+seaborn.barplot(x=None, y=None, data=None, estimator=<function mean>, ...)
+In this exercise, you will use an imported World Bank dataset containing global income per capita data for 189 countries since the year 2000. To practice displaying summary statistics per category, you will plot and compare the median global income per capita since 2000 to the mean.
+
+# Inspect the data
+income_trend.info()
+# Create barplot
+sns.barplot(x='Year', y='Income per Capita', data=income_trend)
+# Rotate xticks
+plt.xticks(rotation=45)
+# Show the plot
+plt.show()
+# Close the plot
+plt.close()
+# Create second barplot
+sns.barplot(x='Year', y='Income per Capita', data=income_trend, estimator=np.median)
+# Rotate xticks
+plt.xticks(rotation=45)
+# Show the plot
+plt.show()
+
+100) Calculate several metrics by sector and IPO year
+
+The seaborn pointplot() function facilitates the comparison of summary statistics of a numerical variable for different levels of categorical variables:
+seaborn.pointplot(x=None, y=None, hue=None, data=None, ...)
+In the video, you saw a visualization for the market capitalization (the numerical variable) differentiated by whether the IPO (the categorical variable) occurred before (first level) or after (second level) the year 2000.
+In this exercise, you will compare the mean market capitalization for each year since 2000 for the NYSE and the NASDAQ, after excluding outliers beyond the 95th percentile.
+
+# Import the seaborn library as sns
+import seaborn as sns
+# Exclude IPOs before 2000 and from the 'amex'
+listings = listings[(listings['IPO Year'] > 2000) & (listings.Exchange != 'amex')]
+# Convert IPO Year to integer
+listings['IPO Year'] = listings['IPO Year'].astype(int)
+# Create market_cap_m
+listings['market_cap_m'] = listings['Market Capitalization'].div(1e6)
+# Exclude outliers
+listings = listings[listings.market_cap_m < listings.market_cap_m.quantile(.95)]
+# Create the pointplot
+sns.pointplot(x='IPO Year', y='market_cap_m', hue='Exchange', data=listings)
+# Rotate xticks
+plt.xticks(rotation=45)
+# Show the plot
+plt.show()
+
+101) Inflation trends in China, India, and the US
+
+Finally, the seaborn package includes functions that allow you to visualize the distribution of levels of categorical variables. In the next two exercises, you will examine the historical inflation data in China, India, and the US over the past 50+ years in data from FRED. Before jumping into using the functions you have just learned, you should first familiarize yourself with the raw data.
+
+# Inspect the inflation data
+inflation.info()
+# Create inflation_by_country
+inflation_by_country = inflation.groupby('Country')
+# Iterate over inflation_by_country and plot the inflation time series per country
+for country, data in inflation_by_country:
+    # Plot the data
+    data.plot(title=country)
+    # Show the plot
+    plt.show()
+
+102) Distribution of inflation rates in China, India, and the US
+
+As you saw in the video, the boxplot() function displays key quantiles of a distribution with respect to categories, where y represents a quantitative variable, and x a categorical variable. In statistics, this kind of distribution is known as a box-and-whisker plot.
+A complement to a box plot is a swarmplot(), which draws a categorical scatterplot that displays all categorical observations without overlapping; it takes similar arguments to boxplot():
+seaborn.boxplot(x=None, y=None, data=None, ...)
+seaborn.swarmplot(x=None, y=None, data=None, ...)
+In this final exercise, you will compare the historical distributions of inflation rates by country - specifically China, India, and the US - instead of by time series trends.
+
+# Create boxplot
+sns.boxplot(x='Country', y='Inflation', data=inflation)
+# Show the plot
+plt.show()
+# Close the plot
+plt.close()
+# Create swarmplot
+sns.swarmplot(x='Country', y='Inflation', data=inflation)
+# Show the plot
+plt.show()
+
+103)
 
