@@ -2510,5 +2510,192 @@ sns.swarmplot(x='Country', y='Inflation', data=inflation)
 # Show the plot
 plt.show()
 
-103)
+103) Calculate mean returns
+
+In this exercise, you're going to calculate performance for a four stock portfolio over the period January 2015 through March 2019. The portfolio consists of Proctor & Gamble, Microsoft, JP Morgan and General Electric stocks. You'll discover that multiplying the mean return of each stock with its portfolio weight, is a very quick and straightforward way to calculate portfolio performance over a given period of time.
+
+# Calculate percentage returns
+returns = data.pct_change()
+# Calculate individual mean returns 
+meanDailyReturns = returns.mean()
+# Define weights for the portfolio
+weights = np.array([0.5, 0.2, 0.2, 0.1])
+# Calculate expected portfolio performance
+portReturn = np.sum(meanDailyReturns*weights)
+# Print the portfolio return
+print(portReturn)
+
+104) Portfolio cumulative returns
+
+In the previous exercise, you've calculated the mean performance over a period of time. This gives you one performance number for that entire period. But what if you would want to plot the development of the performance over time? For that, you will need the cumulative performance, not the mean performance. Just like with interest in your bank account, the cumulative performance gives you the compounded return at each date in your dataset. It tells you; "up until today, this is what the total return has been since the start of my data."
+
+# Create portfolio returns column
+returns['Portfolio']= returns.dot(weights)
+# Calculate cumulative returns
+daily_cum_ret=(1+returns).cumprod()
+print (daily_cum_ret.tail())
+# Plot the portfolio cumulative returns only
+fig, ax = plt.subplots()
+ax.plot(daily_cum_ret.index, daily_cum_ret.Portfolio, color='purple', label="portfolio")
+ax.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+plt.legend()
+plt.show()
+=> Output: <script.py> output:
+                   GE    JPM   MSFT     PG  Portfolio
+    date                                             
+    2018-03-21  0.554  1.836  1.978  0.852      0.974
+    2018-03-22  0.533  1.759  1.920  0.845      0.941
+    2018-03-23  0.522  1.712  1.864  0.839      0.920
+    2018-03-26  0.514  1.765  2.006  0.845      0.934
+    2018-03-27  0.536  1.731  1.913  0.860      0.943
+
+105) Portfolio variance
+
+Your turn! It's time to calculate the risk of our 4-stock portfolio. Let's start with the pricing data, available under data. You'll have to calculate daily percentage returns and assign weights to your portfolio. You'll then continue by calculating the covariance matrix, and use the following formula: Portfolio variance = Weights transposed x (Covariance matrix x Weights) to get the final portfolio variance.
+
+# Get percentage daily returns
+daily_returns = data.pct_change()
+# Assign portfolio weights
+weights = np.array([0.05, 0.4, 0.3, 0.25])
+# Calculate the covariance matrix 
+cov_matrix = (daily_returns.cov())*250
+# Calculate the portfolio variance
+port_variance = np.dot(weights.T, np.dot(cov_matrix, weights))
+# Print the result
+print(str(np.round(port_variance, 4) * 100) + '%')
+=> Microsoft is the riskiest, since it's variance is 5.4%, which is the highest of all the stocks in the portfolio
+
+106) Standard deviation versus variance
+
+# Calculate the standard deviation by taking the square root
+port_standard_dev = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+# Print the results 
+print(str(np.round(port_standard_dev, 4) * 100) + '%')
+=> The standard deviation tells you how much the portfolio's return can deviate from the mean historical return. If a portfolio has a 12% average rate of return and a standard deviation of 4%, its return will range from 8-16%. The mean historic return of this particular portfolio is actually close to zero.
+
+107) Annualizing portfolio returns
+
+Suppose you invested $101 at the beginning of 2015 in a portfolio. By the end of March 2018, you wonder how your portfolio has performed over time, and whether it is as good as another portfolio which started trading mid-2016. What performance metric do you look at? Well, the annualized return of course! So let's calculate the annualized rate of return for your portfolio. Since our sample covers 3.2 years, let's use the monthly denomination in the formula for annualized returns. The number of months is already given under months.
+
+# Calculate total rate of return from start to end
+total_return = (pf_AUM[-1] - pf_AUM[0]) / pf_AUM[0]
+# Annualize return
+annualized_return = ((1 + total_return)**(12/months))-1
+print (annualized_return)
+
+108) Comparing annualized rates of return
+
+In the last exercise, you saw that the annualized rate of return was 19.6%. That's pretty high! But since your portfolio consists of only 4 stocks, this high return is indeed possible as it is not very diversified. Let's compare the portfolio's annual rate of return, with that of the S&P500, which is much more diversified.
+The value of the S&P500 between 1st of January 2015 and end of December 2018 has been made available. That's 4 years of data. You have full years this time, so use the year denomination in the formula for the annualized return. The data is stored under sp500_value.
+
+# Calculate the total return from the S&P500 value series
+total_return = (sp500_value[-1] - sp500_value[0]) / sp500_value[0]
+print(total_return)
+# Annualize the total return spanning 4 years
+annualized_return = ((1 + total_return)**(1/4))-1
+print (annualized_return)
+
+109) S&P500 Sharpe ratio
+
+In this exercise, you're going to calculate the Sharpe ratio of the S&P500, starting with pricing data only. In the next exercise, you'll do the same for the portfolio data, such that you can compare the Sharpe ratios of the two.
+Available for you is the price data from the S&P500 under sp500_value. The risk-free rate is available under rfr, which is conveniently set to zero.
+
+# Calculate total return and annualized return from price data 
+total_return = (sp500_value[-1] - sp500_value[0]) / sp500_value[0]
+# Annualize the total return over 4 year 
+annualized_return = ((1 + total_return)**(1/4))-1
+# Create the returns data 
+returns_sp500 = sp500_value.pct_change()
+# Calculate annualized volatility from the standard deviation
+vol_sp500 = returns_sp500.std() * np.sqrt(250)
+# Calculate the Sharpe ratio 
+sharpe_ratio = ((annualized_return - rfr) /vol_sp500)
+print (sharpe_ratio)
+
+110) Portfolio Sharpe ratio
+
+In this exercise you are now going to calculate the Sharpe ratio of the portfolio. How do you think the portfolio Sharpe ratio will be different to the S&P500 Sharpe ratio? You'll find out in this exercise.
+You have the portfolio value over time under pf_AUM and the number of months for that data under months. Last, the risk-free rate is available under rfr, which is still set to zero.
+
+# Calculate total return and annualized return from price data 
+total_return = (pf_AUM[-1] - pf_AUM[0]) / pf_AUM[0]
+# Annualize the total return over 4 year 
+annualized_return = ((1 + total_return)**(12/months))-1
+# Create the returns data 
+pf_returns = pf_AUM.pct_change()
+# Calculate annualized volatility from the standard deviation
+vol_pf = pf_returns.std()*np.sqrt(250)
+# Calculate the Sharpe ratio 
+sharpe_ratio = ((annualized_return - rfr) /vol_pf)
+print (sharpe_ratio)
+
+111) Skewness of the S&P500
+
+# Create a histogram of the S&P500 returns and show the plot
+returns_sp500.hist()
+plt.show()
+=> A negative skew means there is a 'bump to the right' compared to the normal distribution, which is what the sample data looks like.
+
+112) Calculating skewness and kurtosis
+
+# Print the mean
+print("mean : ", returns_sp500.mean()*100)
+# Print the standard deviation
+print("Std. dev  : ", returns_sp500.std()*100)
+# Print the skewness
+print("skew : ", returns_sp500.skew())
+# Print the kurtosis
+print("kurt : ", returns_sp500.kurtosis())
+
+113) Comparing distributions of stock returns
+
+Let's have a look at how you can use skewness and kurtosis in your investment decisions. In this exercise you're going to compare the distributions of singular stocks with the portfolio, and see whether combining multiple stocks in a portfolio improves your returns distribution.
+
+# Print skewness and kurtosis of the stocks
+print ("skew : ", stock_returns.skew())
+print ("kurt : ", stock_returns.kurtosis())
+# Print the histogram of the portfolio
+pf_returns.hist()
+plt.show()
+# Print skewness and kurtosis of the portfolio
+print ("skew : ", pf_returns.skew())
+print ("kurt : ", pf_returns.kurtosis())
+
+114) Sortino ratio
+
+For this exercise, the portfolio returns data are stored in a DataFrame called df, which you'll use to calculate the Sortino ratio. The Sortino ratio is just like the Sharpe ratio, except for that it uses the standard deviation of the negative returns only, and thereby focuses more on the downside of investing.
+Let's see how big the Sortino ratio is compared to the earlier calculated Sharpe ratio. The risk-free rate rfrand the target return target are already defined and are both zero.
+
+# Create a downside return series with the negative returns only
+downside_returns = df.loc[df['pf_returns'] < target]
+# Calculate expected return and std dev of downside
+expected_return = df['pf_returns'].mean()
+down_stdev = downside_returns['pf_returns'].std()
+# Calculate the sortino ratio
+sortino_ratio = (expected_return - rfr)/down_stdev
+# Print the results
+print("Expected return  : ", expected_return*100)
+print("Downside risk   : ", down_stdev*100)
+print("Sortino ratio : ", sortino_ratio)
+=> You see that the Sortino ratio is slightly lower than the Sharpe ratio we calculated earlier, although that was calculated on annualized returns, so they will differ either way. The Sortino ratio is a slightly more sophisticated ratio compared to Sharpe, as it focusses on negative volatility only.
+
+115) Maximum draw-down portfolio
+
+In this exercise, you'll learn how to calculate the maximum draw-down of the S&P500 (also known as "peak to trough performance drop"). Maximum draw-down is an incredibly insightful risk measure. It tells you what has been the worst performance of the S&P500 in the past years.
+It is the reason why many investors shy away from crypto-currencies; nobody likes to lose a large percentage of their investment (e.g., 70%) in a short period.
+
+# Calculate the max value 
+roll_max = df.rolling(center=False,min_periods=1,window=252).max()
+# Calculate the daily draw-down relative to the max
+daily_draw_down = df/roll_max - 1.0
+# Calculate the minimum (negative) daily draw-down
+max_daily_draw_down = daily_draw_down.rolling(center=False,min_periods=1,window=252).min()
+# Plot the results
+plt.figure(figsize=(15,15))
+plt.plot(date, daily_draw_down, label='Daily drawdown')
+plt.plot(date, max_daily_draw_down, label='Maximum daily drawdown in time window')
+plt.legend()
+plt.show()
+
+116)
 
