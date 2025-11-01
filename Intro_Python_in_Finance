@@ -2917,4 +2917,269 @@ ef.portfolio_performance(verbose=True)
     Sharpe Ratio: 0.94
 By setting the target return of 0.2, mind you this is 20%, you get a mix of three stocks with positive weights in the portfolio. You'll see in a following exercise that this is in fact different from the portfolio that optimizes to obtain the maximum Sharpe ratio.
 
-128)
+128) Portfolio optimization: Max Sharpe
+
+In this exercise, you're going to calculate the portfolio that gives the Maximum Sharpe ratio. Often, this is the portfolio the investor wants to invest in, as it provides the highest possible return to risk ratio.PyPortfolioOpt makes it very easy to calculate this portfolio from a set of historical price data.
+Available for you are the mean historic return for a small portfolio of stocks under mu and a covariance matrix belonging to our portfolio under Sigma. You'll need these as inputs to calculate the Efficient Frontier and Maximum Sharpe portfolio.
+
+# Define the efficient frontier
+ef = EfficientFrontier(mu, Sigma)
+# Calculate weights for the maximum Sharpe ratio portfolio
+raw_weights_maxsharpe = ef.max_sharpe()
+cleaned_weights_maxsharpe = ef.clean_weights()
+print (raw_weights_maxsharpe, cleaned_weights_maxsharpe)
+=> Output: <script.py> output:
+    OrderedDict([('GE', 0.0), ('JPM', 0.4251955192429594), ('MSFT', 0.5748044807570406), ('PG', 0.0)]) OrderedDict([('GE', 0.0), ('JPM', 0.4252), ('MSFT', 0.5748), ('PG', 0.0)])
+Looking closely at some of the stocks in the portfolio, two have negative historic performance, and by adding them they don't actually lower the risk of the portfolio. That means that when we optimize for risk and return, apparently it is optimal not to invest in those.
+
+129) Minimum volatility optimization
+
+In this exercise, you're going to compare the minimum volatility and the Maximum Sharpe portfolios. As a portfolio manager you often want to understand how your chosen portfolio measures up to the minimum volatility portfolio. WithPyPortfolioOpt you can compare the two quickly, without having to write two different constrained optimization problems, which can be quite complex. Available for you is the efficient frontier from the previous exercise under ef.
+
+## Inspect the Maximum Sharpe portfolio from the previous exercise by using portfolio_performance() numbers from ef.
+# Calculate weights for the maximum Sharpe ratio portfolio
+raw_weights_maxsharpe = ef.max_sharpe()
+cleaned_weights_maxsharpe = ef.clean_weights()
+# Show portfolio performance 
+print(cleaned_weights_maxsharpe)
+ef.portfolio_performance(verbose=True)
+=> Output: <script.py> output:
+    OrderedDict([('GE', 0.0), ('JPM', 0.4252), ('MSFT', 0.5748), ('PG', 0.0)])
+    Expected annual return: 20.7%
+    Annual volatility: 19.6%
+    Sharpe Ratio: 0.96
+## Change the optimizer into the min vol optimizer, run the code again and inspect the weights and the performance numbers.
+# Calculate weights for the minimum volatility portfolio
+raw_weights_minvol = ef.min_volatility()
+cleaned_weights_minvol = ef.clean_weights()
+# Show portfolio performance 
+print(cleaned_weights_minvol)
+ef.portfolio_performance(verbose=True)
+=> Output: <script.py> output:
+    OrderedDict([('GE', 0.15732), ('JPM', 0.11714), ('MSFT', 0.04704), ('PG', 0.6785)])
+    Expected annual return: -2.6%
+    Annual volatility: 13.3%
+    Sharpe Ratio: -0.35
+With a few minor adjustments you can easily change the optimizer to obtain a different type of portfolio.
+
+130) Comparing max Sharpe to min vol
+
+In this exercise let's have a closer look at the weights and performance of the Maximum Sharpe and minimum volatility portfolios, and compare them. This exercise will help you understand the characteristics of these two different portfolios. Available are cleaned_weights_minvol, cleaned_weights_maxsharpe, perf_min_volatility, and perf_max_sharpe.
+
+# Print min vol and max sharpe results
+print(cleaned_weights_minvol, cleaned_weights_maxsharpe, perf_min_volatility, perf_max_sharpe, sep="\n")
+=> Output: <script.py> output:
+    OrderedDict([('GE', 0.15732), ('JPM', 0.11714), ('MSFT', 0.04704), ('PG', 0.6785)])
+    OrderedDict([('GE', 0.0), ('JPM', 0.4252), ('MSFT', 0.5748), ('PG', 0.0)])
+    (-0.026415861751657263, 0.13292386607830184, -0.3491913312566078)
+    (0.20716402573897588, 0.1959516973774276, 0.9551538886569299)
+Indeed, the minimum volatility portfolio spreads the risk more by investing in all the stocks, although some have a negative performance, this leads to an overall lower performance, but also to lower risk.
+
+131) Exponentially weighted returns and risk
+
+In this exercise, you're going to perform portfolio optimization with a slightly different way of estimating risk and returns; you're going to give more weight to recent data in the optimization.
+This is a smart way to deal with stock data that is typically non-stationary, i.e., when the distribution changes over time. Implementation can be quickly done by changing the risk model you use to calculate Sigma, and the returns calculation you use to get mu. The stock prices dataset is available as stock_prices.
+
+# Define exponentially weighted Sigma and mu
+Sigma = risk_models.exp_cov(stock_prices, span=180, frequency=252)
+mu = expected_returns.ema_historical_return(stock_prices, frequency=252, span=180)
+# Calculate the efficient frontier
+ef = EfficientFrontier(mu, Sigma)
+# Calculate weights for the maximum sharpe ratio optimization
+raw_weights_maxsharpe = ef.max_sharpe()
+# Show portfolio performance 
+ef.portfolio_performance(verbose=True)
+=> Output: <script.py> output:
+    Expected annual return: 27.1%
+    Annual volatility: 24.4%
+    Sharpe Ratio: 1.03
+
+132) Comparing approaches
+
+In this exercise, you're going to investigate whether the maximum Sharpe portfolios differ when you are using the normal historic expected risk and returns, and when using the exponentially weighted risk and returns. You saw during the video that the exponentially weighted volatility follows the real volatility much closer, but do you actually see a big difference in the portfolio weights when using one, or the other? That's what you'll find out.
+The exponentially weighted risk and return have been calculated using a span of 252 trading days, so it looks back through a maximum period of a year. Available for you are: cleaned_weights_maxsharpe, perf_max_sharpe, cleaned_weights_maxsharpe_EW, perf_max_sharpe_EW. The _EW part stands for exponentially weighted.
+
+# Print the weights of both portfolios types
+print(cleaned_weights_maxsharpe, cleaned_weights_maxsharpe_EW, sep="\n")
+=> Output: <script.py> output:
+    OrderedDict([('GE', 0.0), ('JPM', 0.4252), ('MSFT', 0.5748), ('PG', 0.0)])
+    OrderedDict([('GE', 0.0), ('JPM', 0.34629), ('MSFT', 0.65371), ('PG', 0.0)])
+# Print the performance of both portfolios types
+perf_max_sharpe = ef.portfolio_performance(verbose=True)
+perf_max_sharpe_EW = ef_2.portfolio_performance(verbose=True)
+=> Output: <script.py> output:
+    Expected annual return: 20.7%
+    Annual volatility: 19.6%
+    Sharpe Ratio: 0.96
+    Expected annual return: 29.0%
+    Annual volatility: 20.6%
+    Sharpe Ratio: 1.31
+Since the span is relatively long, and the trends are persistent, this means that the more recent data is pretty similar to the full dataset. In that sense, you are not getting a very large gain by using the exponentially weighted approach when your data is predictable and has persistent trends.
+
+133) Changing the span
+
+At the last exercise you discovered that the span of the exponentially weighted risk and return can have an impact on what the optimal portfolio looks like. In fact, the span has a very big influence! By setting the span, you can either use data for say only the most recent days, or use data from the most recent years. In the limit, when the span is as long as the full sample, it will be equal to using the normal historic mean.
+Now let's get a feel for how a short and long span changes your optimal portfolio. Available is the stock_prices data.
+
+## Set a really long span of 2 years of trading days, assuming that one year has 252 days.
+# Calculate expected returns and sample covariance
+mu_ema = expected_returns.ema_historical_return(stock_prices, span=504 ,frequency=252)
+Sigma_ew = risk_models.exp_cov(stock_prices, span=504, frequency=252)
+ef_2 = EfficientFrontier(mu_ema, Sigma_ew)
+# Calculate weights for the maximum Sharpe ratio portfolio
+weights = ef_2.max_sharpe()
+cleaned_weights_maxsharpe_EW = ef_2.clean_weights()
+perf_max_sharpe_EW = ef_2.portfolio_performance(verbose=True)
+=> Output: <script.py> output:
+    Expected annual return: 30.3%
+    Annual volatility: 18.5%
+    Sharpe Ratio: 1.53
+## Change the span to 10 days, and see how that changes your optimal portfolio.
+# Calculate expected returns and sample covariance
+mu_ema = expected_returns.ema_historical_return(stock_prices, span=10 ,frequency=252)
+Sigma_ew = risk_models.exp_cov(stock_prices, span=10, frequency=252)
+ef_2 = EfficientFrontier(mu_ema, Sigma_ew)
+# Calculate weights for the maximum Sharpe ratio portfolio
+weights = ef_2.max_sharpe()
+cleaned_weights_maxsharpe_EW = ef_2.clean_weights()
+perf_max_sharpe_EW = ef_2.portfolio_performance(verbose=True)
+=> Output: <script.py> output:
+    Expected annual return: 12.8%
+    Annual volatility: 17.0%
+    Sharpe Ratio: 0.63
+Interesting isn't it, that by playing around with the span, you get two completely different type of portfolios, each with a very different Sharpe ratio. If your data is very volatile and changes rapidly, working with a short span might give you better predictive power of the expected return, with a faster moving investment strategy. However, if your data is rather slow moving as is the case with this data, the short span does not help you in better predicting expected risk and returns.
+
+*** PROJECT: ANALYZE YOUR STOCK PORTFOLIO FOR RISKS AND RETURNS
+
+- Prompt: Asset allocation is the most important decision that any investor needs to face. They need to decide how to spread their total capital over certain assets (in this case, stocks). When considering the allocation, the investor wants to balance the risk and the potential reward. At the same time, the allocation depends on factors such as individual goals, risk tolerance, and the investment horizon.
+
+The key framework used in asset allocation is the Modern Portfolio Theory (MPT), which was introduced by the Nobel Prize winner Harry Markowitz. MPT describes how investors can construct portfolios to maximize their expected returns for a given level of risk or, conversely, minimize risk for a given level of expected return. The mathematical framework used to achieve this is called mean-variance optimization.
+
+The main insight from MPT is that investors should not evaluate an asset’s performance alone. Instead, they should evaluate how it would impact the performance of a portfolio of assets. Another important takeaway is the concept of diversification, which means that owning different kinds of assets reduces risk. That is because the loss or gain of a particular security has less impact on the overall portfolio’s performance.
+
+Your task
+
+In the dynamic realm of finance, data scientists/analysts are often tasked with finding optimal investment strategies. Imagine you're one such analyst, and you were asked to build an effective portfolio comprising FAANG stocks – Facebook (Meta), Apple, Amazon, Netflix, and Google. Your goal is to maximize returns while mitigating risk.
+
+In this project, you are tasked to find the optimal allocation to the FAANG stocks based on historical stock price data spanning the years 2020-2023. The dataset is stored in the faang_stocks.csv file. For each trading day, it contains the close prices of the five tech companies.
+
+- Instructions: Use the faang_stocks.csv dataset to complete the following analysis:
+
+What are the expected returns and the annualized Sharpe ratio of an equally-weighted portfolio? Assume the risk-free rate is 0% and store your answers as a float variables called benchmark_exp_return and benchmark_sharpe_ratio.
+
+Find a portfolio that minimizes volatility. Use mean-variance optimization. Store the volatility of the portfolio as a float variable called mv_portfolio_vol. Store the portfolio weights as a pandas Series called mv_portfolio. Use the tickers as index.
+
+Find a portfolio that maximizes the Sharpe ratio. Use mean-variance optimization and keep the risk-free rate at 0%. Store the Sharpe ratio (annualized) of the portfolio as a float variable called ms_portfolio_sharpe. Store the portfolio weights as a pandas Series called ms_portfolio. Use the tickers as index.
+
+- Solution:
+
+# Importing libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from pypfopt.efficient_frontier import EfficientFrontier
+from pypfopt import risk_models
+from pypfopt import expected_returns
+
+# Setting the plotting style to be colorblind-friendly
+plt.style.use("seaborn-colorblind")
+
+# Loading data
+stock_prices_df = pd.read_csv("faang_stocks.csv", index_col="Date")
+
+# Changing the index to a datetime type allows for easier filtering and plotting.
+stock_prices_df.index = pd.to_datetime(stock_prices_df.index)
+stock_prices_df
+
+# Plotting the stock prices
+stock_prices_df.plot(title="FAANG stock prices from years 2020-2023");
+
+# Task 1 ---------------------------------------------------
+
+# Calculate returns
+returns_df = stock_prices_df.pct_change().dropna()
+
+# Calculate the 1/n portfolio weights
+portfolio_weights = 5 * [0.2]
+
+# Calculate the portfolio returns of the 1/n portfolio
+portfolio_returns = returns_df.dot(portfolio_weights)
+
+# Calculate the expected portfolio return
+benchmark_exp_return = portfolio_returns.mean()
+
+# Calculate the portfolio's Sharpe ratio
+benchmark_sharpe_ratio = (
+    portfolio_returns.mean() / portfolio_returns.std() * np.sqrt(252)
+)
+
+# Task 2 ---------------------------------------------------
+
+# Calculate the annualized expected returns and the covariance matrix
+avg_returns = returns_df.mean() * 252
+cov_mat = returns_df.cov() * 252
+
+# Instantiate the EfficientFrontier object
+ef = EfficientFrontier(avg_returns, cov_mat)
+
+# Find the weights that maximize the Sharpe ratio
+weights = ef.min_volatility()
+mv_portfolio = pd.Series(weights)
+
+# Find the minimized volatility
+mv_portfolio_vol = ef.portfolio_performance(risk_free_rate=0)[1]
+
+# Task 2 - alternative solution ----------------------------
+
+# # Calculate the annualized expected returns and the covariance matrix
+# avg_returns = returns_df.mean() * 252
+# cov_mat = returns_df.cov() * 252
+
+# # Define the function to find the portfolio volatility using the weights and the covariance matrix
+# def get_portfolio_volatility(weights, cov_mat):
+#     return np.sqrt(np.dot(weights.T, np.dot(cov_mat, weights)))
+  
+# # Define the number of assets
+# n_assets = len(avg_returns)
+
+# # Define the bounds - the weights can be between 0 and 1
+# bounds = tuple((0, 1) for asset in range(n_assets))
+
+# # Define the initial guess - the equally weighted portfolio
+# initial_guess = n_assets * [1.0 / n_assets]
+
+# # Define the constraint - all weights must add up to 1
+# constr = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+
+# # Find the minimum volatility portfolio
+# result = sco.minimize(
+#     get_portfolio_volatility,
+#     x0=initial_guess,
+#     args=cov_mat,
+#     method="SLSQP",
+#     constraints=constr,
+#     bounds=bounds,
+# )
+
+# # Store the portfolio weights
+# mv_portfolio = pd.Series(result.x, index=avg_returns.index).round(2)
+
+# # Store the portfolio's volatility
+# mv_portfolio_vol = result.fun
+
+# Task 3 ---------------------------------------------------
+
+# Alternative approach to get the expected returns and the covariance matrix
+# avg_returns = expected_returns.mean_historical_return(stock_prices_df, compounding=False)
+# cov_mat = risk_models.sample_cov(stock_prices_df)
+
+# Instantiate the EfficientFrontier object
+ef = EfficientFrontier(avg_returns, cov_mat)
+
+# Find the weights that maximize the Sharpe ratio
+weights = ef.max_sharpe(risk_free_rate=0)
+ms_portfolio = pd.Series(weights)
+
+# Find the maximized Sharpe ratio
+ms_portfolio_sharpe = ef.portfolio_performance(risk_free_rate=0)[2]
