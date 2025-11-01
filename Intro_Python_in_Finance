@@ -2741,3 +2741,180 @@ print (grouped_df['active_weight'])
     Utilities                     -25.593
     Name: active_weight, dtype: float64
 You can quickly see from the negative and positive values of the active weights whether the portfolio was over- or underweight a certain sector.
+
+118) Momentum factor
+
+In this exercise, you are going to investigate the correlation of the S&P500 returns with 2 factors, momentum and value. A stock is showing "momentum" if its prior 12-month average of returns is positive. The momentum factor is therefore formed by combining stocks that show consistent positive historic returns. The value factor looks at stocks that are inexpensive relative to some measure of fundamental value. For example price-to-earnings and price-to-book are typically ratios to measure "value". Let's see how our S&P500 returns relate to the returns of these factors. Available is a DataFrame df containing the returns of the two factors and the S&P500 over time.
+
+# Calculate 20-day rolling correlation with momentum 
+df['correlation_mom']=df['sp500'].rolling(20).corr(df['momentum'])
+# Calculate 20-day rolling correlation with value
+df['correlation_value']=df['sp500'].rolling(20).corr(df['value'])
+# Plot the correlations
+df['correlation_mom'].plot()
+df['correlation_value'].plot()
+plt.legend()
+plt.show()
+
+119) Value factor
+
+In the previous exercise you've looked at the S&P500 exposures, and saw that there was a large consistent exposure to the value factor, but a very fluctuating correlation to momentum.
+Let's now check how our portfolio measures up to this, and let's especially focus on value. Available to you is a DataFrame called factor_data containing the factor returns as well as your portfolio returns. Start by inspecting the DataFrame factor_data in the IPython shell using factor_data.head().
+
+# Calculate the pairwise correlation
+factor_data.corr()
+# Calculate rolling 5 day correlation 
+factor_data['correlation_value']=factor_data['portfolio'].rolling(5).corr(factor_data['value'])
+# Plot the rolling correlation
+factor_data['correlation_value'].plot()
+plt.legend()
+plt.show()
+
+120) Fama French factor correlations
+
+In this exercise you want to check how much correlation your portfolio returns have with the Fama French factors. With a quick correlation table, you can very easily gain insight into how your portfolio returns move with for example the excess market return or the size and value factors. Remember, the Fama French factor model was defined as follows:
+R pf = alpha + Beta0(MKT) + Beta1(SMB) + Beta2(HML)
+
+# Print the correlation table 
+print(factor_returns.corr())
+=> Output: <script.py> output:
+                Mkt-RF    SMB    HML     RF  pf_returns
+    Mkt-RF       1.000  0.331  0.100  0.087       0.739
+    SMB          0.331  1.000 -0.108  0.077       0.162
+    HML          0.100 -0.108  1.000 -0.049      -0.238
+    RF           0.087  0.077 -0.049  1.000       0.039
+    pf_returns   0.739  0.162 -0.238  0.039       1.000
+This portfolio manager has strong strategic investment skills? No, the performance of this portfolio can largely be explained by market returns, but not so much by factor returns.
+(The correlation with the market returns is actually quite high, at around 0.74 that's a lot of performance coming from simple market movements)
+
+121) Linear regression model
+
+In this exercise you're going to use the Fama French model to explain the returns in your portfolio. You'll first walk through the linear regression model taking all the different steps, and obtain the summary at the end to interpret the results.
+
+# Define the model
+model = sm.OLS(factor_returns['pf_returns'], factor_returns[['Mkt-RF','SMB', 'HML']]).fit()
+# Create model predictions
+predictions = model.predict(factor_returns[['Mkt-RF','SMB', 'HML']]) 
+# Print out the summary
+model.summary()
+=> The market excess returns are positively related to the portfolio returns, and the other two factors SMB and HML are negatively related. They all have a significant effect on the portfolio returns.
+
+122) Fama French Factor model
+
+In this exercise, you are going focus on efficiently obtaining just the beta coefficients of the Fama French model. As you've seen in the video, those betas indicate how much of the portfolio's return changes if that particular factor's return changes.
+Sometimes, all you want to do is to check whether the factor relates negatively, or positively to you portfolio returns.
+
+# Import statsmodels
+import statsmodels.api as sm
+# Obtain the beta coefficients
+b1, b2, b3 = sm.OLS(factor_returns['pf_returns'], factor_returns[['Mkt-RF','SMB', 'HML']]).fit().params
+# Print the betas
+print ('Sensitivities of active returns to factors:\nMkt-Rf: %f\nSMB: %f\nHML: %f' %  (b1, b2, b3))
+=> Output: <script.py> output:
+    Sensitivities of active returns to factors:
+    Mkt-Rf: 0.823443
+    SMB: -0.227198
+    HML: -0.482598
+
+123) Performance tear sheet
+
+In this exercise, you're going to create a full performance tear sheet on the S&P500 returns. You'll see that the elaborate calculations you've done in previous chapters, can very quickly be generated with this simple tear sheet, and by inputting just the returns data. In that sense, this tear sheet can save you a lot of time!
+In the first few steps, you'll have to make sure that the data is in the right format otherwise, Pyfolio will give an error. The returns data is available as returns_sp500. Go ahead and inspect the returns_sp500 data in the IPython shell using returns_sp500.head().
+
+# Set the index to datetime
+returns_sp500.index=pd.to_datetime(returns_sp500.index)
+# Ensure the returns are a series
+returns=returns_sp500['S&P500']
+# Create the returns tear sheet
+fig = pf.create_returns_tear_sheet(returns, return_fig=True)
+# Display a zoomed in version of the tear sheet
+display_tear_sheet()
+
+124) Industry exposures with Pyfolio
+
+You saw in the first video of this chapter how to use a groupby function to create the active weights per industry. The drawback is that it takes a snapshot in time. Since portfolio weights change, you can imagine that the industry exposures change over time as well. However, the calculation to determine industry exposures on each day for your portfolio, can become quite tedious and complex.
+Luckily, you can use Pyfolio's tear sheet for this. The tear sheet shows you exposures over time, and summarizes overall top stock picks in your portfolio.
+
+# Define sector mappings
+sect_map = {'COST': 'Consumer Goods',
+            'INTC': 'Technology', 
+            'CERN': 'Healthcare', 
+            'GPS': 'Technology',
+            'MMM': 'Construction', 
+            'DELL': 'Technology', 
+            'AMD': 'Technology'}
+# Create sector exposure tear sheet
+pf.create_position_tear_sheet(returns, positions, sector_mappings=sect_map)
+display_tear_sheet()
+=> COST is the top position over time, and the biggest exposure is to the Technology sector.
+
+125) Calculating expected risk and returns
+
+For this exercise, you're going to start with the raw price data. What you'll need for portfolio optimization, is the expected risk and return from this data.
+With PyPortfolioOpt, you can calculate the expected risk and return in just one line of code, so that makes it very easy for you. The library you need is called pypfopt in short. FYI, you'll see in the next exercise that PyPortfolioOpt gives you the same output if you were to calculate it by hand. Let's give it a try!
+
+# Import the packages 
+from pypfopt import risk_models
+from pypfopt import expected_returns
+from pypfopt.efficient_frontier import EfficientFrontier
+# Calculate expected returns mu 
+mu = expected_returns.mean_historical_return(stock_prices)
+# Calculate the covariance matrix S
+Sigma = risk_models.sample_cov(stock_prices)
+# Obtain the efficient frontier
+ef = EfficientFrontier(mu, Sigma)
+print (mu, Sigma)
+=> Output: <script.py> output:
+    GE     -0.176
+    JPM     0.186
+    MSFT    0.223
+    PG     -0.046
+    dtype: float64          GE    JPM   MSFT     PG
+    GE    0.046  0.023  0.016  0.010
+    JPM   0.023  0.047  0.024  0.011
+    MSFT  0.016  0.024  0.054  0.014
+    PG    0.010  0.011  0.014  0.021
+You've taken the first few important steps in portfolio optimization. Now that you have calculated the efficient frontier with your given measures of expected risk and return, you can select an optimal portfolio from that frontier, that fits your risk and return appetite. That might be the portfolio with the Maximum Sharpe ratio, or even the portfolio with the lowest level of risk.
+
+126) PyPortfolioOpt risk functions
+
+The objective of the Markowitz portfolio optimization problem is to minimize the portfolio variance, given a bunch of constraints. Do you remember how you calculate this from chapter 2? Portfolio variance = weights transposed * covariance matrix * weights. WithPyPortfolioOpt we call the covariance matrix sigma, to denote that this is a sample covariance .
+In this exercise you will see that thePyPortfolioOpt functions to calculate sigma, gives the exact same result if you were to calculate the covariance by hand. The same goes for the expected return calculations, you can also verifyPyPortfolioOpt gives the same output as calculating annualized daily returns by hand. Available are the stock_prices.
+
+# Get the returns from the stock price data
+returns=stock_prices.pct_change()
+# Calculate the annualized covariance matrix 
+covMatrix = returns.cov()*252
+# Calculate the covariance matrix Sigma from a`PyPortfolioOpt` function
+Sigma = risk_models.sample_cov(stock_prices)
+# Print both covariance matrices
+print (covMatrix, Sigma)
+=> <script.py> output:
+             GE    JPM   MSFT     PG
+    GE    0.046  0.023  0.016  0.010
+    JPM   0.023  0.047  0.024  0.011
+    MSFT  0.016  0.024  0.054  0.014
+    PG    0.010  0.011  0.014  0.021          GE    JPM   MSFT     PG
+    GE    0.046  0.023  0.016  0.010
+    JPM   0.023  0.047  0.024  0.011
+    MSFT  0.016  0.024  0.054  0.014
+    PG    0.010  0.011  0.014  0.021
+What did you notice? They are exactly the same, aren't they! This exercise is just to show you that under the hood, thePyPortfolioOpt functions use the same calculations that you are already familiar with, and that these aren't black-box type of calculations. In fact,PyPortfolioOpt can be used to make your portfolio analysis easier, and to skip a few manual steps when you are calculating things. Let's now move on to explore more functionality ofPyPortfolioOpt.
+
+127) Optimal portfolio performance
+
+Let's now continue with the efficient frontier ef that you calculated in a previous exercise for the small portfolio. You still need to select an optimal portfolio from that efficient frontier ef, and check its performance. Let's use the efficient_return option. This function selects the portfolio with the minimized risk given a target return. A portfolio manager is often asked to manage a portfolio under certain risk and return constraints, so this is a very useful function for that.
+
+# Get the minimum risk portfolio for a target return 
+weights = ef.efficient_return(0.2)
+print (weights)
+# Show portfolio performance 
+ef.portfolio_performance(verbose=True)
+=> <script.py> output:
+    OrderedDict([('GE', 0.0), ('JPM', 0.4926529085352376), ('MSFT', 0.4900890447252643), ('PG', 0.017258046739498)])
+    Expected annual return: 20.0%
+    Annual volatility: 19.2%
+    Sharpe Ratio: 0.94
+By setting the target return of 0.2, mind you this is 20%, you get a mix of three stocks with positive weights in the portfolio. You'll see in a following exercise that this is in fact different from the portfolio that optimizes to obtain the maximum Sharpe ratio.
+
+128)
