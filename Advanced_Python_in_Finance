@@ -294,9 +294,371 @@ print(filtered_balance_sheet)
             metric  2013-12  2014-12   2015-12  2016-12  2017-12   Forecast
     6  Receivables  87309.0  92819.0  101975.0  57368.0  62809.0  46775.086
 
-15)
+15) Converting quarters into months
 
+# Create a list for quarters and initialize an empty list qrtlist
+quarters = [700, 650]
+qrtlist = []
+# Create a for loop to split the quarters into months and add to qrtlist
+for qrt in quarters:
+ month = round(qrt / 3, 2)
+ qrtlist = qrtlist + [month, month, month]
+# Print the result
+print("The values per month for the first two quarters are {}.".format(qrtlist))
+=> Output: <script.py> output:
+    The values per month for the first two quarters are [233.33, 233.33, 233.33, 216.67, 216.67, 216.67].
 
+16) Merging months into quarters
+
+Now we saw what to do when we wanted to split quarters into months for more detailed monthly information. But what happens when the opposite is true and we wish to combine data into fewer columns? This is typical when dealing with historical data, when monthly details may not be necessary, or when we need a highly consolidated version of the data for a report.
+The key here is to create an index, and then only add to the quarter total quarter in cycles of 3, or until the length of the list. We can do this with the following code:
+if index % 3 == 0 or index == len(months):
+This code checks whether the index divided by three yields a remainder of 0, or if the index is at the end of the list months. Thus, in a loop it will execute the specified code every three months or when it reaches the end of the list.
+The monthly sales are already provided in the code as months, containing the sales from the first two quarters, as well as the first month of Q3. Your task is to generate a new list called quarters that contains the quarterly totals from the first three months (which includes the partial total of Q3).
+
+# Create a months list, as well as an index, and set the quarter to 0
+months = [100, 100, 150, 250, 300, 10, 20]
+quarter = 0
+quarters = []
+index = 1
+# Create for loop for quarter, print result, and increment the index
+for sales in months:
+    quarter += sales
+    if index % 3 == 0 or index == len(months):
+        quarters.append(quarter)
+        quarter = 0
+    index = index + 1
+print("The quarter totals are Q1: {}, Q2: {}, Q3: {}".format(quarters[0], quarters[1], quarters[2]))
+=> Output: <script.py> output:
+    The quarter totals are Q1: 350, Q2: 560, Q3: 20
+
+17) Converting date formats - simple
+
+Directive	Meaning	Example
+%d	Day of the month as a zero-padded decimal number	01, 02, …, 31
+%b	Month as locale’s abbreviated name	Jan, Feb, …, Dec
+%B	Month as locale’s full name	January, …, December
+%m	Month as a zero-padded decimal number	01, 02, …, 12
+%y	Year without century as a zero-padded decimal number	00, 01, …, 99
+%Y	Year with century as a decimal number	1970, 1988, 2001, 2013
+
+# Import the datetime python library
+from datetime import datetime
+# Create a dt_object to convert the first date and print the month result
+dt_object1 = datetime.strptime('14/02/2018', '%d/%m/%Y')
+print(dt_object1)
+# Create a dt_object to convert the second date and print the month result
+dt_object2 = datetime.strptime('2 March 2018', '%d %B %Y')
+print(dt_object2)
+=> Output: <script.py> output:
+    2018-02-14 00:00:00
+    2018-03-02 00:00:00
+
+18) Converting date formats - explicit
+
+Let's have a look at one of the dates from the previous exercise.
+Sale A: 4000 on 14/02/2018
+We used the datetime library to identify the day d, month m, and year y which could help us to identify data from datasets with different date formats. However, what about a scenario where we want to convert date formats into a specific format?
+In this exercise you will convert Sale A from the format 14/02/2018 to the same date format as Sale B (i.e. 14 February 2018).
+We can do this easily with built-in Python functions. Remember, to split a string we can use the .split()method.
+The input for this exercise will be the datetime of Sale A.
+
+# Set the variable for the datetime to convert
+dt = '14/02/2018'
+# Create the dictionary for the month values
+mm = {'01': 'January', '02': 'February', '03': 'March'}
+# Split the dt string into the different parts
+day, month, year = dt.split('/')
+# Print the concatenated date string
+print(day + ' ' + mm[month] + ' ' + year)
+=> Output: <script.py> output:
+    14 February 2018
+
+19) Working with datasets - month totals
+
+In this exercise, we will be exploring a dataset that has multiple sales in one month. We will create a script that will enable us to identify dates within the same month, and combine them into a new month total, and append this to the table.
+We will be using the dataset df, which represents data from one of our sales areas. Print it out in the console to have a look at the data. As you can see, there were two sales in March. We will combine these sales into a single month total. We can iterate over the dataset using the .iteritems() method.
+We will also be using the .split() method.
+
+# Set the index to start at 0
+index = 0 
+# Create the dictionary for the months
+tt = {'Jan': 0, 'Feb': 0, 'Mar': 0}
+# Create a for loop that will iterate the date and amount values in the dataset
+for date, amount in df.iteritems():
+    # Create the if statement to split the day and month, then add it to the new tt variable
+    if index > 0: 
+        day, month = date.split('-')
+        tt[month] +=float(amount[0])
+    index += 1 
+print(tt)
+=> Output: <script.py> output:
+    {'Jan': 0, 'Feb': 3000.0, 'Mar': 2700.0}
+
+20) Working with datasets - combining datasets
+
+In this example, we will be working with two datasets, df1 and df2. You can print these both out in the console to see what they contain. You will notice that they contain different date formatting. More specifically, df1 specifies the month by the name (e.g. 02-Feb-18), whereas df2 specifies the month numerically (e.g. 06/01/2018). Additionally, df1 uses a hyphen (-) as a separator, whereas df2 uses a forward slash (/) as a separator.
+We will be combining these two datasets to form a consolidated forecast for the quarter. To do this, we will need to parse the different date formats of df1 and df2.
+
+totals = {'Jan': 0, 'Feb': 0, 'Mar': 0}
+calendar = {'01': 'Jan', '02': 'Feb', '03': 'Mar'}
+for date, amount in df1.iteritems():
+        day, month, year = date.split('-')
+        totals[month] +=float(amount[0]) 
+for date, amount in df2.iteritems():
+        day, month, year = date.split('/')
+        totals[calendar[month]] += float(amount[0])
+print(totals)
+=> Output: <script.py> output:
+    {'Jan': 1000.0, 'Feb': 4200.0, 'Mar': 1200.0}
+
+21) Weighted probability
+
+Txs Tools, a company selling hardware tools, is looking to expand out of their home market A into Market B. They have done some market research, and have received the following numeric probabilities:
+Sales Level (USD)	Probability (%)
+0	5
+200	10
+300	40
+500	20
+800	25
+Txs Tools will only be motivated to expand if they can have reasonable assurance that they will achieve sales of 400 or more. To manage the different forecast sales probabilities, Txs Tools have asked you to calculate the weighted probability.
+
+# Create the combined list for sales and probability
+sales_probability = ['0|0.05', '200|0.1', '300|0.4', '500|0.2', '800|0.25'] 
+weighted_probability = 0
+# Create a for loop to calculate the weighted probability
+for pair in sales_probability:
+    parts = pair.split('|')
+    weighted_probability += float(parts[0]) * float(parts[1])
+# Print the weighted probability result
+print("The weighted probability is {}.".format(weighted_probability))
+=> Output: <script.py> output:
+    The weighted probability is 440.0.
+
+22) Market sentiment
+
+Txs Tools has forecast sales of 500 in January, with an expected increase of 5% per month for the rest of the quarter. However, this is dependent on the market sentiment. Based on historical trends, the following information has been provided:
+If the market sentiment drops below 0.6 then the sales will only be realized at an increase of 2% per month.
+If market sentiment increases above 0.8. then sales are expected to increase by 7%.
+
+# Create the computevariance function
+def computevariance(amount, sentiment):
+ if (sentiment < 0.6):
+  res = amount + (amount * 0.02)
+ elif (sentiment > 0.8):
+  res = amount + (amount * 0.07)
+ else:
+  res = amount + (amount * 0.05)
+ return res
+# Compute the variance for jan, feb and mar
+jan = computevariance(500, 0.5)
+feb = computevariance(500, 0.65)
+mar = computevariance(500, 0.85)
+print("The forecast sales considering variance due to market sentiment is {} for Jan, {} for Feb, and {} for Mar.".format(jan, feb, mar))
+=> Output: <script.py> output:
+    The forecast sales considering variance due to market sentiment is 510.0 for Jan, 525.0 for Feb, and 535.0 for Mar.
+
+23) Assigning dependencies for sales and COGS
+
+Txs Tools have built a monthly forecast for their gross profit. This will rely on dependencies for Sales and COGS. Set the dependencies for sales and cogs based on the information below:
+Sales dependency sales_dep: The sale price is the net price after 1 USD commission. Commissions paid increase from 1 USD per unit to 2 USD per unit for every unit above 350 units sold.
+Cost dependency cost_dep: When sales per unit increase above 500 units, an additional production line needs to be used, causing an increase in the cost per unit above 500 of 2 USD per unit.
+The baseline sale price per unit (base_sales_price) is 15 USD and the baseline cost per unit (base_cost_price) is 7 USD.
+
+## Set the dependency calculations to sales_dep such that the first 350 sales are calculated at the base_sales_price, and the remaining sales are calculated with the increased commission.
+# Set the Sales Dependency
+if sales >= 350:
+    sales_dep = (350 * base_sales_price) + ((sales - 350) * (base_sales_price - 1))
+else:
+    sales_dep = sales * base_sales_price
+# Print the results
+print("The sales dependency is {} USD.".format(sales_dep))
+=> The sales dependency is 10850 USD.
+
+## Set the dependency calculations to cost_dep such that the first 500 sales are calculated at the base_cost_price, and any additional sales are calculated with the increased production costs.
+# Set the Cost Dependency
+if sales >= 500:
+    cost_dep = (500 * base_cost_price) + ((sales - 500) * (base_cost_price + 2))
+else:
+    cost_dep = sales * base_cost_price
+# Print the results
+print("The cost dependency is {} USD.".format(cost_dep))
+=> The cost dependency is 5750 USD.
+
+24) Building a sensitivity analysis for gross profit
+
+Txs Tools is now ready to use these dependencies in the gross profit forecast.
+The following forecast unit sales have been provided:
+Jul = 700 Aug = 350 Sep = 650
+The dependencies for sales and cogs are based on the following:
+Sales dependency sales_dep: The sale price is the net price after 1 USD commission. Commissions paid increase from 1 USD per unit to 2 USD per unit for every unit above 350 units sold.
+Cost dependency cost_dep: When sales per unit increase above 500 units, an additional production line needs to be used, causing an increase in the cost per unit above 500 of 2 USD per unit.
+The basic cost price base_cost_price = 7 and basic sales price base_sales_price = 15 has already been set.
+
+# Create the sales_usd list
+sales_usd = [700, 350, 650]
+# Create the if statement to calculate the forecast_gross_profit
+for sales in sales_usd:
+    if sales > 350:
+        sales_dep = (350 * base_sales_price) + ((sales - 350) * (base_sales_price - 1))
+    else:
+        sales_dep = sales * base_sales_price
+    if sales > 500:
+        cost_dep = (500 * base_cost_price) + ((sales - 500) * (base_cost_price + 2))
+    else:
+        cost_dep = sales * base_cost_price
+    forecast_gross_profit = sales_dep - cost_dep
+    # Print the result
+    print("The gross profit forecast for a sale unit value of {} is {} USD.".format(sales, forecast_gross_profit))
+=> Output: <script.py> output:
+    The gross profit forecast for a sale unit value of 700 is 4850 USD.
+    The gross profit forecast for a sale unit value of 350 is 2800 USD.
+    The gross profit forecast for a sale unit value of 650 is 4600 USD.
+
+25) Assigning dependencies for expenses
+
+Txs Tools wants to assign a dependency for its operating expenses, particularly admin salaries.
+The conditions are as follows:
+Admin expenses increase in July and August (Jul and Aug) as temporary workers need to be hired to cover the summer holiday.
+The increase is based on the number of employees taking holidays during that time. For the current year, the value for August is emp_leave = 6 (6 employees expected to take leave).
+The cost is 80 USD per temp employee hired.
+
+# Set the admin dependency
+if emp_leave > 0:
+    admin_dep = emp_leave * 80
+# Print the results
+print("The admin dependency for August is {} USD.".format(admin_dep))
+=> Output: <script.py> output:
+    The admin dependency for August is 480 USD.
+
+26) Build a sensitivity analysis for the net profit
+
+Txs Tools has provided the following forecast admin cost in USD based on full-time employees:
+Jul = 1500 Aug = 1500 Sep = 1500
+Build the forecast net profit forecast_net_profit when emp_leave = [6, 6, 0] and the cost per temp employee is 80 USD.
+In addition to emp_leave and admin_usd, forecast gross profit has already been provided for you as forecast_gross_profit.
+=> Output: admin_usd = [1500, 1500, 1500]
+emp_leave = [6, 6, 0]
+forecast_gross_profit = [4850, 2800, 4600]
+index = 0
+
+for admin in admin_usd:
+    temp = emp_leave[index]
+    if temp > 0:
+        admin_dep = temp * 80 + admin
+    else: 
+        admin_dep = admin 
+    forecast_net_profit = forecast_gross_profit[index] - admin_dep
+    print(forecast_net_profit)
+    index += 1    
+print("The forecast net profit is:")
+
+27) Building an alternate forecast
+
+We will now build an alternative forecast for Txs Tools. The new quarter forecast is based off actual data for Jul - Aug as well as adjusted forecast data for September. The data (units sold) is as follows:
+Jul = 700
+Aug = 220
+Sep = 520
+The dependencies calculations have already been completed from the previous exercise. The following information applies:
+base_cost_price = 7
+base_sales_price = 15
+
+def dependencies(base_cost_price, base_sales_price, sales_usd):
+    res = []
+    for sales in sales_usd:
+        if sales >= 350:
+            sales_dep = (350 * base_sales_price) + ((sales - 350) * (base_sales_price - 1))
+        else:
+            sales_dep = sales * base_sales_price
+        if sales >= 500:
+            cost_dep = (500 * base_cost_price) + ((sales - 500) * (base_cost_price + 2))
+        else:
+            cost_dep = sales * base_cost_price
+        res.append(sales_dep - cost_dep)
+    return res
+forecast1 = dependencies(7, 15, [700, 350, 650])
+forecast2 = dependencies(7, 15, [700, 220, 520])
+print("The original forecast scenario is {}:".format(forecast1))
+print("The alternative forecast scenario is {}:".format(forecast2))
+=> Output: <script.py> output:
+    The original forecast scenario is [4850, 2800, 4600]:
+    The alternative forecast scenario is [4850, 1760, 3950]:
+
+28) Building a gap analysis between forecasts
+
+Txs Tools now has two forecasts, the original forecast forecast1 and the adjusted forecast forecast2.
+The dependencies have already been defined as def dependencies(base_cost_price, base_sales_price, sales_usd), where base_cost_price = 7 and base_sales_price = 15, with forecast2 based off the following adjusted sales unit values:
+Jul = 700
+Aug = 220
+Sep = 520
+In this exercise, we will look at how to use a for loop to cycle between two different lists, forecast1 and forecast2 and calculate the difference ("gap") using an incremented index. It is possible to do this simultaneously as both lists have the same length.
+
+# Set the two results
+forecast1 = dependencies(7, 15, [700, 350, 650])
+forecast2 = dependencies(7, 15, [700, 220, 520])
+# Create an index and the gap analysis for the forecast
+index = 0
+for value in forecast2:
+    print("The gap between forecasts is {}".format(value - forecast1[index]))
+    index += 1
+=> Output: <script.py> output:
+    The gap between forecasts is 0
+    The gap between forecasts is -1040
+    The gap between forecasts is -650
+
+29) Setting dependencies for Netflix
+
+Netflix has compiled a forecast up to the 2019 financial year netflix_f_is, and has based the sales figures in 2019 on the following dependency:
+Number of active subscriptions, which are based on the success of Netflix original shows.
+For 2019, the success of original shows (critical and commercial acclaim) are estimated at 78%. The total amount of subscribers per percentage point is 500, and set to the variable n_subscribers_per_pp (i.e there is a calculated correlation between show success and number of subscribers).
+In this exercise, we will calculate how dependent sales are on the number of subscribers in the forecast, which we will use in the next exercise.
+The Netflix forecast, netflix_f_iscan be printed in the shell.
+
+# Create a filter to select the sales row from the netflix_f_is dataset
+sales_metric = ['Sales']
+# Filter for rows containing the Sales metric
+filtered_netflix_f_is = netflix_f_is[netflix_f_is.metric.isin(sales_metric)]
+# Extract the 2019 Sales forecast value
+forecast1 = filtered_netflix_f_is["2019 fc"].iloc[0]
+# Print the resulting forecast
+print("The sales forecast is {}.".format(forecast1))
+
+# Set the success percentage to 78%
+pct_success = 0.78
+# Calculate the dependency for the subscriber base
+n_subscribers = n_subscribers_per_pp * pct_success
+# See the result
+print("The forecast depends on a subscription base of {}.".format(n_subscribers))
+
+# Calculate the ratio between forecast sales and subscribers
+sales_subs_ratio = forecast1 / n_subscribers
+# See the result
+print("The ratio between subscribers and sales is 1 subscriber equals ${:.2f}.".format(sales_subs_ratio))
+=> Output: <script.py> output:
+    The ratio between subscribers and sales is 1 subscriber equals $46.14.
+
+30) Calculating an alternative forecast for Netflix
+
+The original assumptions are as follows: the total amount of subscribers at a 78% success rate results in 39,000 subscribers. We used this to build the forecast numbers.
+However, the success rate for 2019 has been recalculated to have a probability of 65%, and the management has asked us to make an adjusted forecast based on this value.
+The ratio between the subscribers and sales is 1 subscriber to 0.46 USD sales, set to variable sales_subs_ratio. In addition, the variables for number of subscribers per percentage point (n_subscribers_per_pp) and our prior calculation of forecast1 have also been set.
+
+# Set the proportion of successes to 65%
+pct_success2 = 65
+# Calculate the number of subscribers
+n_subscribers2 = n_subscribers_per_pp * pct_success2
+# Calculate the new forecast
+forecast2 = n_subscribers2 * sales_subs_ratio
+
+# Insert a column named AltForecast, containing forecast2
+filtered_netflix_f_is.insert(len(filtered_netflix_f_is.columns), 'AltForecast', forecast2)
+# Insert a column named Gap, containing the difference
+filtered_netflix_f_is.insert(len(filtered_netflix_f_is.columns), 'Gap', forecast1 - forecast2)
+# See the result
+print(filtered_netflix_f_is)
+=> Output: <script.py> output:
+      metric  2014 act  2015 act  2016 act  2017 fc  2018 fc  2019 fc  AltForecast     Gap
+    0  Sales      5505      6780      8831    11688    14979    17994      14995.0  2999.0
 
 CHAPTER II: FINANCIAL TRADING IN PYTHON
 
@@ -861,5 +1223,7 @@ print('Monthly Sortino ratio %.2f'% monthly_sortino)
     Monthly Sortino ratio 1.11
 Compared to the Sharpe ratio, the Sortino ratio painted a different picture of the strategy's performance. It suggests that the strategy has more excess return per unit of downside risk, hence its performance is excellent.
 
-CHAPTER III: 
+CHAPTER III: MACHINE LEARNING FOR FINANCE IN PYTHON
+
+1)
 
