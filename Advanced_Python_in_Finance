@@ -1,4 +1,865 @@
-CHAPTER I: FINANCIAL TRADING IN PYTHON
+CHAPTER I: FINANCIAL FORECASTING IN PYTHON
 
-1)
+1) Calculating sales
+
+To calculate a sales forecast we need to know both the price we wish to sell our product and the number of units we expect to sell. In this example we will have a look at a company T-Z producing and selling T-Shirts.
+The company offers its customers two options - a basic shirt or a customized shirt. A T-shirt costs 15 USD for a basic shirt, and 25 USD for a customized one.
+T-Z have forecast orders for T-Shirts for delivery next month, and want to use the same sales mix of 60% basic and 40% customized. As this mix is relatively stable, we can calculate an average sales price per unit for T-Z. The variable forecast_units has been set for you.
+
+# Set variables units sold and sales price of the T-shirts (basic and custom)
+salesprice_basic = 15
+salesprice_custom = 25
+# Calculate the combined sales price taking into account the sales mix
+average_sales_price = (salesprice_basic * 0.6) + (salesprice_custom * 0.4)
+# Calculate the total sales for next month
+sales_USD = average_sales_price * forecast_units
+# Print the total sales
+print("Next month's forecast sales figure is {:.2f} USD.".format(sales_USD))
+=> Output: <script.py> output:
+    Next month's forecast sales figure is 9500.00 USD.
+
+2) Forecasting sales with a discount
+
+Sales are often made with special mixes and discounts. Discounts are a great marketing tool and a way to move stock. Let's look again at company T-Z.
+T-Z has launched a new range of T-Shirts linked to a celebrity meme for 40 USD per T-Shirt. They have excess stock of Celebshirt1 on their shelves, and in expectation of the release of Celebshirt2 in February, they have announced a 40% discount on Celebshirt1 in February.
+
+For this exercise, prices are in USD, and unit amounts are total units sold in the respective month. The following variables have been defined for you:
+sales_price = 40
+units_january = 500
+units_february = 700
+The January sales only include sales of Celebshirt1.
+The February sales include sales of Celebshirt1 and Celebshirt2, at a ratio of 45:55.
+
+# Forecast the sales of January
+sales_january = sales_price * units_january
+# Forecast the discounted price
+dsales_price = sales_price * 0.6
+# Forecast the sales of February
+sales_february = (sales_price * units_february * 0.55) + (dsales_price * units_february * 0.45)
+# Print the forecast sales for January and February
+print("The forecast sales for January and February are {} and {} USD respectively.".format(sales_january, sales_february))
+=> <script.py> output:
+    The forecast sales for January and February are 20000 and 22960.0 USD respectively.
+
+3) Calculating COGS
+
+Cost of Goods Sold (COGS) is calculated as follows:
+COGS = Opening stock value - closing stock value + fixed cost current period + variable cost current period
+
+We assume no closing or opening balances, stock is sold in the same month that it is produced.
+Material costs to produce one T-shirt is 8 USD. Labor costs are 2 USD per shirt. As you only use materials and labor to make the shirt, this is known as variable costs. The costs to rent a machine that produces these shirts is 1300 USD per month, regardless of the amount of shirts produced. This is therefore an example of a fixed cost, as fixed costs in COGS are costs directly related to the product but are incurred whether you produce the products or not.
+
+# From previous step
+fixed_costs = machine_rental 
+variable_costs_per_unit = material_costs_per_unit + labor_costs_per_unit
+cogs_jan = (units_jan * variable_costs_per_unit) + fixed_costs
+cogs_feb = (units_feb * variable_costs_per_unit) + fixed_costs
+# Calculate the unit cost for January and February
+unit_cost_jan = cogs_jan / units_jan
+unit_cost_feb = cogs_feb / units_feb
+# Print the January and February cost per unit
+print("The cost per unit for January and February are {} and {} USD respectively.".format(unit_cost_jan, unit_cost_feb))
+=> Output: <script.py> output:
+    The cost per unit for January and February are 16.5 and 15.2 USD respectively.
+
+4) Calculating the break-even point
+
+Tracking and understanding how cost per unit varies by month is critical, as the COGS influence the gross profit. At a certain point, if we do not make enough sales in the month to cover our costs, we will enter a loss situation.
+
+How do we know we have produced enough units to sell to cover our costs? We do this by using a concept called the break-even point. The formula is as follows:
+Breakeven Point (units) = Fixed Costs / (Price - Variable Cost Per Unit)
+In the last exercise, we calculated a unit cost of 16.5 USD for January and 15.2 USD for February. Keep this in mind when calculating the break-even point.
+
+# Calculate the break-even point (in units) for T-Z
+break_even = fixed_costs/(sales_price - variable_costs_per_unit)
+# Print the break even point in units
+print("The break even point is {} units.".format(break_even))
+# Forecast the gross profit for January and February
+gross_profit_jan = (sales_price*units_jan) - cogs_jan
+gross_profit_feb = (sales_price*units_feb) - cogs_feb
+# Print the gross profit for January and February
+print("The gross profit for January and February are {} and {} USD respectively.".format(gross_profit_jan, gross_profit_feb))
+=> Output: <script.py> output:
+    The break even point is 216.66666666666666 units.
+    The gross profit for January and February are -100 and 200 USD respectively.
+
+5) Tesla income statement
+
+The dataset for the Tesla income statement is called income_statement. This dataset has a final column called Trailing Twelve Months (TTM), which is the most recent 12 months of data available. We will use this to calculate a 2018 forecast for Tesla.
+We are only interested in the rows 'Revenue', 'Gross profit', 'Total operating expenses', and 'Net income', so we'll create a filtered income statement to only show these rows. The filtering code uses the following pattern.
+dataframe[dataframe.columnname.isin(list_of_categories)]
+
+# Choose some interesting metrics
+interesting_metrics = ['Revenue', 'Gross profit', 'Total operating expenses', 'Net income']
+# Filter for rows containing these metrics
+filtered_income_statement = income_statement[income_statement.metric.isin(interesting_metrics)]
+# See the result
+print(filtered_income_statement)
+=> <script.py> output:
+                          metric  2012-12  2013-12  2014-12  2015-12  2016-12      TTM
+    0                    Revenue    413.0   2013.0   3198.0   4046.0   7000.0  10755.0
+    2               Gross profit     30.0    456.0    882.0    924.0   1599.0   2219.0
+    6   Total operating expenses    424.0    518.0   1068.0   1640.0   2267.0   3520.0
+    14                Net income   -396.0    -74.0   -294.0   -889.0   -675.0  -1407.0
+
+6) Forecasting profit for Tesla
+
+As in the previous exercise, the dataset for the Tesla income statement is named income_statement. Using what we have learned in the previous exercise, we will now append a new column with 2018 Forecast data, which we will assign the header "Forecast". For this exercise, we would like to set the filtered_income_statement to only show the row 'Revenue'.
+Remember, the TTM column is the most recent 12-month value that we will use for the 2018 forecast. Thus far, we have the following information for 2018:
+The market demand analysis predicts the revenue to increase to 13,000 in 2018 due to increased sales of Model 3.
+
+revenue_metric = ['Revenue']
+# Filter for rows containing the revenue metric
+filtered_income_statement = income_statement[income_statement.metric.isin(revenue_metric)]
+# Get the number of columns in filtered_income_statement
+n_cols = len(filtered_income_statement.columns)
+# Insert a column in the correct position containing the column 'Forecast'
+filtered_income_statement.insert(n_cols, 'Forecast', 13000) 
+# See the result
+print(filtered_income_statement)
+=> <script.py> output:
+        metric  2012-12  2013-12  2014-12  2015-12  2016-12      TTM  Forecast
+    0  Revenue    413.0   2013.0   3198.0   4046.0   7000.0  10755.0     13000
+
+7) Calculating accounts receivable (debtors)
+
+When we sell something on credit, the credit portion is in the balance sheet under ‘Accounts Receivable’ or ‘Debtors’. For example, if credit sales are made in January with a 60-day payback period, they would be recorded in our ‘Debtors’ account in January, but only be paid (released) in March, and so on.
+In this exercise, we will create the following lists:
+The credit sales in the month credits, which in this exercise is 60% of the sale value.
+The total accounts receivable debtors, to be calculated as the credits for the current month, plus the credits of the month before, minus the credits of two months before (as we assume the credits from 2 months ago or 60 days, will be repaid by then).
+We have set an index for the variable month. The month value is set at 0.
+
+# Create the list for sales, and empty lists for debtors and credits
+sales = [500, 350, 700]
+debtors = [] 
+credits = []
+# Create the statement to append the calculated figures to the debtors and credits lists
+for mvalue in sales: 
+    credits.append(mvalue * 0.6)
+    if month > 0:
+        debtors.append(credits[month] + credits[month-1]) 
+    else:
+        debtors.append(credits[month])
+    month += 1
+# Print the result
+print("The ‘Debtors’ are {}.".format(debtors))
+=> Output: <script.py> output:
+    The ‘Debtors’ are [300.0, 510.0, 630.0].
+
+8) Bad debts
+
+When offering credit terms to customers, there is always a risk that the customer does not pay their debt. In the finance world, this is known as "bad debts". As we have already recorded sales, we need to record the loss of sales now, as we never received the payment.
+This affects both the income statement and the balance sheet. In the income statement, we record a negative value in the sales for the month we write off the debt. In the balance sheet, we need to reduce our debtor’s asset.
+The following variables have been defined for January: debtors_jan = 1500. In February, we received news that a customer has gone into liquidation. This customer currently owes 500 USD.
+We expect to recover 70% of this amount; the rest has to be written off as bad debts.
+
+# Calculate the bad debts for February
+bad_debts_feb = 500*0.3
+# Calculate the feb debtors amount
+debtors_feb = (debtors_jan - bad_debts_feb)
+# Print the debtors for January and the bad debts and the debtors for February
+print("The debtors are {} in January, {} in February. February's bad debts are {} USD.".format(debtors_jan, debtors_feb, bad_debts_feb))
+=> Output: <script.py> output:
+    The debtors are 1500 in January, 1350.0 in February. February's bad debts are 150.0 USD.
+
+9) Calculating accounts payable (creditors)
+
+Now we will look at a scenario where we are the ones being granted credit. This means that we can buy something, but only have to pay for this amount later.
+In this exercise, T-Z needs to buy nuts and bolts to produce 1000 units in January and 1200 units in February. The cost of nuts and bolts per unit is 0.25 USD. The credit terms are 50% cash upfront and 50% in 30 days.
+Therefore, the creditors' value, in this case, would be paid the month directly after. This means that the creditors' value would only reflect the current month's credit purchases.
+
+# Set the cost per unit
+unit_cost = 0.25
+# Create the list for production units and empty list for creditors
+production = [1000,1200]
+creditors = []
+# Calculate the accounts payable for January and February
+for mvalue in production: 
+    creditors.append(mvalue * unit_cost * 0.5)
+# Print the creditors balance for January and February
+print("The creditors balance for January and February are {} and {} USD.".format(creditors[0], creditors[1]))
+=> Output: <script.py> output:
+    The creditors balance for January and February are 125.0 and 150.0 USD.
+
+10) Debtor days ratio
+
+The first ratio we will look at is debtor days. This ratio looks at how many days it takes to receive our money from our debtors. It is usually calculated over a period of 1 financial year.
+The ratio is as follows:
+Debtor Days = (Ending Balance Debtors / Sales) * Days in Financial Year
+
+The following information is available to you:
+Sales for the year: 12,500 USD
+Ending Debtors balance: 650
+
+# Create the variables
+debtors_end = 650
+sales_tot = 12500
+# Calculate the debtor days variable
+ddays_ratio = (debtors_end/sales_tot) * 365
+# Print the result
+print("The debtor days ratio is {}.".format(ddays_ratio))
+=> Output: <script.py> output:
+    The debtor days ratio is 18.98.
+
+11) Days payable outstanding
+
+We will now have a look at our accounts payable, or creditors, and a ratio called the Days Payable Outstanding (DPO). This ratio is an efficiency ratio that measures the average number of days a company takes to pay its suppliers.
+The DPO ratio is calculated as follows:
+Days Payable Outstanding = (Ending Balance Creditors / Total COGS) * Days in Financial Year
+
+T-Z wants to know its days payable outstanding and has asked you to calculate it.
+The following is available in the workspace:
+Total COGS for the period = 4000
+Closing Payables balance = 650
+
+# Get the variables
+cogs_tot = 4000
+creditors_end = 650
+# Calculate the days payable outstanding
+dpo = (creditors_end/cogs_tot)*365
+# Print the days payable outstanding
+print("The days payable outstanding is {}.".format(dpo))
+=> Output: <script.py> output:
+    The days payable outstanding is 59.3125.
+
+12) Days in inventory and asset turnover ratio
+
+In this exercise, we will calculate the time it takes for a company to turn inventory into sales (days in inventory or DII ratio) and a ratio to calculate the efficiency of a company’s assets by seeing how the company uses its assets to generate sales (asset turnover ratio). The required formulas are:
+
+DII = (Average Inventory / Total COGS) * Days in Financial Year
+Total Average Assets = (Opening Balance + Closing Balance) / 2
+Asset Turnover = Sales / Total Average Assets
+
+# Calculate the DII Ratio
+dii_ratio = (av_inv/cogs_tot)*365
+# Print the result
+print("The DII ratio is {}.".format(dii_ratio))
+# Calculate the Average Assets
+av_assets = (ob_assets + cb_assets)/2
+# Calculate the Asset Turnover Ratio
+at_ratio = sales_tot/av_assets
+# Print the Asset Turnover Ratio
+print("The asset turnover ratio is {}.".format(at_ratio))
+=> Output: <script.py> output:
+    The DII ratio is 173.375.
+    The asset turnover ratio is 2.2222222222222223.
+
+13) Calculating balance sheet ratios for Ford
+
+Now we will look at a real life example, Ford Inc, a company producing motor vehicles. We have uploaded a dataset: balance_sheet with the data for Ford Inc's most recent balance sheet. The sales and cost of sales figures have been provided for 2017 with the Key_Figures_Memodataset.
+We are only interested in one line on the balance sheet, the Receivables (another name for Debtors), and therefore need to create a filter for this. In this exercise, we will use boolean indexing to filter our dataset for Receivables in the metric column. We will first specify our metric of interest ('Receivables'), and then check whether the column of interest has this value in each row. This will generate a boolean series of True and False values. With this series, we can then filter our existing dataset.
+Once we have filtered our dataset, we can retrieve the receivables values from the most recent time period and calculate the debtor days ratio (provided below).
+Debtor Days = (Ending Balance Debtors / Sales) * Days in Financial Year
+
+# Create the filter metric for Receivables
+receivables_metric = ['Receivables']
+# Create a boolean series with your metric
+receivables_filter = balance_sheet.metric.isin(receivables_metric)
+# Use the series to filter the dataset
+filtered_balance_sheet = balance_sheet[receivables_filter]
+# Extract the zeroth value from the last time period (2017-12)
+debtors_end = filtered_balance_sheet["2017-12"].iloc[0]
+# Calculate the debtor days ratio
+ddays = (debtors_end / sales) * 365
+# Print the debtor days ratio
+print("The debtor day ratio is {:.0f}. A higher debtors days ratio means it takes longer to collect cash from debtors.".format(ddays))
+=> Output: <script.py> output:
+    The debtor day ratio is 146. A higher debtors days ratio means it takes longer to collect cash from debtors.
+
+14) Forecasting the balance sheet for Ford
+
+Now that we have the ratios for Ford, the management wishes to improve them for the 2018 financial year. There is one ratio in particular that management would like to be improved – the debtor days ratio, which is currently sitting at 146 days, while better than Nissan (244 days), is still much higher than Toyota, the industry leader (31 days).
+Management would like to bring the debtor days down to below 100 days.
+
+These variables have already been set:
+filtered_balance_sheet contains the receivables row of the balance sheet.
+ddays = 99 is the target debtor days.
+sales = 156776 is the existing sales total.
+The formula to calculate debtor days is: 
+Debtor Days = (Ending Balance Debtors / Sales) * Days in Financial Year
+
+# Calculate the forecasted sales 
+f_sales = sales * 1.10
+# Solve for the forecasted debtors' ending balance
+f_debtors_end = ddays * f_sales / 365
+print("If sales rise by 10% and the debtor days decrease to {:.0f} then the forecasted closing balance for debtors will be {:.0f}.".format(ddays, f_debtors_end))
+# Get the number of columns in the filtered balance sheet
+n_cols = len(filtered_balance_sheet.columns)
+# Append a Forecast column of the forecasted debtors' end balance
+filtered_balance_sheet.insert(n_cols, 'Forecast', f_debtors_end)
+# See the result
+print(filtered_balance_sheet)
+=> Output: <script.py> output:
+    If sales rise by 10% and the debtor days decrease to 99 then the forecasted closing balance for debtors will be 46775.
+            metric  2013-12  2014-12   2015-12  2016-12  2017-12   Forecast
+    6  Receivables  87309.0  92819.0  101975.0  57368.0  62809.0  46775.086
+
+15)
+
+
+
+CHAPTER II: FINANCIAL TRADING IN PYTHON
+
+1) Plot a time series line chart
+
+Cryptocurrencies are a new category of assets, and you are interested in exploring them more. You have some daily historical price data of Bitcoin saved in a CSV file. You want to get familiar with the data by doing some basic exploration and plotting.
+The pandas package has been imported as pd (for the rest of the course as needed), and matplotlib.pyplot has been imported as plt.
+
+# Load the data
+bitcoin_data = pd.read_csv('bitcoin_data.csv', index_col='Date', parse_dates=True)
+# Print the top 5 rows
+print(bitcoin_data.head())
+# Plot the daily high price
+plt.plot(bitcoin_data['High'], color='green')
+# Plot the daily low price
+plt.plot(bitcoin_data['Low'], color='red')
+plt.title('Daily high low prices')
+plt.show()
+=> Output: <script.py> output:
+                  Open    High     Low   Close     Volume
+    Date                                                 
+    2016-12-17  785.17  792.51  784.86  790.83   78989800
+    2016-12-18  791.01  794.74  788.03  790.53   60524400
+    2016-12-19  790.69  793.61  790.32  792.71   74886400
+    2016-12-20  792.25  801.34  791.50  800.88   99629296
+    2016-12-21  800.64  834.28  799.41  834.28  155576000
+
+2) Plot a candlestick chart
+
+A candlestick chart is a style of chart that packs multiple pieces of price information into one chart. It can provide you with a good sense of price action and visual aid for technical analysis. You will plot a candlestick chart using the same data as the previous exercise, which has been preloaded as bitcoin_data. Also, plotly.graph_objects has been imported as go.
+
+# Define the candlestick data
+candlestick = go.Candlestick(
+    x=bitcoin_data.index,
+    open=bitcoin_data['Open'],
+    high=bitcoin_data['High'],
+    low=bitcoin_data['Low'],
+    close=bitcoin_data['Close'])
+# Create a candlestick figure   
+fig = go.Figure(data=[candlestick])
+fig.update_layout(title='Bitcoin prices')                        
+# Show the plot
+fig.show()
+
+3) Resample the data
+
+In this exercise, you will switch your hat from a day trader to a swing trader and then a position trader, and manipulate the data to suit your needs.
+
+# Resample the data to daily by calculating the mean values
+eurusd_daily = eurusd_4h.resample('D').mean()
+# Print the top 5 rows
+print(eurusd_daily.head())
+
+# Resample the data to weekly by calculating the mean values
+eurusd_weekly = eurusd_4h.resample('W').mean()
+# Print the top 5 rows
+print(eurusd_weekly.head())
+
+4) Plot a return histogram
+
+As a trader, it is important to analyze an asset's return profile, such as ranges of price changes, return distributions, etc. Over the years, Tesla fans and short sellers have been either betting on or against Tesla stocks aggressively, leading to volatile stock prices. You have some Tesla historical daily price data and want to verify this phenomenon.
+The stock data has been preloaded in tsla_data, and matplotlib.pyplot has been imported as plt. Additional customizations to the plot such as a title and axis labels have already been provided for you.
+
+# Calculate daily returns
+tsla_data['daily_return'] = tsla_data['Close'].pct_change() * 100
+# Plot the histogram
+tsla_data['daily_return'].hist(bins=100, color='red')
+plt.ylabel('Frequency')
+plt.xlabel('Daily return')
+plt.title('Daily return histogram')
+plt.show()
+
+5) Calculate and plot SMAs
+
+Daily price data is inherently messy and noisy. You want to analyze the Apple stock daily price data, and plan to add a simple moving average (SMA) indicator to smooth out the data. Specifically, you decide to use the 50-day SMA.
+The stock data has been preloaded in aapl_data, and matplotlib.pyplot has been imported as plt. Additional customizations to the plot such as a title and legend have already been provided for you.
+
+# Calculate SMA
+aapl_data['sma_50'] = aapl_data['Close'].rolling(window=50).mean()
+# Plot the SMA
+plt.plot(aapl_data['sma_50'], color='green', label='SMA_50')
+# Plot the close price
+plt.plot(aapl_data['Close'], color='red', label='Close')
+# Customize and show the plot
+plt.title('Simple moving averages')
+plt.legend()
+plt.show()
+
+6) Define and backtest a simple strategy
+
+You want to create a strategy to trade the so-called "FAANG" stocks, which is an acronym referring to the stocks of the five most popular and best-performing American technology companies: Facebook, Amazon, Apple, Netflix, and Alphabet (a.k.a. Google). The idea is simple, you will hold an equal amount of each stock in your portfolio. Every week the strategy will buy or sell shares as needed in order to balance the equal weights.
+First, you will inspect the data for the "FAANG" stocks. Second, you will define the strategy, which specifies buying an equal amount of each stock, and rebalance every week. Lastly, you will run the backtest and plot the result.
+The bt package has been imported for you. The historical price data of the "FAANG" has been preloaded in bt_data.
+
+# Print the top five rows
+print(bt_data.head())
+# Define the strategy
+bt_strategy = bt.Strategy('Trade_Weekly', 
+                         [bt.algos.RunWeekly(),
+                          bt.algos.SelectAll(),
+                          bt.algos.WeighEqually(),
+                          bt.algos.Rebalance()])
+# Create a backtest
+bt_test = bt.Backtest(bt_strategy, bt_data)
+# Run the backtest
+bt_res = bt.run(bt_test)
+# Plot the test result
+bt_res.plot(title="Backtest result")
+plt.show()
+=> The test shows over a six-month period, using this strategy to trade the “FAANG” stocks can increase your portfolio value over 30%. The strategy looks viable.
+
+7) Calculate and plot two EMAs
+
+A 12-period EMA and 26-period EMA are two moving averages used in calculating a more complex indicator called MACD (Moving Average Convergence Divergence). The MACD turns two EMAs into a momentum indicator by subtracting the longer EMA from the shorter one. Before learning more about MACD, you want to get familiar with its components first. You decide to calculate two EMAs using the Google daily stock prices and plot them in one chart.
+The daily historical price data of the Google stock has been loaded in stock_data. Also, talib has been imported for you, and matplotlib.pyplot has been imported as plt.
+
+# Calculate 12-day EMA
+stock_data['EMA_12'] = talib.EMA(stock_data['Close'], timeperiod=12)
+# Calculate 26-day EMA
+stock_data['EMA_26'] = talib.EMA(stock_data['Close'], timeperiod=26)
+# Plot the EMAs with price
+plt.plot(stock_data['EMA_12'], label='EMA_12')
+plt.plot(stock_data['EMA_26'], label='EMA_26')
+plt.plot(stock_data['Close'], label='Close')
+# Customize and show the plot
+plt.legend()
+plt.title('EMAs')
+plt.show()
+=> As you can see a shorter-term EMA moves faster with the price than the longer-term EMA, hence comparing the gap between them can reveal how fast the price is changing, that is, the price momentum.
+
+8) SMA vs. EMA
+
+SMA and EMA are both commonly-used trend indicators. SMA gives equal weight to all data points, while EMA applies more weight to recent data points. You have some Google stock price data and want to decide on a moving average indicator to use. You plan to calculate both the SMA and EMA with the same lookback period and plot them in one chart.
+The daily historical price data of the Google stock has been loaded in stock_data. Also, talib has been imported for you, and matplotlib.pyplot has been imported as plt.
+
+# Calculate the SMA
+stock_data['SMA'] = talib.SMA(stock_data['Close'], timeperiod=50)
+# Calculate the EMA
+stock_data['EMA'] = talib.EMA(stock_data['Close'], timeperiod=50)
+# Plot the SMA, EMA with price
+plt.plot(stock_data['SMA'], label='SMA')
+plt.plot(stock_data['EMA'], label='EMA')
+plt.plot(stock_data['Close'], label='Close')
+# Customize and show the plot
+plt.legend()
+plt.title('SMA vs EMA')
+plt.show()
+=> Output: The EMA is less smooth and more responsive to sudden price spikes. If you have a shorter trading timeframe and want to be more sensitive to the recent price fluctuations, EMA should be your choice.
+
+9) Calculate the ADX
+
+The average directional movement index (ADX) was developed by J. Welles Wilder as an indicator of trend strength. It combines two other indicators, the plus directional index (+DI) and minus directional indicator (-DI), and is obtained using lengthy calculations. However, with Python, you can calculate it with one line of code. In this exercise, you will implement your first ADX indicator using daily price data of the Tesla stock.
+The historical daily price data has been loaded in stock_data. Also, talib has been imported for you.
+
+# Calculate the ADX with the default time period
+stock_data['ADX_14'] = talib.ADX(stock_data['High'],
+                                 stock_data['Low'], 
+                                 stock_data['Close'])
+# Calculate the ADX with the time period set to 21
+stock_data['ADX_21'] = talib.ADX(stock_data['High'],
+                                 stock_data['Low'], 
+                                 stock_data['Close'], 
+                                 timeperiod=21)
+# Print the last five rows
+print(stock_data.tail())
+=> Output: <script.py> output:
+                 Open   High    Low  Close  ADX_14  ADX_21
+    Date                                                  
+    2020-11-24 540.40 559.99 526.20 555.38   21.16   14.13
+    2020-11-25 550.06 574.00 545.37 574.00   23.92   15.63
+    2020-11-27 581.16 598.78 578.45 585.76   26.82   17.28
+    2020-11-30 602.21 607.80 554.51 567.60   28.25   18.29
+    2020-12-01 597.59 597.85 572.05 584.76   29.58   19.26
+
+10) Visualize the ADX
+
+The ADX can quantify the strength of a trend, but does not suggest the bullish or bearish trend direction. Typically an ADX value above 25 indicates that a trending market is present. To better understand it, you will calculate the ADX and plot it along with the price data.
+As in the previous exercise, you will use historical daily price data of the Tesla stock, which has been loaded in as stock_data. Also, talib has been imported for you, and matplotlib.pyplot has been imported as plt.
+
+# Calculate ADX
+stock_data['ADX'] = talib.ADX(stock_data['High'], stock_data['Low'], stock_data['Close'])
+# Create subplots
+fig, (ax1, ax2) = plt.subplots(2)
+# plot ADX with the price
+ax1.set_ylabel('Price')
+ax1.plot(stock_data['Close'])
+ax2.set_ylabel('ADX')
+ax2.plot(stock_data['ADX'], color='red')
+ax1.set_title('Price and ADX')
+plt.show()
+=> ADX is used to measure the strength of a trending market. When the stock was not trending but moving sideways, ADX started to fall.
+
+11) Calculate the RSI
+
+The RSI calculation follows a straightforward formula. RS, or Relative Strength, is the average of upward price changes in a chosen n periods, divided by the average of downward price changes over those n periods.
+Where: RS = average of upward price changes / average of downward price changes
+RSI = 100 - 100/(1 + RS)
+All these calculations can be handled in Python with one line of code. In this exercise, you will do your first RSI calculation using historical daily price data of the Google stock.
+The daily price data has been loaded as stock_data. Also, talib has been imported for you.
+
+# Calculate RSI with the default time period
+stock_data['RSI_14'] = talib.RSI(stock_data['Close'])
+# Calculate RSI with a time period of 21
+stock_data['RSI_21'] = talib.RSI(stock_data['Close'], timeperiod=21) 
+# Print the last five rows
+print(stock_data.tail())
+=> Output: <script.py> output:
+                  Open    High     Low   Close  RSI_14  RSI_21
+    Date                                                      
+    2020-11-24 1730.50 1771.60 1727.69 1768.88   62.78   61.73
+    2020-11-25 1772.89 1778.54 1756.54 1771.43   63.10   61.93
+    2020-11-27 1773.09 1804.00 1772.44 1793.19   65.81   63.69
+    2020-11-30 1781.18 1788.06 1755.00 1760.74   58.87   59.40
+    2020-12-01 1774.37 1824.83 1769.37 1798.10   63.63   62.46
+
+12) Visualize the RSI
+
+The RSI is a momentum indicator that oscillates between 0 and 100. Typically an RSI over 70 indicates an overbought market condition, which means the asset is overvalued and the price may reverse. An RSI below 30 suggests an oversold market condition, which means the asset is undervalued and the price may rally. To better understand it, you will calculate the RSI and plot it along with the price data.
+As you did in the previous exercise, you will use historical daily price data of the Google stock, which has been loaded as stock_data. Also, talib has been imported for you and matplotlib.pyplot has been imported as plt.
+
+# Calculate RSI
+stock_data['RSI'] = talib.RSI(stock_data['Close'])
+# Create subplots
+fig, (ax1, ax2) = plt.subplots(2)
+# plot RSI with the price
+ax1.set_ylabel('Price')
+ax1.plot(stock_data['Close'])
+ax2.set_ylabel('RSI')
+ax2.plot(stock_data['RSI'], color='orangered')
+ax1.set_title('Price and RSI')
+plt.show()
+=> The stock price bottomed up and started to rise; When the RSI was near 30, it became more likely the stock was oversold and the price might soon bound back as observed in the plots.
+
+13) Implement Bollinger Bands
+
+Bollinger Bands are envelopes plotted above and below a simple moving average of the price. Because the distance of the bands is based on the standard deviation, they adjust to volatility swings in the underlying price. To better understand the impact of standard deviation specification on Bollinger bands, you will implement and plot two sets of Bollinger Bands on the same dataset. You will use historical Bitcoin price data, which has been preloaded as bitcoin_data. The talib library has also been imported for you.
+
+## Define Bollinger Bands using 1 standard deviation for both the upper and lower bands. Plot the upper and lower bands.
+# Define the Bollinger Bands with 1-sd
+upper_1sd, mid_1sd, lower_1sd = talib.BBANDS(bitcoin_data['Close'],
+                                             nbdevup=1,
+                                             nbdevdn=1,
+                                             timeperiod=20)
+# Plot the upper and lower Bollinger Bands 
+plt.plot(bitcoin_data['Close'], color='green', label='Price')
+plt.plot(upper_1sd, color='tomato', label="Upper 1sd")
+plt.plot(lower_1sd, color='tomato', label='Lower 1sd')
+
+# Customize and show the plot
+plt.legend(loc='upper left')
+plt.title('Bollinger Bands (1sd)')
+plt.show()
+
+## Define Bollinger Bands using 2 standard deviations for both the upper and lower bands. Plot the upper and lower bands.
+# Define the Bollinger Bands with 2-sd
+upper_2sd, mid_2sd, lower_2sd = talib.BBANDS(bitcoin_data['Close'],
+                                             nbdevup=2,
+                                             nbdevdn=2,
+                                             timeperiod=20)
+# Plot the upper and lower Bollinger Bands 
+plt.plot(bitcoin_data['Close'], color='green', label='Price')
+plt.plot(upper_2sd, color='orange', label='Upper 2sd')
+plt.plot(lower_2sd, color='orange', label='Lower 2sd')
+# Customize and show the plot
+plt.legend(loc='upper left')
+plt.title('Bollinger Bands (2sd)')
+plt.show()
+
+=> The 2-sd Bollinger Bands are wider than the 1-sd Bollinger Bands as expected. Yet the Bitcoin was very volatile, and its prices frequently moved out of the 2-sd Bollinger Bands. The plot demonstrated Bitcoin's price peak and crash around Dec 2017, indicating tremendous volatility risk.
+
+14) Build an SMA-based signal strategy
+
+It's time to build and backtest your first signal-based strategy. Although simple, these types of strategies can be effective, and also lay the groundwork for more complex strategies consisting of additional signals and information.
+Implementing a price-comparison-based signal with bt is a straightforward process. You will first download some historical price data of the stock, calculate its SMA (simple moving average), implement an SMA-based signal strategy, and then backtest it with the stock price data.
+The bt package has been imported for you. The historical price data of the Apple stock has been preloaded in price_data.
+
+# Calculate the SMA
+sma = price_data.rolling(20).mean()
+# Define the strategy
+bt_strategy = bt.Strategy('AboveSMA', 
+                          [bt.algos.SelectWhere(price_data > sma),
+                           bt.algos.WeighEqually(),
+                           bt.algos.Rebalance()])
+# Create the backtest and run it
+bt_backtest = bt.Backtest(bt_strategy, price_data)
+bt_result = bt.run(bt_backtest)
+# Plot the backtest result
+bt_result.plot(title='Backtest result')
+plt.show()
+
+15) Build an EMA-based signal strategy
+
+Previously, you implemented an SMA-based signal strategy. However, you are wondering whether the EMA (exponential moving average) indicator is a better choice since it is more sensitive to recent price movement. You also would like to leverage the talib library to calculate the indicator. After switching to an EMA-based signal strategy, you will perform a similar backtest using the Apple stock price data.
+The bt and talib packages have been imported for you. Also, the historical price data of the Apple stock has been preloaded in price_data.
+
+# Calculate the EMA
+ema['Close'] = talib.EMA(price_data['Close'], timeperiod=20)
+# Define the strategy
+bt_strategy = bt.Strategy('AboveEMA',
+                          [bt.algos.SelectWhere(price_data > ema),
+                           bt.algos.WeighEqually(),
+                           bt.algos.Rebalance()])
+# Create the backtest and run it
+bt_backtest = bt.Backtest(bt_strategy, price_data)
+bt_result = bt.run(bt_backtest)
+# Plot the backtest result
+bt_result.plot(title='Backtest result')
+plt.show()
+=> The strategy looks viable. Instead of applying the SMA, applying the EMA in this strategy slightly improved its profitability based on the historical period backtested.
+
+19) Construct an EMA crossover signal
+
+Trend-following strategies believe that "the trend is your friend," and use signals to indicate the trend and profit by riding it.
+You want to build and backtest a trend-following strategy. First, you decide to use two EMAs (exponential moving averages) to construct the signal. When the shorter-term EMA, EMA_short, is larger than the longer-term EMA, EMA_long, you will enter long positions in the market. Vice versa, when EMA_short is smaller than EMA_long, you will enter short positions.
+A 10-day EMA and 40-day EMA have been pre-calculated and saved in EMA_short and EMA_long. The historical price data of the Google stock has been preloaded in price_data. In addition, the bt package has been imported for you.
+
+# Construct the signal
+signal[EMA_short > EMA_long] = 1
+signal[EMA_short < EMA_long] = -1
+# Merge the data 
+combined_df = bt.merge(signal, price_data, EMA_short, EMA_long)
+combined_df.columns = ['signal', 'Price', 'EMA_short', 'EMA_long']
+# Plot the signal, price and MAs
+combined_df.plot(secondary_y=['signal'])
+plt.show()
+=> The plot helps you to detect whether the signal is constructed as intended. Next up, you are ready to implement it in your strategy!
+
+20) Build and backtest a trend-following strategy
+
+Previously, you constructed a signal using two EMA indicators. When the shorter-term EMA is larger than the longer-term EMA, the signal is 1 for entering long positions in the market. Vice versa, when the shorter-term EMA is smaller than the longer-term EMA, the signal is -1 for entering short positions. Now you will implement a trend-following strategy with your signal and perform a backtest using the Google stock.
+The historical price data of the Google stock has been preloaded in price_data. The bt package has been imported for you. In addition, signal from the previous exercise is available to use.
+
+# Define the strategy
+bt_strategy = bt.Strategy('EMA_crossover', 
+                          [bt.algos.WeighTarget(signal),
+                           bt.algos.Rebalance()])
+# Create the backtest and run it
+bt_backtest = bt.Backtest(bt_strategy, price_data)
+bt_result = bt.run(bt_backtest)
+# Plot the backtest result
+bt_result.plot(title='Backtest result')
+plt.show()
+=> The strategy is profitable based on the historical period backtested. It longed the stock when the price was trending up and shorted it when the price was trending down, therefore taking advantage of trading both sides.
+
+21) Construct an RSI based signal
+
+It's time to implement your first mean-reversion strategy. Mean reversion trading uses signals to detect market imbalance, and takes long positions in an oversold market and short positions in an overbought market.
+First, you will use the RSI indicator to gauge market conditions and construct the signal. If the RSI value drops below 30, you will enter long positions. If the RSI value rises above 70, you will enter short positions. If the RSI value is in between 30 and 70, you will take no positions.
+The RSI indicator has been pre-calculated and saved in stock_rsi. The historical price data of the Google stock has been preloaded in price_data. In addition, the bt package has been imported for you.
+
+# Construct the signal
+signal[stock_rsi > 70] = -1
+signal[stock_rsi < 30] = 1
+signal[(stock_rsi <= 70) & (stock_rsi >= 30)] = 0
+# Merge the data
+combined_df = bt.merge(signal, price_data)
+combined_df.columns = ['signal', 'Price']
+combined_df.plot(secondary_y=['signal'])
+plt.show()
+=> At point C, the price reached a new high and the signal suggested short. However, the price did not reverse back but was merely moving sideways, so this trade would not be effective.
+
+22) Build and backtest a mean reversion strategy
+
+Previously, you constructed a signal using the RSI indicator. When the RSI value drops below 30, the signal is 1 for entering long positions in the market. When the RSI value rises above 70, the signal is -1 for entering short positions. Now you will implement a mean reversion strategy with the signal and perform a backtest on trading the Google stock.
+The historical price data of the Google stock has been preloaded in price_data. In addition, the bt package has been imported for you.
+
+# Define the strategy
+bt_strategy = bt.Strategy('RSI_MeanReversion', 
+                          [bt.algos.WeighTarget(signal),
+                           bt.algos.Rebalance()])
+# Create the backtest and run it
+bt_backtest = bt.Backtest(bt_strategy, price_data)
+bt_result = bt.run(bt_backtest)
+# Plot the backtest result
+bt_result.plot(title='Backtest result')
+plt.show()
+=> Unlike the trend-following strategy, this RSI-based mean reversion strategy tries to take advantage of temporary market imbalances and trades more frequently. Also, if the RSI value does not indicate an overbought or oversold market condition, no trade is taken, so the profit line is flat. Overall, the strategy looks viable based on the historical period backtested.
+
+23) Conduct a strategy optimization
+
+You have an SMA-based signal strategy to trade stocks. However, you are not sure what lookback period to use for calculating the SMA that can optimize the strategy performance. You plan to run multiple backtests on different input parameters. Also, you want the capability to assess the strategy on trading different stocks or based on different historical periods.
+The bt package has been imported for you. Also, the historical price data of the Tesla stock has been preloaded in price_data.
+
+def signal_strategy(price_data, period, name):
+    # Calculate SMA
+    sma = price_data.rolling(period).mean()
+    # Define the signal-based Strategy
+    bt_strategy = bt.Strategy(name, 
+                              [bt.algos.SelectWhere(price_data>sma),
+                               bt.algos.WeighEqually(),
+                               bt.algos.Rebalance()])
+    # Return the backtest
+    return bt.Backtest(bt_strategy, price_data)
+
+# Create signal strategy backtest
+sma10 = signal_strategy(price_data, period=10, name='SMA10')
+sma30 = signal_strategy(price_data, period=30, name='SMA30')
+sma50 = signal_strategy(price_data, period=50, name='SMA50')
+# Run all backtests and plot the resutls
+bt_results = bt.run(sma10, sma30, sma50)
+bt_results.plot(title='Strategy optimization')
+plt.show()
+=> Based on the backtest results, using the 10-day SMA in the strategy to trade the Tesla stock was best performing during most of 2020. However, it started to lose its edge towards the end of year when the stock price was mostly moving sideways. The fast moving average is quick to capture the trend, but also quick to react to the market noise when there is no trend.
+
+24) Perform a strategy benchmarking
+
+You are wondering: instead of spending energy actively trading a stock, what if you just sit back and hold the stock for a period of time. Does your active trading strategy generate better profits than a passive buy-and-hold strategy? To answer this question, you plan to perform a benchmarking test.
+The bt package has been imported for you. Also, the historical price data of the Tesla stock has been preloaded in price_data.
+In addition, the three strategy backtests sma10, sma30. sma50 from the previous exercise have been pre-loaded, and can be used directly.
+
+def buy_and_hold(price_data, name):
+    # Define the benchmark strategy
+    bt_strategy = bt.Strategy(name, 
+                              [bt.algos.RunOnce(),
+                               bt.algos.SelectAll(),
+                               bt.algos.WeighEqually(),
+                               bt.algos.Rebalance()])
+   # Return the backtest
+    return bt.Backtest(bt_strategy, price_data)
+
+# Create benchmark strategy backtest
+benchmark = buy_and_hold(price_data, name='benchmark')
+# Run all backtests and plot the resutls
+bt_results = bt.run(sma10, sma30, sma50, benchmark)
+bt_results.plot(title='Strategy benchmarking')
+plt.show()
+=> The backtest results suggest the signal-based strategy outperformed the benchmark buy-and-hold strategy (red line) during most of 2020 for trading the Tesla stock. Your active trading effort would have paid off.
+
+25) Review return results of a backtest
+
+You implemented a trend-following strategy using a simple moving average indicator. You backtested it using the Amazon stock historical price data from 2019 to 2020, and the result plot is shown on the right. Now you would like to review the return statistics from the backtest result.
+The bt backtest result has been provided in bt_result and is ready to use.
+
+# Obtain all backtest stats
+resInfo = bt_result.stats
+# Get daily, monthly, and yearly returns
+print('Daily return: %.4f'% resInfo.loc['daily_mean'])
+print('Monthly return: %.4f'% resInfo.loc['monthly_mean'])
+print('Yearly return: %.4f'% resInfo.loc['yearly_mean'])
+# Get the compound annual growth rate
+print('Compound annual growth rate: %.4f'% resInfo.loc['cagr'])
+=> Output: <script.py> output:
+    Daily return: 0.2826
+    Monthly return: 0.3270
+    Yearly return: 0.3324
+    Compound annual growth rate: 0.2812
+
+26) Plot return histograms of a backtest
+
+Continue with the same strategy backtest result from the previous exercise. Now you would like to plot return histograms to further examine the characteristics of the return distribution.
+The bt backtest result has been provided in bt_result and is ready to use. In addition, matplotlib.pyplot has been imported as plt.
+
+# Plot the daily return histogram
+bt_result.plot_histograms(bins=50)
+plt.show()
+# Plot the weekly return histogram
+bt_result.plot_histograms(bins=50, freq='w')
+plt.show()
+=> Note most of the daily or weekly returns are small (between +/-2%). Occasionally there are a few big positive (> 15%) or negative (< -10%) returns. Also, the return distributions are not symmetric.
+
+27) Compare return results of multiple strategies
+
+With the same strategy using a simple moving average indicator, you also conducted a strategy optimization by varying the lookback periods of the moving average indicator from 30 to 50 days. You backtested both strategies using the Google stock historical price data from 2017 to 2020. Now you are about to compare the backtest results.
+The bt backtest results of both strategies have been provided in bt_results and are ready to use.
+
+# Plot the backtest result
+bt_results.plot(title='Backtest result')
+plt.show()
+# Get the lookback returns
+lookback_returns = bt_results.display_lookback_returns()
+print(lookback_returns)
+=> Output: <script.py> output:
+          Strategy1 Strategy2
+    mtd      -0.03%     3.30%
+    3m       -2.15%     0.68%
+    6m        8.32%     8.11%
+    ytd      10.47%    28.07%
+    1y       17.10%    35.19%
+    3y        7.68%    11.39%
+    5y         nan%      nan%
+    10y        nan%      nan%
+    incep     7.68%    11.39%
+Although both strategies have similar short-term (6-month) return results, looking back into longer terms, Strategy 2 is clearly outperforming. Note since the backtest was performed using 3-year historical data, the 5-year and 10-year lookback returns are not available, so they defaulted to the same result as the 3-year return result.
+
+28) Review performance with drawdowns
+
+You implemented a signal-based strategy using two moving average indicators. You performed a backtest using the Tesla stock historical price data from 2019 to 2020, and the result plot is shown on the right. Now you would like to evaluate the strategy performance, specifically the downside volatility, by reviewing the drawdown result from the backtest.
+The bt backtest result has been provided in bt_result and is ready to use.
+
+# Obtain all backtest stats
+resInfo = bt_result.stats
+# Get the average drawdown
+avg_drawdown = resInfo.loc['avg_drawdown']
+print('Average drawdown: %.2f'% avg_drawdown)
+# Get the average drawdown days
+avg_drawdown_days = resInfo.loc['avg_drawdown_days']
+print('Average drawdown days: %.0f'% avg_drawdown_days)
+=> Output: <script.py> output:
+    Average drawdown: -0.11
+    Average drawdown days: 22
+The results suggest your trading account would have an 11% drawdown on average, and each drawdown period would last about 22 days. Although the strategy looks profitable for trading the Tesla stock, you want to make sure you can stomach the more than 10% drawdown from time to time.
+
+29) Calculate and review the Calmar ratio
+
+Continue with the same strategy. From the previous exercise, you know that the average drawdown is approximately 11%, and that the average period is 22 days. Now you would like to get a better understanding of the risk-return profile of it. You plan to review the CAGR, max drawdown, then use them to calculate the Calmar ratio and assess the result.
+The resInfo DataFrame that contains all backtest statistics has been provided for you.
+
+# Get the CAGR
+cagr = resInfo.loc['cagr']
+print('Compound annual growth rate: %.4f'% cagr)
+# Get the max drawdown
+max_drawdown = resInfo.loc['max_drawdown']
+print('Maximum drawdown: %.2f'% max_drawdown)
+# Calculate Calmar ratio manually
+calmar_calc = cagr / max_drawdown * (-1)
+print('Calmar Ratio calculated: %.2f'% calmar_calc)
+# Get the Calmar ratio
+calmar = resInfo.loc['calmar']
+print('Calmar Ratio: %.2f'% calmar)
+=> Output: <script.py> output:
+    Compound annual growth rate: 1.7651
+    Maximum drawdown: -0.59
+    Calmar Ratio calculated: 3.00
+    Calmar Ratio: 3.00
+A Calmar ratio of 3 is pretty good. Although the max drawdown is a hefty 59%, the CAGR is an impressive 176.5%. No risk, no reward. The strategy's backtest performance is satisfactory from a risk-adjusted perspective.
+
+30) Evaluate strategy performance by Sharpe ratio
+
+The Sharpe ratio is a risk-adjusted return measure developed by Nobel laureate William F. Sharpe. It is calculated as the average return over the risk-free rate divided by the standard deviation of the excess return.
+You will calculate and review the Sharpe ratio of a signal-based strategy. The strategy generates long or short signals using two moving average indicators, and has been backtested using the 3-year historical price data of the Google stock. The backtest statistics has been provided in resInfo.
+
+# Get annual return and volatility
+yearly_return = resInfo.loc['yearly_mean']
+print('Annual return: %.2f'% yearly_return)
+yearly_vol = resInfo.loc['yearly_vol']
+print('Annual volatility: %.2f'% yearly_vol)
+# Calculate the Sharpe ratio manually
+sharpe_ratio = yearly_return / yearly_vol
+print('Sharpe ratio calculated: %.2f'% sharpe_ratio)
+# Print the Sharpe ratio
+print('Sharpe ratio %.2f'% resInfo.loc['yearly_sharpe'])
+=> Output: <script.py> output:
+    Annual return: 0.12
+    Annual volatility: 0.14
+    Sharpe ratio calculated: 0.90
+    Sharpe ratio 0.90
+ Your calculation matches the one obtained from the backtest result. The Sharpe ratio is less than 1, which indicates less than one unit of return is achieved per unit of risk taken.
+
+31) Evaluate strategy performance by Sortino ratio
+
+The Sortino ratio is the excess return over the risk-free rate divided by the downside deviation, and thus it measures the excess return to "bad" volatility. In other words, it doesn't penalize the volatility of positive excess returns.
+You will use the Sortino ratio to evaluate the same strategy from the previous exercise and see if it tells a different story. As a reminder, the strategy is a signal-based strategy using two moving average indicators. The strategy backtest statistic using Google 3-year historical stock price data has been loaded in resInfo. The Sharpe ratios have been printed for you and are visible in the console.
+
+# Print annual Sortino ratio
+yearly_sortino = resInfo.loc['yearly_sortino']
+print('Annual Sortino ratio: %.2f'% yearly_sortino)
+# Print monthly Sortino ratio
+monthly_sortino = resInfo.loc['monthly_sortino']
+print('Monthly Sortino ratio %.2f'% monthly_sortino)
+=> Output: <script.py> output:
+    Annual Sortino ratio: 6.31
+    Monthly Sortino ratio 1.11
+Compared to the Sharpe ratio, the Sortino ratio painted a different picture of the strategy's performance. It suggests that the strategy has more excess return per unit of downside risk, hence its performance is excellent.
+
+CHAPTER III: 
 
