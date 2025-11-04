@@ -298,7 +298,7 @@ plt.show()
 
 15) Simulate AR(1) Time Series
 
-You will simulate and plot a few AR(1) time series, each with a different parameter, phi , using the arima_process module in statsmodels. In this exercise, you will look at an AR(1) model with a large positive phi and a large negative phi, but feel free to play around with your own parameters.
+You will simulate and plot a few AR(1) time series, each with a different parameter, phi, using the arima_process module in statsmodels. In this exercise, you will look at an AR(1) model with a large positive phi and a large negative phi, but feel free to play around with your own parameters.
 There are a few conventions when using the arima_process module that require some explanation. First, these routines were made very generally to handle both AR and MA models. We will cover MA models next, so for now, just ignore the MA part. Second, when inputting the coefficients, you must include the zero-lag coefficient of 1, and the sign of the other coefficients is opposite what we have been using (to be consistent with the time series literature in signal processing). For example, for an AR(1) process with phi = 0.9, the array representing the AR parameters would be ar = np.array([1, -0.9])
 
 # import the module for simulating data
@@ -319,5 +319,1082 @@ simulated_data_2 = AR_object2.generate_sample(nsample=1000)
 plt.plot(simulated_data_2)
 plt.show()
 
-16)
+16) Compare the ACF for Several AR Time Series
+
+The autocorrelation function decays exponentially for an AR time series at a rate of the AR parameter. For example, if the AR parameter, phi = + 0.9, the first-lag autocorrelation will be 0.9, the second-lag will be 0.9 ^ 2 = 0.81, the third-lag will be 0.9 ^ 3 = 0.729, etc. A smaller AR parameter will have a steeper decay, and for a negative AR parameter, say -0.9, the decay will flip signs, so the first-lag autocorrelation will be -0.9, the second-lag will be 0.81, the third-lag will be -0.729, etc.
+The object simulated_data_1 is the simulated time series with an AR parameter of +0.9, simulated_data_2 is for an AR parameter of -0.9, and simulated_data_3 is for an AR parameter of 0.3
+
+# Import the plot_acf module from statsmodels
+from statsmodels.graphics.tsaplots import plot_acf
+# Plot 1: AR parameter = +0.9
+plot_acf(simulated_data_1, alpha=1, lags=20)
+plt.show()
+# Plot 2: AR parameter = -0.9
+plot_acf(simulated_data_2, alpha=1, lags=20)
+plt.show()
+# Plot 3: AR parameter = +0.3
+plot_acf(simulated_data_3, alpha=1, lags=20)
+plt.show()
+
+17) Estimating an AR Model
+
+You will estimate the AR(1) parameter, phi, of one of the simulated series that you generated in the earlier exercise. Since the parameters are known for a simulated series, it is a good way to understand the estimation routines before applying it to real data.
+For simulated_data_1 with a true phi of 0.9, you will print out the estimate of phi. In addition, you will also print out the entire output that is produced when you fit a time series, so you can get an idea of what other tests and summary statistics are available in statsmodels.
+
+# Import the ARIMA module from statsmodels
+from statsmodels.tsa.arima.model import ARIMA
+# Fit an AR(1) model to the first simulated data
+mod = ARIMA(simulated_data_1, order=(1,0,0))
+res = mod.fit()
+# Print out summary information on the fit
+print(res.summary())
+# Print out the estimate for phi
+print("When the true phi=0.9, the estimate of phi is:")
+print(res.params[1])
+=> Output: <script.py> output:
+                                   SARIMAX Results                                
+    ==============================================================================
+    Dep. Variable:                      y   No. Observations:                 1000
+    Model:                 ARIMA(1, 0, 0)   Log Likelihood               -1420.051
+    Date:                Tue, 04 Nov 2025   AIC                           2846.103
+    Time:                        01:20:01   BIC                           2860.826
+    Sample:                             0   HQIC                          2851.699
+                                   - 1000                                         
+    Covariance Type:                  opg                                         
+    ==============================================================================
+                     coef    std err          z      P>|z|      [0.025      0.975]
+    ------------------------------------------------------------------------------
+    const         -0.3986      0.320     -1.247      0.212      -1.025       0.228
+    ar.L1          0.9011      0.013     67.552      0.000       0.875       0.927
+    sigma2         1.0005      0.045     22.239      0.000       0.912       1.089
+    ===================================================================================
+    Ljung-Box (L1) (Q):                   0.58   Jarque-Bera (JB):                 0.17
+    Prob(Q):                              0.45   Prob(JB):                         0.92
+    Heteroskedasticity (H):               1.00   Skew:                            -0.03
+    Prob(H) (two-sided):                  0.99   Kurtosis:                         2.98
+    ===================================================================================
+    
+    Warnings:
+    [1] Covariance matrix calculated using the outer product of gradients (complex-step).
+    When the true phi=0.9, the estimate of phi is:
+    0.9011059395968692
+
+18) Forecasting with an AR Model
+
+In addition to estimating the parameters of a model that you did in the last exercise, you can also do forecasting, both in-sample and out-of-sample using statsmodels. The in-sample is a forecast of the next data point using the data up to that point, and the out-of-sample forecasts any number of data points in the future. You can plot the forecasted data using the function plot_predict(). You supply the starting point for forecasting and the ending point, which can be any number of data points after the data set ends.
+For the simulated data in DataFrame simulated_data_1, with phi = 0.9, you will plot out-of-sample forecasts and confidence intervals around those forecasts.
+
+# Import the ARIMA and plot_predict from statsmodels
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.graphics.tsaplots import plot_predict
+# Forecast the first AR(1) model
+mod = ARIMA(simulated_data_1, order=(1,0,0))
+res = mod.fit()
+# Plot the data and the forecast
+fig, ax = plt.subplots()
+simulated_data_1.loc[950:].plot(ax=ax)
+plot_predict(res, start=1000, end=1010, ax=ax)
+plt.show()
+Notice how, when phi is high like here, the forecast gradually moves to the long term mean of zero, but if phi were low, it would move much quicker to the long term mean.
+
+19) Let's Forecast Interest Rates
+
+You will now use the forecasting techniques you learned in the last exercise and apply it to real data rather than simulated data. You will revisit a dataset from the first chapter: the annual data of 10-year interest rates going back 56 years, which is in a Series called interest_rate_data. Being able to forecast interest rates is of enormous importance, not only for bond investors but also for individuals like new homeowners who must decide between fixed and floating rate mortgages.
+You saw in the first chapter that there is some mean reversion in interest rates over long horizons. In other words, when interest rates are high, they tend to drop and when they are low, they tend to rise over time. Currently they are below long-term rates, so they are expected to rise, but an AR model attempts to quantify how much they are expected to rise.
+The class ARIMA and the function plot_predict have already been imported.
+
+# Forecast interst rates using an AR(1) model
+mod = ARIMA(interest_rate_data, order=(1,0,0))
+res = mod.fit()
+# Plot the data and the forecast
+fig, ax = plt.subplots()
+interest_rate_data.plot(ax=ax)
+plot_predict(res, start=0, end='2027', alpha=None, ax=ax)
+plt.show()
+=> According to an AR(1) model, 10-year interest rates are forecasted to rise from 2.16%, towards the end of 2017 to 3.35% in five years.
+
+20) Compare AR Model with Random Walk
+
+Sometimes it is difficult to distinguish between a time series that is slightly mean reverting and a time series that does not mean revert at all, like a random walk. You will compare the ACF for the slightly mean-reverting interest rate series of the last exercise with a simulated random walk with the same number of observations.
+You should notice when plotting the autocorrelation of these two series side-by-side that they look very similar.
+
+# Import the plot_acf module from statsmodels
+from statsmodels.graphics.tsaplots import plot_acf
+# Plot the interest rate series and the simulated random walk series side-by-side
+fig, axes = plt.subplots(2,1)
+# Plot the autocorrelation of the interest rate series in the top plot
+fig = plot_acf(interest_rate_data, alpha=1, lags=12, ax=axes[0])
+# Plot the autocorrelation of the simulated random walk series in the bottom plot
+fig = plot_acf(simulated_data, alpha=1, lags=12, ax=axes[1])
+# Label axes
+axes[0].set_title("Interest Rate Data")
+axes[1].set_title("Simulated Random Walk Data")
+plt.show()
+
+21) Estimate Order of Model: PACF
+
+One useful tool to identify the order of an AR model is to look at the Partial Autocorrelation Function (PACF). In this exercise, you will simulate two time series, an AR(1) and an AR(2), and calculate the sample PACF for each. You will notice that for an AR(1), the PACF should have a significant lag-1 value, and roughly zeros after that. And for an AR(2), the sample PACF should have significant lag-1 and lag-2 values, and zeros after that.
+Just like you used the plot_acf function in earlier exercises, here you will use a function called plot_pacf in the statsmodels module.
+
+# Import the modules for simulating data and for plotting the PACF
+from statsmodels.tsa.arima_process import ArmaProcess
+from statsmodels.graphics.tsaplots import plot_pacf
+# Simulate AR(1) with phi=+0.6
+ma = np.array([1])
+ar = np.array([1, -0.6])
+AR_object = ArmaProcess(ar, ma)
+simulated_data_1 = AR_object.generate_sample(nsample=5000)
+# Plot PACF for AR(1)
+plot_pacf(simulated_data_1, lags=20)
+plt.show()
+# Simulate AR(2) with phi1=+0.6, phi2=+0.3
+ma = np.array([1])
+ar = np.array([1, -0.6, -0.3])
+AR_object = ArmaProcess(ar, ma)
+simulated_data_2 = AR_object.generate_sample(nsample=5000)
+# Plot PACF for AR(2)
+plot_pacf(simulated_data_2, lags=20)
+plt.show()
+
+22) Estimate Order of Model: Information Criteria
+
+Another tool to identify the order of a model is to look at the Akaike Information Criterion (AIC) and the Bayesian Information Criterion (BIC). These measures compute the goodness of fit with the estimated parameters, but apply a penalty function on the number of parameters in the model. You will take the AR(2) simulated data from the last exercise, saved as simulated_data_2, and compute the BIC as you vary the order, p, in an AR(p) from 0 to 6.
+
+# Import the module for estimating an ARIMA model
+from statsmodels.tsa.arima.model import ARIMA
+# Fit the data to an AR(p) for p = 0,...,6 , and save the BIC
+BIC = np.zeros(7)
+for p in range(7):
+    mod = ARIMA(simulated_data_2, order=(p,0,0))
+    res = mod.fit()
+# Save BIC for AR(p)    
+    BIC[p] = res.bic
+# Plot the BIC as a function of p
+plt.plot(range(1,7), BIC[1:7], marker='o')
+plt.xlabel('Order of AR Model')
+plt.ylabel('Bayesian Information Criterion')
+plt.show()
+=> For an AR(2), the BIC achieves its minimum at p=2, which is what we expect.
+
+23) Simulate MA(1) Time Series
+
+You will simulate and plot a few MA(1) time series, each with a different parameter, theta, using the arima_process module in statsmodels, just as you did in the last chapter for AR(1) models. You will look at an MA(1) model with a large positive phi and a large negative phi.
+As in the last chapter, when inputting the coefficients, you must include the zero-lag coefficient of 1, but unlike the last chapter on AR models, the sign of the MA coefficients is what we would expect. For example, for an MA(1) process with theta = -0.9, the array representing the MA parameters would be ma = np.array([1, -0.9])
+
+# import the module for simulating data
+from statsmodels.tsa.arima_process import ArmaProcess
+# Plot 1: MA parameter = -0.9
+plt.subplot(2,1,1)
+ar1 = np.array([1])
+ma1 = np.array([1, -0.9])
+MA_object1 = ArmaProcess(ar1, ma1)
+simulated_data_1 = MA_object1.generate_sample(nsample=1000)
+plt.plot(simulated_data_1)
+# Plot 2: MA parameter = +0.9
+plt.subplot(2,1,2)
+ar2 = np.array([1])
+ma2 = np.array([1, 0.9])
+MA_object2 = ArmaProcess(ar2, ma2)
+simulated_data_2 = MA_object2.generate_sample(nsample=1000)
+plt.plot(simulated_data_2)
+plt.show()
+
+24) Compute the ACF for Several MA Time Series
+
+Unlike an AR(1), an MA(1) model has no autocorrelation beyond lag 1, an MA(2) model has no autocorrelation beyond lag 2, etc. The lag-1 autocorrelation for an MA(1) model is not theta, but rather theta / (1 + theta^2). For example, if the MA parameter, theta, is = +0.9, the first-lag autocorrelation will be 0.9 / (1 + 0.81) = 0.497, and the autocorrelation at all other lags will be zero. If the MA parameter, , is -0.9, the first-lag autocorrelation will be -0.9 / (1 + 0.81) = -0.497.
+You will verify these autocorrelation functions for the three time series you generated in the last exercise.
+
+# Import the plot_acf module from statsmodels
+from statsmodels.graphics.tsaplots import plot_acf
+# Plot 1: MA parameter = -0.9
+plot_acf(simulated_data_1, lags=20)
+plt.show()
+# Plot 2: MA parameter = 0.9
+plot_acf(simulated_data_2, lags=20)
+plt.show()
+# Plot 3: MA parameter = -0.3
+plot_acf(simulated_data_3, lags=20)
+plt.show()
+
+25) Estimating an MA Model
+
+You will estimate the MA(1) parameter, theta, of one of the simulated series that you generated in the earlier exercise. Since the parameters are known for a simulated series, it is a good way to understand the estimation routines before applying it to real data.
+For simulated_data_1 with a true theta of -0.9, you will print out the estimate of theta. In addition, you will also print out the entire output that is produced when you fit a time series, so you can get an idea of what other tests and summary statistics are available in statsmodels.
+
+# Import the ARIMA module from statsmodels
+from statsmodels.tsa.arima.model import ARIMA
+# Fit an MA(1) model to the first simulated data
+mod = ARIMA(simulated_data_1, order=(0,0,1))
+res = mod.fit()
+# Print out summary information on the fit
+print(res.summary())
+# Print out the estimate for the constant and for theta
+print("When the true theta=-0.9, the estimate of theta is:")
+print(res.params[1])
+=> Output: <script.py> output:
+                                   SARIMAX Results                                
+    ==============================================================================
+    Dep. Variable:                      y   No. Observations:                 1000
+    Model:                 ARIMA(0, 0, 1)   Log Likelihood               -1420.500
+    Date:                Tue, 04 Nov 2025   AIC                           2846.999
+    Time:                        02:34:31   BIC                           2861.723
+    Sample:                             0   HQIC                          2852.595
+                                   - 1000                                         
+    Covariance Type:                  opg                                         
+    ==============================================================================
+                     coef    std err          z      P>|z|      [0.025      0.975]
+    ------------------------------------------------------------------------------
+    const         -0.0038      0.003     -1.162      0.245      -0.010       0.003
+    ma.L1         -0.8967      0.014    -65.162      0.000      -0.924      -0.870
+    sigma2         1.0015      0.045     22.223      0.000       0.913       1.090
+    ===================================================================================
+    Ljung-Box (L1) (Q):                   0.46   Jarque-Bera (JB):                 0.14
+    Prob(Q):                              0.50   Prob(JB):                         0.93
+    Heteroskedasticity (H):               1.00   Skew:                            -0.03
+    Prob(H) (two-sided):                  0.99   Kurtosis:                         2.98
+    ===================================================================================
+    
+    Warnings:
+    [1] Covariance matrix calculated using the outer product of gradients (complex-step).
+    When the true theta=-0.9, the estimate of theta is:
+    -0.8967129858089047
+
+26) Forecasting with MA Model
+
+As you did with AR models, you will use MA models to forecast in-sample and out-of-sample data using the plot_predict() function in statsmodels.
+For the simulated series simulated_data_1 with theta = -0.9, you will plot in-sample and out-of-sample forecasts. One big difference you will see between out-of-sample forecasts with an MA(1) model and an AR(1) model is that the MA(1) forecasts more than one period in the future are simply the mean of the sample.
+
+# Import the ARIMA and plot_predict from statsmodels
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.graphics.tsaplots import plot_predict
+# Forecast the first MA(1) model
+mod = ARIMA(simulated_data_1, order=(0,0,1))
+res = mod.fit()
+# Plot the data and the forecast
+fig, ax = plt.subplots()
+simulated_data_1.loc[950:].plot(ax=ax)
+plot_predict(res, start=1000, end=1010, ax=ax)
+plt.show()
+
+27) High Frequency Stock Prices
+
+Higher frequency stock data is well modeled by an MA(1) process, so it's a nice application of the models in this chapter.
+The DataFrame intraday contains one day's prices (on September 1, 2017) for Sprint stock (ticker symbol "S") sampled at a frequency of one minute. The stock market is open for 6.5 hours (390 minutes), from 9:30am to 4:00pm.
+Before you can analyze the time series data, you will have to clean it up a little, which you will do in this and the next two exercises. When you look at the first few rows, you'll notice several things. First, there are no column headers.The data is not time stamped from 9:30 to 4:00, but rather goes from 0 to 390. And you will notice that the first date is the odd-looking "a1504272600". The number after the "a" is Unix time which is the number of seconds since January 1, 1970. This is how this dataset separates each day of intraday data.
+If you look at the data types, you'll notice that the DATE column is an object, which here means a string. You will need to change that to numeric before you can clean up some missing data.
+
+# import datetime module
+import datetime
+# Change the first date to zero
+intraday.iloc[0,0] = 0
+# Change the column headers to 'DATE' and 'CLOSE'
+intraday.columns = ['DATE','CLOSE']
+# Examine the data types for each column
+print(intraday.dtypes)
+# Convert DATE column to numeric
+intraday['DATE'] = pd.to_numeric(intraday['DATE'])
+# Make the `DATE` column the new index
+intraday = intraday.set_index('DATE')
+
+28) More Data Cleaning: Missing Data
+
+When you print out the length of the DataFrame intraday, you will notice that a few rows are missing. There will be missing data if there are no trades in a particular one-minute interval. One way to see which rows are missing is to take the difference of two sets: the full set of every minute and the set of the DataFrame index which contains missing rows. After filling in the missing rows, you can convert the index to time of day and then plot the data.
+Stocks trade at discrete one-cent increments (although a small percentage of trades occur in between the one-cent increments) rather than at continuous prices, and when you plot the data you should observe that there are long periods when the stock bounces back and forth over a one cent range. This is sometimes referred to as "bid/ask bounce".
+
+# Notice that some rows are missing
+print("If there were no missing rows, there would be 391 rows of minute data")
+print("The actual length of the DataFrame is:", len(intraday))
+# Everything
+set_everything = set(range(391))
+# The intraday index as a set
+set_intraday = set(intraday.index)
+# Calculate the difference
+set_missing = set_everything - set_intraday
+# Print the difference
+print("Missing rows: ", set_missing)
+
+# Fill in the missing rows
+intraday = intraday.reindex(range(391), method='ffill')
+# Change the index to the intraday times
+intraday.index = pd.date_range(start='2017-09-01 9:30', end='2017-09-01 16:00', freq='1min')
+# Plot the intraday time series
+intraday.plot(grid=True)
+plt.show()
+=> Output: <script.py> output:
+    If there were no missing rows, there would be 391 rows of minute data
+    The actual length of the DataFrame is: 389
+    Missing rows:  {182, 14}
+
+29) Applying an MA Model
+
+The bouncing of the stock price between bid and ask induces a negative first order autocorrelation, but no autocorrelations at lags higher than 1. You get the same ACF pattern with an MA(1) model. Therefore, you will fit an MA(1) model to the intraday stock data from the last exercise.
+The first step is to compute minute-by-minute returns from the prices in intraday, and plot the autocorrelation function. You should observe that the ACF looks like that for an MA(1) process. Then, fit the data to an MA(1), the same way you did for simulated data.
+
+# Import plot_acf and ARIMA modules from statsmodels
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.tsa.arima.model import ARIMA
+# Compute returns from prices
+returns = intraday.pct_change()
+returns = returns.dropna()
+# Plot ACF of returns with lags up to 60 minutes
+plot_acf(returns, lags=60)
+plt.show()
+# Fit the data to an MA(1) model
+mod = ARIMA(returns, order=(0,0,1))
+res = mod.fit()
+print(res.params[1])
+
+30) Equivalence of AR(1) and MA(infinity)
+
+To better understand the relationship between MA models and AR models, you will demonstrate that an AR(1) model is equivalent to an MA(infinity) model with the appropriate parameters.
+You will simulate an MA model with parameters 0.8, 0.8^2, 0.8^3, ... for a large number (30) lags and show that it has the same Autocorrelation Function as an AR(1) model with phi = 0.8.
+Note, to raise a number x to the power of an exponent n, use the format x**n.
+
+# import the modules for simulating data and plotting the ACF
+from statsmodels.tsa.arima_process import ArmaProcess
+from statsmodels.graphics.tsaplots import plot_acf
+# Build a list MA parameters
+ma = [.8**i for i in range(30)]
+# Simulate the MA(30) model
+ar = np.array([1])
+AR_object = ArmaProcess(ar, ma)
+simulated_data = AR_object.generate_sample(nsample=5000)
+# Plot the ACF
+plot_acf(simulated_data, lags=30)
+plt.show()
+=> Notice that the ACF looks the same as an AR(1) with parameter 0.8.
+
+31) Cointegration Models
+
+## A Dog on a Leash? (Part 1)
+
+The Heating Oil and Natural Gas prices are pre-loaded in DataFrames HO and NG. First, plot both price series, which look like random walks. Then plot the difference between the two series, which should look more like a mean reverting series (to put the two series in the same units, we multiply the heating oil prices, in $/gallon, by 7.25, which converts it to $/millionBTU, which is the same units as Natural Gas).
+The data for continuous futures (each contract has to be spliced together in a continuous series as contracts expire) was obtained from Quandl.
+
+# Plot the prices separately
+plt.subplot(2,1,1)
+plt.plot(7.25*HO, label='Heating Oil')
+plt.plot(NG, label='Natural Gas')
+plt.legend(loc='best', fontsize='small')
+# Plot the spread
+plt.subplot(2,1,2)
+plt.plot(7.25 *HO-NG, label='Spread')
+plt.legend(loc='best', fontsize='small')
+plt.axhline(y=0, linestyle='--', color='k')
+plt.show()
+Notice from the plot that when Heating Oil briefly dipped below Natural Gas, it quickly reverted back up.
+
+## A Dog on a Leash? (Part 2)
+
+To verify that Heating Oil and Natural Gas prices are cointegrated, First apply the Dickey-Fuller test separately to show they are random walks. Then apply the test to the difference, which should strongly reject the random walk hypothesis. The Heating Oil and Natural Gas prices are pre-loaded in DataFrames HO and NG.
+
+# Import the adfuller module from statsmodels
+from statsmodels.tsa.stattools import adfuller
+# Compute the ADF for HO and NG
+result_HO = adfuller(HO['Close'])
+print("The p-value for the ADF test on HO is ", result_HO[1])
+result_NG = adfuller(NG['Close'])
+print("The p-value for the ADF test on NG is ", result_NG[1])
+# Compute the ADF of the spread
+result_spread = adfuller(7.25 * HO['Close'] - NG['Close'])
+print("The p-value for the ADF test on the spread is ", result_spread[1])
+=> Output: <script.py> output:
+    The p-value for the ADF test on HO is  0.9567108785017872
+    The p-value for the ADF test on NG is  0.9008747444676731
+    The p-value for the ADF test on the spread is  7.019439302142287e-05
+As we expected, we cannot reject the hypothesis that the individual futures are random walks, but we can reject that the spread is a random walk.
+
+32) Are Bitcoin and Ethereum Cointegrated?
+
+Cointegration involves two steps: regressing one time series on the other to get the cointegration vector, and then perform an ADF test on the residuals of the regression. In the last example, there was no need to perform the first step since we implicitly assumed the cointegration vector was (1, -1). In other words, we took the difference between the two series (after doing a units conversion). Here, you will do both steps.
+You will regress the value of one cryptocurrency, bitcoin (BTC), on another cryptocurrency, ethereum (ETH). If we call the regression coefficient b, then the cointegration vector is simply (1, -b). Then perform the ADF test on BTC -b ETH. Bitcoin and Ethereum prices are pre-loaded in DataFrames BTC and ETH.
+
+# Import the statsmodels module for regression and the adfuller function
+import statsmodels.api as sm
+from statsmodels.tsa.stattools import adfuller
+# Regress BTC on ETH
+ETH = sm.add_constant(ETH)
+result = sm.OLS(BTC,ETH).fit()
+# Compute ADF
+b = result.params[1]
+adf_stats = adfuller(BTC['Price'] - b*ETH['Price'])
+print("The p-value for the ADF test is ", adf_stats[1])
+=> Output: <script.py> output:
+    The p-value for the ADF test is  0.023369002323472707
+
+33) Case Study: Climate Change
+
+a) Is Temperature a Random Walk (with Drift)?
+
+An ARMA model is a simplistic approach to forecasting climate changes, but it illustrates many of the topics covered in this class. The DataFrame temp_NY contains the average annual temperature in Central Park, NY from 1870-2016 (the data was downloaded from the NOAA here). Plot the data and test whether it follows a random walk (with drift).
+
+# Import the adfuller function from the statsmodels module
+from statsmodels.tsa.stattools import adfuller
+# Convert the index to a datetime object
+temp_NY.index = pd.to_datetime(temp_NY.index, format='%Y')
+# Plot average temperatures
+temp_NY.plot()
+plt.show()
+# Compute and print ADF p-value
+result = adfuller(temp_NY['TAVG'])
+print("The p-value for the ADF test is ", result[1])
+
+b) Getting "Warmed" Up: Look at Autocorrelations
+
+Since the temperature series, temp_NY, is a random walk with drift, take first differences to make it stationary. Then compute the sample ACF and PACF. This will provide some guidance on the order of the model.
+
+# Import the modules for plotting the sample ACF and PACF
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+# Take first difference of the temperature Series
+chg_temp = temp_NY.diff()
+chg_temp = chg_temp.dropna()
+# Plot the ACF and PACF on the same page
+fig, axes = plt.subplots(2,1)
+# Plot the ACF
+plot_acf(chg_temp, lags=20, ax=axes[0])
+# Plot the PACF
+plot_pacf(chg_temp, lags=20, ax=axes[1])
+plt.show()
+
+c) Which ARMA Model is Best?
+
+Recall that the Akaike Information Criterion (AIC) can be used to compare models with different numbers of parameters. It measures goodness-of-fit, but places a penalty on models with more parameters to discourage overfitting. Lower AIC scores are better. Fit the temperature data to an AR(1), AR(2), and ARMA(1,1) and see which model is the best fit, using the AIC criterion. The AR(2) and ARMA(1,1) models have one more parameter than the AR(1) has.
+The annual change in temperature is in a DataFrame chg_temp.
+
+# Import the module for estimating an ARIMA model
+from statsmodels.tsa.arima.model import ARIMA
+# Fit the data to an AR(1) model and print AIC:
+mod_ar1 = ARIMA(chg_temp, order=(1,0,0))
+res_ar1 = mod_ar1.fit()
+print("The AIC for an AR(1) is: ", res_ar1.aic)
+# Fit the data to an AR(2) model and print AIC:
+mod_ar2 = ARIMA(chg_temp, order=(2,0,0))
+res_ar2 = mod_ar2.fit()
+print("The AIC for an AR(2) is: ", res_ar2.aic)
+# Fit the data to an ARMA(1,1) model and print AIC:
+mod_arma11 = ARIMA(chg_temp, order=(1,0,1))
+res_arma11 = mod_arma11.fit()
+print("The AIC for an ARMA(1,1) is: ", res_arma11.aic)
+=> Output: <script.py> output:
+    The AIC for an AR(1) is:  510.53468987331087
+    The AIC for an AR(2) is:  501.9274123409139
+    The AIC for an ARMA(1,1) is:  469.0729190925578
+
+d) Don't Throw Out That Winter Coat Yet
+
+Finally, you will forecast the temperature over the next 30 years using an ARMA(1,1) model, including confidence bands around that estimate. Keep in mind that the estimate of the drift will have a much bigger impact on long range forecasts than the ARMA parameters.
+Earlier, you determined that the temperature data follows a random walk and you looked at first differencing the data. In this exercise, you will use the ARIMA module on the temperature data (before differencing), which is identical to using the ARMA module on changes in temperature, followed by taking cumulative sums of these changes to get the temperature forecast.
+Because temperatures are trending up over time, you will also need to add a trend component when you define the ARIMA model. In the exercise, you'll use a linear trend with time by setting the argument trend='t'. You can also try other trend models to see how the forecasts change. For example, for a quadratic trend a + bt + c* t^2, set trend=[0,1,1], to include both a linear term, bt, and quadratic term, c* t^2, in the model.
+The data is preloaded in a DataFrame called temp_NY.
+
+# Import the ARIMA module from statsmodels
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.graphics.tsaplots import plot_predict
+# Forecast temperatures using an ARIMA(1,1,1) model
+mod = ARIMA(temp_NY, trend='t', order=(1,1,1))
+res = mod.fit()
+# Plot the original series and the forecasted series
+fig, ax = plt.subplots()
+temp_NY.plot(ax=ax)
+plot_predict(res, start='1872', end='2046', ax=ax)
+plt.show()
+=> According to the model, the temperature is expected to be about 0.6 degrees higher in 30 years (almost entirely due to the trend), but the 95% confidence interval around that is over 5 degrees.
+
+35) Plot time series data
+
+# Import pandas
+import pandas as pd
+# Read in the file content in a DataFrame called discoveries
+discoveries = pd.read_csv(url_discoveries)
+# Display the first five lines of the DataFrame
+print(discoveries.head(5))
+# Convert the date column to a datestamp type
+discoveries['date'] = pd.to_datetime(discoveries['date'])
+# Set the date column as the index of your DataFrame discoveries
+discoveries = discoveries.set_index('date')
+# Plot the time series in your DataFrame
+ax = discoveries.plot(color='blue')
+# Specify the x-axis label in your plot
+ax.set_xlabel('Date')
+# Specify the y-axis label in your plot
+ax.set_ylabel('Number of great discoveries')
+# Show plot
+plt.show()
+
+36) Specify plot styles
+
+# Import the matplotlib.pyplot sub-module
+import matplotlib.pyplot as plt
+# Use the fivethirtyeight style
+plt.style.use('fivethirtyeight')
+# Plot the time series
+ax1 = discoveries.plot()
+ax1.set_title('FiveThirtyEight Style')
+plt.show()
+
+# Use the ggplot style
+plt.style.use('ggplot')
+ax2 = discoveries.plot()
+# Set the title
+ax2.set_title('ggplot Style')
+plt.show()
+
+37) Subset time series data
+
+When plotting time series data, you may occasionally want to visualize only a subset of the data. The pandas library provides powerful indexing and subsetting methods that allow you to extract specific portions of a DataFrame. For example, you can subset all the data between 1950 and 1960 in the discoveries DataFrame by specifying the following date range:
+subset_data = discoveries['1950-01-01':'1960-01-01']
+Note: Subsetting your data this way is only possible if the index of your DataFrame contains dates of the datetime type. Failing that, the pandas library will return an error message.
+
+# Select the subset of data between 1945 and 1950
+discoveries_subset_1 = discoveries['1945-01-01':'1950-01-01']
+# Plot the time series in your DataFrame as a blue area chart
+ax = discoveries_subset_1.plot(color='blue', fontsize=15)
+# Show plot
+plt.show()
+
+# Select the subset of data between 1939 and 1958
+discoveries_subset_2 = discoveries['1939-01-01':'1958-01-01']
+# Plot the time series in your DataFrame as a blue area chart
+ax = discoveries_subset_2.plot(color='blue', fontsize=15)
+# Show plot
+plt.show()
+
+38) Add vertical and horizontal markers
+
+Additional annotations can help further emphasize specific observations or events. Here, you will learn how to highlight significant events by adding markers at specific timestamps of your time series plot. The matplotlib library makes it possible to draw vertical and horizontal lines to identify particular dates.
+Recall that the index of the discoveries DataFrame are of the datetime type, so the x-axis values of a plot will also contain dates, and it is possible to directly input a date when annotating your plots with vertical lines. For example, a vertical line at January 1, 1945 can be added to your plot by using the command:
+ax.axvline('1945-01-01', linestyle='--')
+
+# Plot your the discoveries time series
+ax = discoveries.plot(color='blue', fontsize=6)
+# Add a red vertical line
+ax.axvline('1939-01-01', color='red', linestyle='--')
+# Add a green horizontal line
+ax.axhline(4, color='green', linestyle='--')
+plt.show()
+
+39) Add shaded regions to your plot
+
+When plotting time series data in Python, it is also possible to highlight complete regions of your time series plot. In order to add a shaded region between January 1, 1936 and January 1, 1950, you can use the command:
+ax.axvspan('1936-01-01', '1950-01-01', color='red' , alpha=0.5)
+Here we specified the overall transparency of the region by using the alpha argument (where 0 is completely transparent and 1 is full color).
+
+# Plot your the discoveries time series
+ax = discoveries.plot(color='blue', fontsize=6)
+# Add a vertical red shaded region between the dates of 1900-01-01 and 1915-01-01
+ax.axvspan('1900-01-01', '1915-01-01', color='red', alpha=0.3)
+# Add a horizontal green shaded region between the values of 6 and 8
+ax.axhspan(6, 8, color='green', alpha=0.3)
+plt.show()
+
+40) Display rolling averages
+
+It is also possible to visualize rolling averages of the values in your time series. This is equivalent to "smoothing" your data, and can be particularly useful when your time series contains a lot of noise or outliers. For a given DataFrame df, you can obtain the rolling average of the time series by using the command:
+df_mean = df.rolling(window=12).mean()
+The window parameter should be set according to the granularity of your time series. For example, if your time series contains daily data and you are looking for rolling values over a whole year, you should specify the parameter to window=365. In addition, it is easy to get rolling values for other other metrics, such as the standard deviation (.std()) or variance (.var()).
+
+# Compute the 52 weeks rolling mean of the co2_levels DataFrame
+ma = co2_levels.rolling(window=52).mean()
+# Compute the 52 weeks rolling standard deviation of the co2_levels DataFrame
+mstd = co2_levels.rolling(window=52).std()
+# Add the upper bound column to the ma DataFrame
+ma['upper'] = ma['co2'] + (mstd['co2'] * 2)
+# Add the lower bound column to the ma DataFrame
+ma['lower'] = ma['co2'] - (mstd['co2'] * 2)
+# Plot the content of the ma DataFrame
+ax = ma.plot(linewidth=0.8, fontsize=6)
+# Specify labels, legend, and show the plot
+ax.set_xlabel('Date', fontsize=10)
+ax.set_ylabel('CO2 levels in Mauai Hawaii', fontsize=10)
+ax.set_title('Rolling mean and variance of CO2 levels\nin Mauai Hawaii from 1958 to 2001', fontsize=10)
+plt.show()
+=> Showing the rolling mean and standard deviation of your data allows to get a more compact view of your data.
+
+41) Autocorrelation in time series data
+
+In the field of time series analysis, autocorrelation refers to the correlation of a time series with a lagged version of itself. For example, an autocorrelation of order 3 returns the correlation between a time series and its own values lagged by 3 time points.
+It is common to use the autocorrelation (ACF) plot, also known as self-autocorrelation, to visualize the autocorrelation of a time-series. The plot_acf() function in the statsmodels library can be used to measure and plot the autocorrelation of a time series.
+
+# Import required libraries
+import matplotlib.pyplot as plt
+plt.style.use('fivethirtyeight')
+from statsmodels.graphics import tsaplots
+# Display the autocorrelation plot of your time series
+fig = tsaplots.plot_acf(co2_levels['co2'], lags=24)
+# Show plot
+plt.show()
+=> Autocorrelation plots can be used to quickly discover patterns into your time series
+
+42) Partial autocorrelation in time series data
+
+Like autocorrelation, the partial autocorrelation function (PACF) measures the correlation coefficient between a time-series and lagged versions of itself. However, it extends upon this idea by also removing the effect of previous time points. For example, a partial autocorrelation function of order 3 returns the correlation between our time series (t_1, t_2, t_3, …) and its own values lagged by 3 time points (t_4, t_5, t_6, …), but only after removing all effects attributable to lags 1 and 2.
+The plot_pacf() function in the statsmodels library can be used to measure and plot the partial autocorrelation of a time series.
+
+# Import required libraries
+import matplotlib.pyplot as plt
+plt.style.use('fivethirtyeight')
+from statsmodels.graphics import tsaplots
+# Display the autocorrelation plot of your time series
+fig = tsaplots.plot_pacf(co2_levels['co2'], lags=24)
+# Show plot
+plt.show()
+
+43) Time series decomposition
+
+When visualizing time series data, you should look out for some distinguishable patterns:
+seasonality: does the data display a clear periodic pattern?
+trend: does the data follow a consistent upwards or downward slope?
+noise: are there any outlier points or missing values that are not consistent with the rest of the data?
+You can rely on a method known as time-series decomposition to automatically extract and quantify the structure of time-series data. The statsmodels library provides the seasonal_decompose() function to perform time series decomposition out of the box.
+decomposition = sm.tsa.seasonal_decompose(time_series)
+You can extract a specific component, for example seasonality, by accessing the seasonal attribute of the decomposition object.
+
+# Import statsmodels.api as sm
+import statsmodels.api as sm
+# Perform time series decompositon
+decomposition = sm.tsa.seasonal_decompose(co2_levels)
+# Print the seasonality component
+print(decomposition.seasonal)
+=> Output: <script.py> output:
+    datestamp
+    1958-03-29    1.028
+    1958-04-05    1.235
+    1958-04-12    1.412
+    1958-04-19    1.701
+    1958-04-26    1.951
+                  ...  
+    2001-12-01   -0.525
+    2001-12-08   -0.393
+    2001-12-15   -0.135
+    2001-12-22    0.116
+    2001-12-29    0.285
+    Name: seasonal, Length: 2284, dtype: float64
+Time series decomposition is a powerful method to reveal the structure of your time series.
+
+44) Time series decomposition of the airline dataset
+
+In this exercise, you will apply time series decomposition to the airline dataset, and visualize the trend and seasonal components.
+
+# Import statsmodels.api as sm
+import statsmodels.api as sm
+# Perform time series decompositon
+decomposition = sm.tsa.seasonal_decompose(airline)
+# Extract the trend and seasonal components
+trend = decomposition.trend
+seasonal = decomposition.seasonal
+
+# Print the first 5 rows of airline_decomposed
+print(airline_decomposed.head(5))
+# Plot the values of the airline_decomposed DataFrame
+ax = airline_decomposed.plot(figsize=(12, 6), fontsize=15)
+# Specify axis labels
+ax.set_xlabel('Date', fontsize=15)
+plt.legend(fontsize=15)
+plt.show()
+
+45) Load multiple time series
+
+Whether it is during personal projects or your day-to-day work as a Data Scientist, it is likely that you will encounter situations that require the analysis and visualization of multiple time series at the same time.
+Provided that the data for each time series is stored in distinct columns of a file, the pandas library makes it easy to work with multiple time series. In the following exercises, you will work with a new time series dataset that contains the amount of different types of meat produced in the USA between 1944 and 2012.
+
+# Read in meat DataFrame
+meat = pd.read_csv(url_meat)
+# Review the first five lines of the meat DataFrame
+print(meat.head(5))
+# Convert the date column to a datestamp type
+meat['date'] = pd.to_datetime(meat['date'])
+# Set the date column as the index of your DataFrame meat
+meat = meat.set_index('date')
+# Print the summary statistics of the DataFrame
+print(meat.describe())
+=> Output: <script.py> output:
+             date   beef   veal    pork  lamb_and_mutton  broilers  other_chicken  turkey
+    0  1944-01-01  751.0   85.0  1280.0             89.0       NaN            NaN     NaN
+    1  1944-02-01  713.0   77.0  1169.0             72.0       NaN            NaN     NaN
+    2  1944-03-01  741.0   90.0  1128.0             75.0       NaN            NaN     NaN
+    3  1944-04-01  650.0   89.0   978.0             66.0       NaN            NaN     NaN
+    4  1944-05-01  681.0  106.0  1029.0             78.0       NaN            NaN     NaN
+               beef     veal      pork  lamb_and_mutton  broilers  other_chicken   turkey
+    count   827.000  827.000   827.000          827.000   635.000        143.000  635.000
+    mean   1683.463   54.199  1211.684           38.361  1516.583         43.034  292.815
+    std     501.698   39.063   371.312           19.624   963.012          3.867  162.483
+    min     366.000    8.800   124.000           10.900   250.900         32.300   12.400
+    25%    1231.500   24.000   934.500           23.000   636.350         40.200  154.150
+    50%    1853.000   40.000  1156.000           31.000  1211.300         43.400  278.300
+    75%    2070.000   79.000  1466.000           55.000  2426.650         45.650  449.150
+    max    2512.000  215.000  2210.400          109.000  3383.800         51.100  585.100
+
+46) Visualize multiple time series
+
+# Plot time series dataset
+ax = meat.plot(linewidth=2, fontsize=12)
+# Additional customizations
+ax.set_xlabel('Date')
+ax.legend(fontsize=15)
+# Show plot
+plt.show()
+
+# Plot an area chart
+ax = meat.plot.area(fontsize=12)
+# Additional customizations
+ax.set_xlabel('Date')
+ax.legend(fontsize=15)
+# Show plot
+plt.show()
+
+47) Add summary statistics to your time series plot
+
+# Plot the meat data
+ax = meat.plot(fontsize=6, linewidth=1)
+# Add x-axis labels
+ax.set_xlabel('Date', fontsize=6)
+# Add summary table information to the plot
+ax.table(cellText=meat_mean.values,
+         colWidths = [0.15]*len(meat_mean.columns),
+         rowLabels=meat_mean.index,
+         colLabels=meat_mean.columns,
+         loc='top')
+# Specify the fontsize and location of your legend
+ax.legend(loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=3, fontsize=6)
+# Show plot
+plt.show()
+
+48) Plot your time series on individual plots
+
+It can be beneficial to plot individual time series on separate graphs as this may improve clarity and provide more context around each time series in your DataFrame.
+It is possible to create a "grid" of individual graphs by "faceting" each time series by setting the subplots argument to True. In addition, the arguments that can be added are:
+layout: specifies the number of rows x columns to use.
+sharex and sharey: specifies whether the x-axis and y-axis values should be shared between your plots.
+
+# Create a facetted graph with 2 rows and 4 columns
+meat.plot(subplots=True, 
+          layout=(2, 4), 
+          sharex=False, 
+          sharey=False, 
+          colormap='viridis', 
+          fontsize=2, 
+          legend=False, 
+          linewidth=0.2)  
+plt.show()
+
+49) Visualize correlation matrices
+
+The correlation matrix generated in the previous exercise can be plotted using a heatmap. To do so, you can leverage the heatmap() function from the seaborn library which contains several arguments to tailor the look of your heatmap.
+df_corr = df.corr()
+sns.heatmap(df_corr)
+plt.xticks(rotation=90)
+plt.yticks(rotation=0) 
+You can use the .xticks() and .yticks() methods to rotate the axis labels so they don't overlap.
+
+# Import seaborn library
+import seaborn as sns
+# Get correlation matrix of the meat DataFrame: corr_meat
+corr_meat = meat.corr(method='spearman')
+# Customize the heatmap of the corr_meat correlation matrix
+sns.heatmap(corr_meat,
+            annot=True,
+            linewidths=0.4,
+            annot_kws={"size": 10})
+plt.xticks(rotation=90)
+plt.yticks(rotation=0) 
+plt.show()
+
+50) Clustered heatmaps
+
+Heatmaps are extremely useful to visualize a correlation matrix, but clustermaps are better. A Clustermap allows to uncover structure in a correlation matrix by producing a hierarchically-clustered heatmap:
+
+df_corr = df.corr()
+fig = sns.clustermap(df_corr)
+plt.setp(fig.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
+plt.setp(fig.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+To prevent overlapping of axis labels, you can reference the Axes from the underlying fig object and specify the rotation.
+
+# Import seaborn library
+import seaborn as sns
+# Get correlation matrix of the meat DataFrame
+corr_meat = meat.corr(method='pearson')
+# Customize the heatmap of the corr_meat correlation matrix and rotate the x-axis labels
+fig = sns.clustermap(corr_meat,
+                     row_cluster=True,
+                     col_cluster=True,
+                     figsize=(10, 10))
+plt.setp(fig.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
+plt.setp(fig.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+plt.show()
+
+51) Case Study: Unemployment Rate
+
+a) Explore the Jobs dataset
+# Read in jobs file
+jobs = pd.read_csv(url_jobs)
+# Print first five lines of your DataFrame
+print(jobs.head(5))
+# Check the type of each column in your DataFrame
+print(jobs.dtypes)
+# Convert datestamp column to a datetime object
+jobs['datestamp'] = pd.to_datetime(jobs['datestamp'])
+# Set the datestamp columns as the index of your DataFrame
+jobs = jobs.set_index('datestamp')
+# Check the number of missing values in each column
+print(jobs.isnull().sum())
+
+b) Describe time series data with boxplots
+# Generate a boxplot
+jobs.boxplot(fontsize=6, vert=False)
+plt.show()
+# Generate numerical summaries
+print(jobs.describe())
+# Print the name of the time series with the highest mean
+print('Agriculture')
+# Print the name of the time series with the highest variability
+print('Construction')
+
+c) Plot all the time series in your dataset
+# A subset of the jobs DataFrame
+jobs_subset = jobs[['Finance', 'Information', 'Manufacturing', 'Construction']]
+# Print the first 5 rows of jobs_subset
+print(jobs_subset.head(5))
+# Create a facetted graph with 2 rows and 2 columns
+ax = jobs_subset.plot(subplots=True,
+                      layout=(2, 2),
+                      sharex=False,
+                      sharey=False,
+                      linewidth=0.7,
+                      fontsize=3,
+                      legend=False)
+plt.show()
+
+d) Annotate significant events in time series data
+# Plot all time series in the jobs DataFrame
+ax = jobs.plot(colormap='Spectral', fontsize=6, linewidth=0.8)
+# Set labels and legend
+ax.set_xlabel('Date', fontsize=10)
+ax.set_ylabel('Unemployment Rate', fontsize=10)
+ax.set_title('Unemployment rate of U.S. workers by industry', fontsize=10)
+ax.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+# Annotate your plots with vertical lines
+ax.axvline('2001-07-01', color='blue', linestyle='--', linewidth=0.8)
+ax.axvline('2008-09-01', color='blue', linestyle='--', linewidth=0.8)
+# Show plot
+plt.show()
+
+e) Plot monthly and yearly trends
+# Extract the month from the index of jobs
+index_month = jobs.index.month
+# Compute the mean unemployment rate for each month
+jobs_by_month = jobs.groupby(index_month).mean()
+# Plot the mean unemployment rate for each month
+ax = jobs_by_month.plot(fontsize=6, linewidth=1)
+# Set axis labels and legend
+ax.set_xlabel('Month', fontsize=10)
+ax.set_ylabel('Mean unemployment rate', fontsize=10)
+ax.legend(bbox_to_anchor=(0.8, 0.6), fontsize=10)
+plt.show()
+
+# Extract of the year in each date indices of the jobs DataFrame
+index_year = jobs.index.year
+# Compute the mean unemployment rate for each year
+jobs_by_year = jobs.groupby(index_year).mean()
+# Plot the mean unemployment rate for each year
+ax = jobs_by_year.plot(fontsize=6, linewidth=1)
+# Set axis labels and legend
+ax.set_xlabel('Year', fontsize=10)
+ax.set_ylabel('Mean unemployment rate', fontsize=10)
+ax.legend(bbox_to_anchor=(0.1, 0.5), fontsize=10)
+plt.show()
+=> Output: Averaging time series values by month shows that unemployment rate tends to be a lot higher during the winter months for the Agriculture and Construction industry. The increase in unemployment rate after 2008 is very clear when average time series values by year.
+
+f) Apply time series decomposition to your dataset
+# Initialize dictionary
+jobs_decomp = {}
+# Get the names of each time series in the DataFrame
+jobs_names = jobs.columns
+# Run time series decomposition on each time series of the DataFrame
+for ts in jobs_names:
+    ts_decomposition = sm.tsa.seasonal_decompose(jobs[ts])
+    jobs_decomp[ts] = ts_decomposition
+
+g) Visualize the seasonality of multiple time series
+# Extract the seasonal values for the decomposition of each time series
+for ts in jobs_names:
+    jobs_seasonal[ts] = jobs_decomp[ts].seasonal
+# Create a DataFrame from the jobs_seasonal dictionary
+seasonality_df = pd.DataFrame.from_dict(jobs_seasonal)
+# Remove the label for the index
+seasonality_df.index.name = None
+# Create a faceted plot of the seasonality_df DataFrame
+seasonality_df.plot(subplots=True,
+                   layout=(4, 4),
+                   sharey=False,
+                   fontsize=2,
+                   linewidth=0.3,
+                   legend=False)
+# Show plot
+plt.show()
+
+h) Correlations between multiple time series
+# Get correlation matrix of the seasonality_df DataFrame
+seasonality_corr = seasonality_df.corr(method='spearman')
+# Customize the clustermap of the seasonality_corr correlation matrix
+fig = sns.clustermap(seasonality_corr, annot=True, annot_kws={"size": 4}, linewidths=.4, figsize=(15, 10))
+plt.setp(fig.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+plt.setp(fig.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
+plt.show()
+
+52) Augmented Dicky-Fuller
+
+In this exercise you will run the augmented Dicky-Fuller test on the earthquakes time series to test for stationarity. You plotted this time series in the last exercise. It looked like it could be stationary, but earthquakes are very damaging. If you want to make predictions about them you better be sure.
+Remember that if it were not stationary this would mean that the number of earthquakes per year has a trend and is changing. This would be terrible news if it is trending upwards, as it means more damage. It would also be terrible news if it were trending downwards, it might suggest the core of our planet is changing and this could have lots of knock on effects for us!
+The earthquakes DataFrame has been loaded in for you as earthquake.
+
+# Import augmented dicky-fuller test function
+from statsmodels.tsa.stattools import adfuller
+# Run test
+result = adfuller(earthquake['earthquakes_per_year'])
+# Print test statistic
+print(result[0])
+# Print p-value
+print(result[1])
+# Print critical values
+print(result[4]) 
+
+# Run the ADF test on the time series
+result = adfuller(city['city_population'])
+# Take the first difference of city dropping the NaN values. Assign this to city_stationary
+city_stationary = city.diff().dropna()
+# Run ADF test on the differenced time series
+result = adfuller(city_stationary['city_population'])
+# Take the second difference of city, by applying the .diff() method twice and drop the NaN values
+city_stationary = city.diff().diff().dropna()
+# Run ADF test on the differenced time series
+result = adfuller(city_stationary['city_population'])
+=> Output: <script.py> output:
+    ADF Statistic: -6.433646032918734
+    p-value: 1.6734498510401136e-08
+A p-value of 0.000000016 is very significant! This time series is now stationary and ready for modeling!
+
+53) Log-return transforms
+
+In this exercise you will compare the log-return transform and the first order difference of the Amazon stock time series to find which is better for making the time series stationary.
+
+# Calculate the first difference and drop the nans
+amazon_diff = amazon.diff()
+amazon_diff = amazon_diff.dropna()
+# Run test and print
+result_diff = adfuller(amazon_diff['close'])
+print(result_diff)
+# Calculate log-return and drop nans
+amazon_log = np.log(amazon/amazon.shift(1))
+amazon_log = amazon_log.dropna()
+# Run test and print
+result_log = adfuller(amazon_log['close'])
+print(result_log)
+=> Output: <script.py> output:
+    (-7.20357948881125, 2.33127172548712e-10, 23, 1234, {'1%': -3.435660336370594, '5%': -2.863885022214541, '10%': -2.568018522153254}, 10764.626718933836)
+    (-34.91574853605969, 0.0, 0, 1257, {'1%': -3.4355629707955395, '5%': -2.863842063387667, '10%': -2.567995644141416}, -6245.723147672197)
+Notice that both the differenced and the log-return transformed time series have a small p-value, but the log transformed time series has a much more negative test statistic. This means the log-return tranformation is better.
+
+54) Generating ARMA data
+
+In this exercise you will generate 100 days worth of AR/MA/ARMA data. Remember that in the real world applications, this data could be changes in Google stock prices, the energy requirements of New York City, or the number of cases of flu.
+You can use the arma_generate_sample() function available in your workspace to generate time series using different AR and MA coefficients.
+Remember for any model ARMA(p,q):
+The list ar_coefs has the form [1, -a_1, -a_2, ..., -a_p].
+The list ma_coefs has the form [1, m_1, m_2, ..., m_q],
+where a_i are the lag-i AR coefficients and m_j are the lag-j MA coefficients.
+
+# Import data generation function and set random seed
+from statsmodels.tsa.arima_process import arma_generate_sample
+np.random.seed(3)
+# Set coefficients
+ar_coefs = [1, 0.2]
+ma_coefs = [1, 0.3, 0.4]
+# Generate data
+y = arma_generate_sample(ar_coefs, ma_coefs, nsample=100, scale=0.5)
+plt.plot(y)
+plt.ylabel(r'$y_t$')
+plt.xlabel(r'$t$')
+plt.show()
+
+55) Fitting AR, MA, ARMA and ARMAX models
+
+In this exercise you will fit an AR and an MA model to some data. The data here has been generated using the arma_generate_sample() function we used before.
+You know the real AR and MA parameters used to create this data so it is a really good way to gain some confidence with ARMA models and know you are doing it right. In the next exercise you'll move onto some real world data with confidence.
+There is a pandas DataFrame available in your environment called sample. It has two columns of different time series data.
+
+a) Fit an AR(2) model to the 'timeseries_1' column of sample.
+# Instantiate the model
+model = ARIMA(sample['timeseries_1'], order=(2,0,0))
+# Fit the model
+results = model.fit()
+# Print summary
+print(results.summary())
+=> Parameters to generate the 'timeseries_1' data: ar_coefs = [1, -0.9, 0.3] ; ma_coefs = [1]
+
+b) Fit an MA(3) model to the 'timeseries_2' column of sample.
+# Instantiate the model
+model = ARIMA(sample['timeseries_2'], order=(0,0,3))
+# Fit the model
+results = model.fit()
+# Print summary
+print(results.summary())
+=> Parameters to generate the 'timeseries_2' data: ar_coefs = [1] ; ma_coefs = [1, 0.2, 0.6, -0.1]
+
+c) Instantiate an ARMA(3,1) model and pass it the earthquakes dataset.
+# Instantiate the model
+model = ARIMA(earthquake, order=(3,0,1))
+# Fit the model
+results = model.fit()
+# Print model fit summary
+print(results.summary())
+
+d) Instantiate an ARMAX(2,1) model to train on the 'wait_times_hrs' column of hospital using the 'nurse_count' column as an exogenous variable.
+# Instantiate the model
+model = ARIMA(hospital['wait_times_hrs'], order=(2,0,1), 
+             exog=hospital['nurse_count'])
+# Fit the model
+results = model.fit()
+# Print model fit summary
+print(results.summary())
+
+56) Generating one-step-ahead predictions
+
+It is very hard to forecast stock prices. Classic economics actually tells us that this should be impossible because of market clearing.
+Your task in this exercise is to attempt the impossible and predict the Amazon stock price anyway.
+In this exercise you will generate one-step-ahead predictions for the stock price as well as the uncertainty of these predictions.
+A model has already been fitted to the Amazon data for you. The results object from this model is available in your environment as results.
+
+# Generate predictions
+one_step_forecast = results.get_prediction(start=-30)
+# Extract prediction mean
+mean_forecast = one_step_forecast.predicted_mean
+# Get confidence intervals of predictions
+confidence_intervals = one_step_forecast.conf_int()
+# Select lower and upper confidence limits
+lower_limits = confidence_intervals.loc[:,'lower close']
+upper_limits = confidence_intervals.loc[:,'upper close']
+# Print best estimate predictions
+print(mean_forecast)
+=> You can use theis one-step-ahead forecast to estimate what your error would be, if you were to make a prediction for the Amazon stock price of tomorrow.
+
+57) Plotting one-step-ahead predictions
+
+Now that you have your predictions on the Amazon stock, you should plot these predictions to see how you've done.
+You made predictions over the latest 30 days of data available, always forecasting just one day ahead. By evaluating these predictions you can judge how the model performs in making predictions for just the next day, where you don't know the answer.
+The lower_limits, upper_limits and amazon DataFrames as well as your mean prediction mean_forecast that you created in the last exercise are available in your environment.
+
+# plot the amazon data
+plt.plot(amazon.index, amazon, label='observed')
+# plot your mean predictions
+plt.plot(mean_forecast.index, mean_forecast, color='r', label='forecast')
+# shade the area between your confidence limits
+plt.fill_between(lower_limits.index, lower_limits, 
+               upper_limits, color='pink')
+# set labels, legends and show plot
+plt.xlabel('Date')
+plt.ylabel('Amazon Stock Price - Close USD')
+plt.legend()
+plt.show()
+
+58)
 
