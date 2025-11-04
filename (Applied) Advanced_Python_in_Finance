@@ -1,0 +1,132 @@
+CHAPTER 1: INTRO TO PORTFOLIO RISK MANAGEMENT
+
+1) Financial timeseries data
+
+# Import pandas as pd
+import pandas as pd
+# Read in the csv file and parse dates
+StockPrices = pd.read_csv(fpath_csv, parse_dates=['Date'])
+# Ensure the prices are sorted by Date
+StockPrices = StockPrices.sort_values(by='Date')
+# Print only the first five rows of StockPrices
+print(StockPrices.head())
+=> Output: <script.py> output:
+            Date    Open    High     Low   Close    Volume  Adjusted
+    0 2000-01-03  88.777  89.722  84.712  58.281  53228400    38.528
+    1 2000-01-04  85.893  88.588  84.901  56.312  54119000    37.226
+    2 2000-01-05  84.050  88.021  82.726  56.906  64059600    37.619
+    3 2000-01-06  84.853  86.130  81.970  55.000  54976600    36.359
+    4 2000-01-07  82.159  84.901  81.166  55.719  62013600    36.834
+
+2) Calculating financial returns
+
+The file you loaded in the previous exercise included daily Open, High, Low, Close, Adjusted Close, and Volume data, often referred to as OHLCV data.
+The Adjusted Close column is the most important. It is normalized for stock splits, dividends, and other corporate actions, and is a true reflection of the return of the stock over time. You will be using the adjusted close price to calculate the returns of the stock in this exercise.
+StockPrices from the previous exercise is available in your workspace, and matplotlib.pyplot is imported as plt.
+
+# Calculate the daily returns of the adjusted close price
+StockPrices['Returns'] = StockPrices['Adjusted'].pct_change()
+# Check the first five rows of StockPrices
+print(StockPrices.head())
+# Plot the returns column over time
+StockPrices['Returns'].plot()
+plt.show()
+=> Output: <script.py> output:
+                  Open    High     Low   Close    Volume  Adjusted  Returns
+    Date                                                                   
+    2000-01-03  88.777  89.722  84.712  58.281  53228400    38.528      NaN
+    2000-01-04  85.893  88.588  84.901  56.312  54119000    37.226   -0.034
+    2000-01-05  84.050  88.021  82.726  56.906  64059600    37.619    0.011
+    2000-01-06  84.853  86.130  81.970  55.000  54976600    36.359   -0.033
+    2000-01-07  82.159  84.901  81.166  55.719  62013600    36.834    0.013
+
+3) Return distributions
+
+In order to analyze the probability of outliers in returns, it is helpful to visualize the historical returns of a stock using a histogram. You can use the histogram to show the historical density or frequency of a given range of returns. Note the outliers on the left tail of the return distribution are what you often want to avoid, as they represent large negative daily returns. Outliers on the right hand side of the distribution are normally particularly good events for the stock such as a positive earnings surprise.
+StockPrices from the previous exercise is available in your workspace, and matplotlib.pyplot is imported as plt.
+
+# Convert the decimal returns into percentage returns
+percent_return = StockPrices['Returns']*100
+# Drop the missing values
+returns_plot = percent_return.dropna()
+# Plot the returns histogram
+plt.hist(returns_plot, bins=75)
+plt.show()
+
+4) First moment: Mu
+
+# Import numpy as np
+import numpy as np
+# Calculate the average daily return of the stock
+mean_return_daily = np.mean(StockPrices['Returns'])
+print(mean_return_daily)
+# Calculate the implied annualized average return
+mean_return_annualized = ((1+mean_return_daily)**252)-1
+print(mean_return_annualized)
+=> The average daily return of the stock (mu) is 0.04% per day. This works out to an annualized return of 9.99% per year.
+
+5) Second moment: Variance
+
+# Calculate the standard deviation of daily return of the stock
+sigma_daily = np.std(StockPrices['Returns'])
+print(sigma_daily)
+# Calculate the daily variance
+variance_daily = sigma_daily**2
+print(variance_daily)
+=> The average daily volatility of the stock (sigma) is 1.93% per day. The average daily variance of the stock (the second moment) is 0.04%.
+
+6) Annualizing variance
+
+# Annualize the standard deviation
+sigma_annualized = sigma_daily*np.sqrt(252)
+print(sigma_annualized)
+# Calculate the annualized variance
+variance_annualized = sigma_annualized**2
+print(variance_annualized)
+=> This works out to an annualized volatility (sigma) of 30.7% per year. And an annualized variance of 9.43% per year
+
+7) Third moment: Skewness
+
+To calculate the third moment, or skewness of a returns distribution in Python, you can use the skew() function from scipy.stats. Remember that a negative skew is a right-leaning curve, while positive skew is a left-leaning curve. In finance, you would tend to want positive skewness, as this would mean that the probability of large positive returns is unusually high, and the negative returns are more closely clustered and predictable. StockPrices from the previous exercise is available in your workspace.
+
+# Import skew from scipy.stats
+from scipy.stats import skew
+# Drop the missing values
+clean_returns = StockPrices['Returns'].dropna()
+# Calculate the third moment (skewness) of the returns distribution
+returns_skewness = skew(clean_returns)
+print(returns_skewness)
+=> The third moment (skewness) of the stock returns is 0.22. A normal distribution would have a skewness much closer to 0.
+
+8) Fourth moment: Kurtosis
+
+Finally, to calculate the fourth moment of a distribution, you can use the kurtosis() function from scipy.stats. Note that this function actually returns the excess kurtosis, not the 4th moment itself. In order to calculate kurtosis, simply add 3 to the excess kurtosis returned by kurtosis(). clean_returns from the previous exercise is available in your workspace.
+
+# Import kurtosis from scipy.stats
+from scipy.stats import kurtosis
+# Calculate the excess kurtosis of the returns distribution
+excess_kurtosis = kurtosis(clean_returns)
+print(excess_kurtosis)
+# Derive the true fourth moment of the returns distribution
+fourth_moment = excess_kurtosis + 3
+print(fourth_moment)
+=> The fourth moment (kurtosis) of the stock returns is 13.31 with an excess kurtosis of 10.31. A normal distribution would tend to have a kurtosis of 3, and an excess kurtosis of 0.
+
+9) Statistical tests for normality
+
+In order to truly be confident in your judgement of the normality of the stock's return distribution, you will want to use a true statistical test rather than simply examining the kurtosis or skewness. You can use the shapiro() function from scipy.stats to run a Shapiro-Wilk test of normality on the stock returns. The function will return two values in a list. The first value is the t-stat of the test, and the second value is the p-value. You can use the p-value to make a judgement about the normality of the data. If the p-value is less than or equal to 0.05, you can safely reject the null hypothesis of normality and assume that the data are non-normally distributed. clean_returns from the previous exercise is available in your workspace.
+
+# Import shapiro from scipy.stats
+from scipy.stats import shapiro
+# Run the Shapiro-Wilk test on the stock returns
+shapiro_results = shapiro(clean_returns)
+print("Shapiro results:", shapiro_results)
+# Extract the p-value from the shapiro_results
+p_value = shapiro_results[1]
+print("P-value: ", p_value)
+=> Output: <script.py> output:
+    Shapiro results: ShapiroResult(statistic=0.9003633260726929, pvalue=0.0)
+    P-value:  0.0
+The p-value is 0, so null hypothesis of normality is rejected. The data are non-normal.
+
+10)
