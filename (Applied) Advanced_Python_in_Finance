@@ -129,4 +129,139 @@ print("P-value: ", p_value)
     P-value:  0.0
 The p-value is 0, so null hypothesis of normality is rejected. The data are non-normal.
 
-10)
+10) Calculating portfolio returns
+
+In order to build and backtest a portfolio, you have to be comfortable working with the returns of multiple assets in a single object.
+
+In this exercise, you will be using a pandas DataFrame object, already stored as the variable StockReturns, to hold the returns of multiple assets and to calculate the returns of a model portfolio.
+
+The model portfolio is constructed with pre-defined weights for some of the largest companies in the world just before January 2017:
+
+Company Name	Ticker	Portfolio Weight
+Apple	            AAPL	12%
+Microsoft	            MSFT	15%
+Exxon Mobil	            XOM	8%
+Johnson & Johnson	JNJ	5%
+JP Morgan	            JPM	9%
+Amazon	            AMZN	10%
+General Electric	GE	11%
+Facebook	            FB	14%
+AT&T	            T	16%
+Note that the portfolio weights should sum to 100% in most cases
+
+# Finish defining the portfolio weights as a numpy array
+portfolio_weights = np.array([0.12, 0.15, 0.08, 0.05, 0.09, 0.10, 0.11, 0.14, 0.16])
+# Calculate the weighted stock returns
+WeightedReturns = StockReturns.mul(portfolio_weights, axis=1)
+# Calculate the portfolio returns
+StockReturns['Portfolio'] = WeightedReturns.sum(axis=1)
+# Plot the cumulative portfolio returns over time
+CumulativeReturns = ((1+StockReturns["Portfolio"]).cumprod()-1)
+CumulativeReturns.plot()
+plt.show()
+
+11) Equal-weighted portfolios
+
+When comparing different portfolios, you often want to consider performance versus a naive equally-weighted portfolio. If the portfolio doesn't outperform a simple equally weighted portfolio, you might want to consider another strategy, or simply opt for the naive approach if all else fails. You can expect equally-weighted portfolios to tend to outperform the market when the largest companies are doing poorly. This is because even tiny companies would have the same weight in your equally-weighted portfolio as Apple or Amazon, for example.
+To make it easier for you to visualize the cumulative returns of portfolios, we defined the function cumulative_returns_plot() in your workspace.
+
+# How many stocks are in your portfolio?
+numstocks = 9
+# Create an array of equal weights across all assets
+portfolio_weights_ew = np.repeat(1/numstocks, numstocks)
+# Calculate the equally-weighted portfolio returns
+StockReturns['Portfolio_EW'] = StockReturns.iloc[:, 0:numstocks].mul(portfolio_weights_ew, axis=1).sum(axis=1)
+cumulative_returns_plot(['Portfolio', 'Portfolio_EW'])
+
+12) Market-cap weighted portfolios
+
+Conversely, when large companies are doing well, market capitalization, or "market cap", weighted portfolios tend to outperform. This is because the largest weights are being assigned to the largest companies, or the companies with the largest market cap. Below is a table of the market capitalizations of the companies in your portfolio just before January 2017:
+
+Company Name	Ticker	Market Cap ($ Billions)
+Apple	            AAPL	601.51
+Microsoft	            MSFT	469.25
+Exxon Mobil	            XOM	349.5
+Johnson & Johnson	JNJ	310.48
+JP Morgan	            JPM	299.77
+Amazon	            AMZN	356.94
+General Electric	GE	268.88
+Facebook	            FB	331.57
+AT&T	            T	246.09
+
+# Create an array of market capitalizations (in billions)
+market_capitalizations = np.array([601.51, 469.25, 349.5, 310.48, 299.77, 356.94, 268.88, 331.57, 246.09])
+# Calculate the market cap weights
+mcap_weights = market_capitalizations / sum(market_capitalizations)
+# Calculate the market cap weighted portfolio returns
+StockReturns['Portfolio_MCap'] = StockReturns.iloc[:, 0:9].mul(mcap_weights, axis=1).sum(axis=1)
+cumulative_returns_plot(['Portfolio', 'Portfolio_EW', 'Portfolio_MCap'])
+
+13) The correlation matrix
+
+The correlation matrix can be used to estimate the linear historical relationship between the returns of multiple assets. You can use the built-in .corr() method on a pandas DataFrame to easily calculate the correlation matrix.
+Correlation ranges from -1 to 1. The diagonal of the correlation matrix is always 1, because a stock always has a perfect correlation with itself. The matrix is symmetric, which means that the lower triangle and upper triangle of the matrix are simply reflections of each other since correlation is a bi-directional measurement.
+In this exercise, you will use the seaborn library to generate a heatmap.
+
+# Calculate the correlation matrix
+correlation_matrix = StockReturns.corr()
+# Print the correlation matrix
+print(correlation_matrix)
+# Import seaborn as sns
+import seaborn as sns
+# Create a heatmap
+sns.heatmap(correlation_matrix,
+            annot=True,
+            cmap="YlGnBu", 
+            linewidths=0.3,
+            annot_kws={"size": 8})
+# Plot aesthetics
+plt.xticks(rotation=90)
+plt.yticks(rotation=0) 
+plt.show()
+=> Output: <script.py> output:
+           AAPL   MSFT    XOM    JNJ    JPM   AMZN     GE     FB      T
+    AAPL  1.000  0.437  0.056  0.038  0.200  0.509  0.007  0.542  0.005
+    MSFT  0.437  1.000  0.084  0.230  0.191  0.621 -0.045  0.543 -0.021
+    XOM   0.056  0.084  1.000  0.121  0.306  0.015  0.194 -0.047  0.198
+    JNJ   0.038  0.230  0.121  1.000  0.070  0.053  0.068  0.079  0.092
+    JPM   0.200  0.191  0.306  0.070  1.000  0.014  0.257  0.095  0.253
+    AMZN  0.509  0.621  0.015  0.053  0.014  1.000 -0.092  0.653 -0.018
+    GE    0.007 -0.045  0.194  0.068  0.257 -0.092  1.000 -0.024  0.293
+    FB    0.542  0.543 -0.047  0.079  0.095  0.653 -0.024  1.000 -0.025
+    T     0.005 -0.021  0.198  0.092  0.253 -0.018  0.293 -0.025  1.000
+
+14) The covariance matrix
+
+You can easily compute the covariance matrix of a DataFrame of returns using the .cov() method. The correlation matrix doesn't really tell you anything about the variance of the underlying assets, only the linear relationships between assets. The co-variance (a.k.a. variance-covariance) matrix, on the other hand, contains all of this information and is very useful for portfolio optimization and risk management purposes.
+
+# Calculate the covariance matrix
+cov_mat = StockReturns.cov()
+# Annualize the covariance matrix
+cov_mat_annual = cov_mat*252
+# Print the annualized co-variance matrix
+print(cov_mat_annual)
+
+<script.py> output:
+               AAPL       MSFT        XOM        JNJ        JPM       AMZN         GE         FB          T
+    AAPL  3.100e-02  1.140e-02  1.093e-03  7.742e-04  5.716e-03  1.881e-02  2.360e-04  1.624e-02  1.519e-04
+    MSFT  1.140e-02  2.191e-02  1.392e-03  3.899e-03  4.597e-03  1.928e-02 -1.315e-03  1.368e-02 -5.298e-04
+    XOM   1.093e-03  1.392e-03  1.250e-02  1.548e-03  5.554e-03  3.544e-04  4.295e-03 -8.903e-04  3.751e-03
+    JNJ   7.742e-04  3.899e-03  1.548e-03  1.309e-02  1.307e-03  1.266e-03  1.540e-03  1.545e-03  1.780e-03
+    JPM   5.716e-03  4.597e-03  5.554e-03  1.307e-03  2.637e-02  4.739e-04  8.283e-03  2.631e-03  6.972e-03
+    AMZN  1.881e-02  1.928e-02  3.544e-04  1.266e-03  4.739e-04  4.395e-02 -3.830e-03  2.329e-02 -6.376e-04
+    GE    2.360e-04 -1.315e-03  4.295e-03  1.540e-03  8.283e-03 -3.830e-03  3.927e-02 -8.213e-04  9.849e-03
+    FB    1.624e-02  1.368e-02 -8.903e-04  1.545e-03  2.631e-03  2.329e-02 -8.213e-04  2.894e-02 -7.078e-04
+    T     1.519e-04 -5.298e-04  3.751e-03  1.780e-03  6.972e-03 -6.376e-04  9.849e-03 -7.078e-04  2.883e-02
+
+15) Portfolio standard deviation
+
+To calculate portfolio volatility, you will need the covariance matrix, the portfolio weights, and knowledge of the transpose operation. The transpose of a numpy array can be calculated using the .T attribute. The np.dot() function is the dot product of two arrays.
+
+# Import numpy as np
+import numpy as np
+# Calculate the portfolio standard deviation
+portfolio_volatility = np.sqrt(np.dot(portfolio_weights.T, np.dot(cov_mat_annual, portfolio_weights)))
+print(portfolio_volatility)
+
+16) Sharpe ratios
+
