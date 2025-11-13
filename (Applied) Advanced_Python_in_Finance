@@ -1,6 +1,6 @@
 CHAPTER 1: INTRO TO PORTFOLIO RISK MANAGEMENT
 
-1) Financial timeseries data
+1) Financial time series data
 
 # Import pandas as pd
 import pandas as pd
@@ -264,4 +264,343 @@ portfolio_volatility = np.sqrt(np.dot(portfolio_weights.T, np.dot(cov_mat_annual
 print(portfolio_volatility)
 
 16) Sharpe ratios
+
+The Sharpe ratio is a simple metric of risk-adjusted return which was pioneered by William F. Sharpe. Sharpe ratio is useful to determine how much risk is being taken to achieve a certain level of return. In finance, you are always seeking ways to improve your Sharpe ratio, and the measure is very commonly quoted and used to compare investment strategies.
+
+# Risk-free rate
+risk_free = 0
+# Calculate the Sharpe Ratio for each asset
+RandomPortfolios['Sharpe'] = (RandomPortfolios['Returns'] - risk_free) / RandomPortfolios['Volatility']
+# Print the range of Sharpe ratios
+print(RandomPortfolios['Sharpe'].describe()[['min', 'max']])
+=> Output: <script.py> output:
+    min    0.743
+    max    2.270
+    Name: Sharpe, dtype: float64
+Bill Sharpe would be proud! The portfolio's historical Sharpe ratios range from 0.742 to 2.27.
+
+17) The MSR portfolio
+
+The maximum Sharpe ratio, or MSR portfolio, which lies at the apex of the efficient frontier, can be constructed by looking for the portfolio with the highest Sharpe ratio. Unfortunately, the MSR portfolio is often quite erratic. Even though the portfolio had a high historical Sharpe ratio, it doesn't guarantee that the portfolio will have a good Sharpe ratio moving forward.
+
+# Sort the portfolios by Sharpe ratio
+sorted_portfolios = RandomPortfolios.sort_values(by=['Sharpe'], ascending=False)
+# Extract the corresponding weights
+MSR_weights = sorted_portfolios.iloc[0, 0:numstocks]
+# Cast the MSR weights as a numpy array
+MSR_weights_array = np.array(MSR_weights)
+# Calculate the MSR portfolio returns
+StockReturns['Portfolio_MSR'] = StockReturns.iloc[:, 0:numstocks].mul(MSR_weights_array, axis=1).sum(axis=1)
+# Plot the cumulative returns
+cumulative_returns_plot(['Portfolio_EW', 'Portfolio_MCap', 'Portfolio_MSR'])
+
+18) The GMV portfolio
+
+The global minimum volatility portfolio, or GMV portfolio, is the portfolio with the lowest standard deviation (risk) and the highest return for the given risk level. Returns are very hard to predict, but volatilities and correlations tend to be more stable over time. This means that the GMV portfolio often outperforms the MSR portfolios out of sample, even though the MSR would outperform quite significantly in-sample. Of course, out-of-sample results are what really matter in finance.
+
+# Sort the portfolios by volatility
+sorted_portfolios = RandomPortfolios.sort_values(by=['Volatility'], ascending=True)
+# Extract the corresponding weights
+GMV_weights = sorted_portfolios.iloc[0,0:numstocks]
+# Cast the GMV weights as a numpy array
+GMV_weights_array = np.array(GMV_weights)
+# Calculate the GMV portfolio returns
+StockReturns['Portfolio_GMV'] = StockReturns.iloc[:, 0:numstocks].mul(GMV_weights_array, axis=1).sum(axis=1)
+# Plot the cumulative returns
+cumulative_returns_plot(['Portfolio_EW', 'Portfolio_MCap', 'Portfolio_MSR', 'Portfolio_GMV'])
+=> Output: The GMV portfolio tends to be the most stable optimization over time, but of course, you can expect a lower volatility portfolio to have a lower return than the benchmark market cap weighting method.
+
+19) Excess returns
+
+To perform a robust analysis on your portfolio returns, you must first subtract the risk-free rate of return from your portfolio returns. The portfolio return minus the risk-free rate of return is known as the Excess Portfolio Return. In the United States, the risk-free rate has been close to 0 since the financial crisis (2008), but this step is crucial for other countries with higher risk-free rates, such as Venezuela or Brazil. The FamaFrenchData DataFrame is available in your workspace and contains the proper data for this exercise. The portfolio you will be working with is the equal-weighted portfolio.
+
+# Calculate excess portfolio returns
+FamaFrenchData['Portfolio_Excess'] = FamaFrenchData['Portfolio'] - FamaFrenchData['RF']
+# Plot returns vs excess returns
+CumulativeReturns = ((1+FamaFrenchData[['Portfolio','Portfolio_Excess']]).cumprod()-1)
+CumulativeReturns.plot()
+plt.show()
+=> Notice how the excess return is only slightly less? That's because the risk-free rate has been so low!
+
+20) Calculating beta using covariance
+
+Beta is an essential component of many financial models and is a measure of systematic risk, or exposure to the broad market. In the CAPM model, beta is one of two essential factors.
+
+# Calculate the co-variance matrix between Portfolio_Excess and Market_Excess
+covariance_matrix = FamaFrenchData[['Portfolio_Excess', 'Market_Excess']].cov()
+
+# Extract the covariance coefficient
+covariance_coefficient = covariance_matrix.iloc[0, 1]
+print(covariance_coefficient)
+# Calculate the benchmark variance
+benchmark_variance = FamaFrenchData['Market_Excess'].var()
+print(benchmark_variance)
+# Calculating the portfolio market beta
+portfolio_beta = covariance_coefficient / benchmark_variance
+print(portfolio_beta)
+=> Output: <script.py> output:
+    5.726126338154964e-05
+    5.880335088211895e-05
+    0.9737755165745455
+Your portfolio beta is 0.9738. You can think of market beta as a measure of your exposure to the broad stock market. For every 1.0% rise (or fall) in the market, you can expect your portfolio to rise (fall) roughly 0.97%.
+
+21) Calculating beta with CAPM
+
+# Import statsmodels.formula.api
+import statsmodels.formula.api as smf 
+# Define the regression formula
+CAPM_model = smf.ols(formula='Portfolio_Excess ~ Market_Excess', data=FamaFrenchData)
+# Fit the regression
+CAPM_fit = CAPM_model.fit()
+print(CAPM_fit.rsquared_adj)
+# Extract the beta
+regression_beta = CAPM_fit.params['Market_Excess']
+print(regression_beta)
+=> Output: <script.py> output:
+    0.7942627160017839
+    0.973775516574546
+Your portfolio beta is once again 0.9738. The adjusted r-squared is 0.7943. A high adjusted r-squared (close to 1) means that the majority of your portfolio's movements can be explained by the factors in your model.
+
+22) The Fama-French 3-factor model
+
+The Fama-French model famously adds two additional factors to the CAPM model to describe asset returns.
+
+# Import statsmodels.formula.api
+import statsmodels.formula.api as smf 
+# Define the regression formula
+FamaFrench_model = smf.ols(formula='Portfolio_Excess ~ Market_Excess + SMB + HML', data=FamaFrenchData)
+# Fit the regression
+FamaFrench_fit = FamaFrench_model.fit()
+# Extract the adjusted r-squared
+regression_adj_rsq = FamaFrench_fit.rsquared_adj
+print(regression_adj_rsq)
+=> Output: <script.py> output:
+    0.8193910088585152
+The Fama-French 3 factor model fit well, raising the adjusted r-squared from 0.7943 to 0.8194, meaning that the model explains more of your portfolio variance. But there's still room for improvement...
+
+23) p-values and coefficients
+
+You can use the .pvalues attribute on a fitted smf.ols regression model to retrieve the p-values for each coefficient. Normally, p-values less than 0.05 are considered statistically significant. Coefficients can be extracted from the fitted regression object using the .params attribute.
+In this example, a statistically significant negative SMB ('Small Minus Big') coefficient would signify a factor exposure to large-cap stocks, while a positive coefficient would signify an exposure to small-cap stocks. The fitted regression model FamaFrench_fit from the previous exercise is available in your workspace.
+
+# Extract the p-value of the SMB factor
+smb_pval = FamaFrench_fit.pvalues['SMB']
+# If the p-value is significant, print significant
+if smb_pval < 0.05:
+    significant_msg = 'significant'
+else:
+    significant_msg = 'not significant'
+# Print the SMB coefficient
+smb_coeff = FamaFrench_fit.params['SMB']
+print("The SMB coefficient is ", smb_coeff, " and is ", significant_msg)
+=> Output: <script.py> output:
+    The SMB coefficient is  -0.2621515274319262  and is  significant
+Your portfolio has a statistically significant negative exposure (-0.2621) to small-cap stocks - in other words, positive exposure to large caps!
+
+24) The efficient market and alpha
+
+The alpha left over by the regression is unexplained performance due to unknown factors. In a regression model, this is simply the coefficient of the intercept.
+There are two general schools of thought as to why:
+The model simply needs to be expanded. When you have found all of the missing economic factors, you can explain all stock and portfolio returns. This is known as the Efficient Market Hypothesis. There is a degree of unexplainable performance that no model will ever capture reliably. Perhaps it is due to skill, timing, intuition or luck, but investors should seek to maximize their alpha.
+Your fitted regression analysis from the previous exercise has been stored in FamaFrench_fit.
+
+# Extract your portfolio alpha
+portfolio_alpha = FamaFrench_fit.params['Intercept']
+print(portfolio_alpha)
+# Annualize your portfolio alpha
+portfolio_alpha_annualized = ((1+portfolio_alpha)**252)-1
+print(portfolio_alpha_annualized)
+=> Output: <script.py> output:
+    0.00018326665203183062
+    0.04726181730280854
+Your annualized portfolio alpha is 4.73% -- Efficient markets beware!
+
+25) The 5-factor model
+
+In 2015, Fama and French extended their previous 3-factor model, adding two additional factors:
+RMW: Profitability
+CMA: Investment
+The RMW factor represents the returns of companies with high operating profitability versus those with low operating profitability, and the CMA factor represents the returns of companies with aggressive investments versus those that are more conservative.
+The FamaFrenchData object is available in your workspace and contains the RMW and CMA factors in addition to the previous factors.
+
+# Import statsmodels.formula.api
+import statsmodels.formula.api as smf 
+# Define the regression formula
+FamaFrench5_model = smf.ols(formula='Portfolio_Excess ~ Market_Excess + SMB + HML + RMW + CMA', data=FamaFrenchData)
+# Fit the regression
+FamaFrench5_fit = FamaFrench5_model.fit()
+# Extract the adjusted r-squared
+regression_adj_rsq = FamaFrench5_fit.rsquared_adj
+print(regression_adj_rsq)
+=> Output: <script.py> output:
+    0.8367245019225793
+The Fama-French 5 Factor model explains the most variability, so alpha is lower. The adjusted r-squared is even higher at 0.8367! Could you build a better model?
+
+26) Historical drawdown
+
+The stock market tends to rise over time, but that doesn't mean that you won't have periods of drawdown. Drawdown can be measured as the percentage loss from the highest cumulative historical point. In Python, you can use the .accumulate() and .maximum() functions to calculate the running maximum
+
+# Calculate the running maximum
+running_max = np.maximum.accumulate(cum_rets)
+# Ensure the value never drops below 1
+running_max[running_max < 1] = 1
+# Calculate the percentage drawdown
+drawdown = (cum_rets)/running_max - 1
+# Plot the results
+drawdown.plot()
+plt.show()
+=> Output: Notice how the drawdown never goes above 0 (as opposed to the previous plot)? That's because a positive drawdown isn't a drawdown at all - its a gain!
+
+27) Historical value at risk
+
+Drawdown is a measure of sustained losses over time, but what about simple single-day movements? Value at Risk, often referred to as VaR, is a way to estimate the risk of a single day negative price movement. VaR can be measured for any given probability, or confidence level, but the most commonly quoted tend to be VaR(95) and VaR(99). Historical VaR is the simplest method to calculate VaR, but it relies on historical returns data, which may not be a good assumption of the future. Historical VaR(95), for example, represents the minimum loss that your portfolio or asset has sustained in the worst 5% of cases.
+Below, you will calculate the historical VaR(95) of the USO oil ETF. Returns data is available (in percent) in the variable StockReturns_perc.
+
+# Calculate historical VaR(95)
+var_95 = np.percentile(StockReturns_perc, 5)
+print(var_95)
+# Sort the returns for plotting
+sorted_rets = sorted(StockReturns_perc)
+# Plot the probability of each sorted return quantile
+plt.hist(sorted_rets, density=True, stacked=True)
+# Denote the VaR 95 quantile
+plt.axvline(x=var_95, color='r', linestyle='-', label='VaR 95: {0:.2f}%'.format(var_95))
+plt.show()
+=> Output: <script.py> output:
+    -3.6082337640374957
+Historical VaR(95) = -3.61%
+
+28) Historical expected shortfall
+
+Expected Shortfall, otherwise known as CVaR, or conditional value at risk, is simply the expected loss of the worst-case scenarios of returns. For example, if your portfolio has a VaR(95) of -3%, then the CVaR(95) would be the average value of all losses exceeding -3%. Returns data is available (in percent) in the variable StockReturns_perc. var_95 from the previous exercise is also available in your workspace.
+
+# Historical CVaR 95
+cvar_95 = StockReturns_perc[StockReturns_perc <= var_95].mean()
+print(cvar_95)
+# Sort the returns for plotting
+sorted_rets = sorted(StockReturns_perc)
+# Plot the probability of each return quantile
+plt.hist(sorted_rets, density=True, stacked=True)
+# Denote the VaR 95 and CVaR 95 quantiles
+plt.axvline(x=var_95, color="r", linestyle="-", label='VaR 95: {0:.2f}%'.format(var_95))
+plt.axvline(x=cvar_95, color='b', linestyle='-', label='CVaR 95: {0:.2f}%'.format(cvar_95))
+plt.show()
+=> Output: <script.py> output:
+    -5.054143158346777
+Notice how the CVaR(95) of -5.05% was more extreme than the VaR(95) level?
+
+29) Changing VaR and CVaR quantiles
+
+VaR quantiles often used are 90%, 95%, and 99%, corresponding to the worst 10%, 5%, and 1% of cases, respectively. These same quantiles are also often used for CVaR. Note that CVaR will always be a more extreme estimate when compared with VaR for the same quantile. Compare the VaR vs CVaR values for USO ETF returns below.
+Returns data is available (in percent) in StockReturns_perc. We also calculated var_95, cvar_95, var_99, cvar_99, and defined a function plot_hist() that compares several quantiles for you.
+
+# Historical VaR quantiles
+var_90 = np.percentile(StockReturns_perc, 10)
+print(var_90)
+# Historical CVaR quantiles
+cvar_90 = StockReturns_perc[StockReturns_perc <= var_90].mean()
+print(cvar_90)
+# Plot to compare
+plot_hist()
+=> Output: <script.py> output:
+    -2.558512646965176
+    -4.043186770518807
+The CVaR(90) is -4.04%, which is higher than the VaR(90) of -2.56%.
+
+30) Parametric VaR
+
+Value at Risk can also be computed parametrically using a method known as variance/covariance VaR. This method allows you to simulate a range of possibilities based on historical return distribution properties rather than actual return values. You can calculate the parametric VaR(90) using:
+# Import norm from scipy.stats
+from scipy.stats import norm
+# Calculate Parametric VaR
+norm.ppf(confidence_level=0.10, mu, vol)
+where mu and vol are the mean and volatility, respectively.
+Returns data is available (in decimals) in the variable StockReturns.
+
+# Import norm from scipy.stats
+from scipy.stats import norm
+# Estimate the average daily return
+mu = np.mean(StockReturns)
+# Estimate the daily volatility
+vol = np.std(StockReturns)
+# Set the VaR confidence level
+confidence_level = 0.05
+# Calculate Parametric VaR
+var_95 = norm.ppf(confidence_level, mu, vol)
+print('Mean: ', str(mu), '\nVolatility: ', str(vol), '\nVaR(95): ', str(var_95))
+=> Output: <script.py> output:
+    Mean:  -0.00028638956240214787 
+    Volatility:  0.021888087129708852 
+    VaR(95):  -0.03628908906473361
+
+31) Scaling risk estimates
+
+The VaR(95) number calculated in previous exercises is simply the value at risk for a single day. To estimate the VaR for a longer time horizon, scale the value by the square root of time.
+
+# Aggregate forecasted VaR
+forecasted_values = np.empty([100, 2])
+# Loop through each forecast period
+for i in range(0, 100):
+    # Save the time horizon i
+    forecasted_values[i, 0] = i
+    # Save the forecasted VaR 95
+    forecasted_values[i, 1] = var_95*np.sqrt(i+1)
+# Plot the results
+plot_var_scale()
+
+32) A random walk simulation
+
+Stochastic or random movements are used in physics to represent particle and fluid movements, in mathematics to describe fractal behavior, and in finance to describe stock market movements. Use the np.random.normal() function to model random walk movements of the USO oil ETF with a constant daily average return (mu) and average daily volatility (vol) over the course of T trading days.
+
+# Set the simulation parameters
+mu = np.mean(StockReturns)
+vol = np.std(StockReturns)
+T = 252
+S0 = 10
+# Add one to the random returns
+rand_rets = np.random.normal(mu, vol, T) + 1
+# Forecasted random walk
+forecasted_values = S0*rand_rets.cumprod()
+# Plot the random walk
+plt.plot(range(0, T), forecasted_values)
+plt.show()
+
+33) Monte Carlo simulations
+
+Monte-Carlo simulations are used to model a wide range of possibilities. Monte-Carlos can be constructed in many different ways, but all of them involve generating a large number of random variants of a given model, allowing a wide distribution of possible paths to be analyzed. This can allow you to build a comprehensive forecast of possibilities to sample from without a large amount of historical data.
+Generate 100 Monte-Carlo simulations for the USO oil ETF. The parameters mu, vol, T, and S0 are available from the previous exercise.
+
+# Loop through 100 simulations
+for i in range(100):
+    # Generate the random returns
+    rand_rets = np.random.normal(mu,vol,T) + 1
+    # Create the Monte Carlo path
+    forecasted_values = S0*(rand_rets).cumprod()
+    # Plot the Monte Carlo path
+    plt.plot(range(T), forecasted_values)
+# Show the simulations
+plt.show()
+
+34) Monte Carlo VaR
+
+Both the return values and the Monte-Carlo paths can be used for analysis of everything ranging from option pricing models and hedging to portfolio optimization and trading strategies. Aggregate the returns data at each iteration, and use the resulting values to forecast parametric VaR(99). The parameters mu, vol, T, and S0 are available from the previous exercise.
+
+# Aggregate the returns
+sim_returns = []
+# Loop through 100 simulations
+for i in range(100):
+    # Generate the Random Walk
+    rand_rets = np.random.normal(mu, vol, T)
+    # Save the results
+    sim_returns.append(rand_rets)
+# Calculate the VaR(99)
+var_99 = np.percentile(sim_returns, 1)
+print("Parametric VaR(99): ", round(100*var_99, 2),"%")
+=> Output: <script.py> output:
+    Parametric VaR(99):  -5.04 %
+
+
+CHAPTER 2: QUANTITATIVE RISK MANAGEMENT IN PYTHON
+
+1)
 
