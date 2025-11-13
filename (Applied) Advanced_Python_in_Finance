@@ -602,5 +602,423 @@ print("Parametric VaR(99): ", round(100*var_99, 2),"%")
 
 CHAPTER 2: QUANTITATIVE RISK MANAGEMENT IN PYTHON
 
-1)
+1) Portfolio returns during the crisis
+
+The first step in quantifying the effects of uncertainty on a financial portfolio is to examine the portfolio's return. You'll consider a portfolio of four investment bank stocks, which were both instigators and victims of the global financial crisis. The banks are Citibank, Goldman Sachs, J.P. Morgan, and Morgan Stanley. Closing stock prices for the period 2005 - 2010 are in the available portfolio DataFrame. You'll use this to examine the dramatic price changes during the depths of the crisis, 2008 - 2009. You'll also see how volatile the resulting portfolio_returns were, assuming an equal-weighted portfolio with weights stored in the weights list.
+In this and in all future exercises, numpy, pandas, and matplotlib.pyplot are available as np, pd, and plt, respectively.
+
+# Select portfolio asset prices for the middle of the crisis, 2008-2009
+asset_prices = portfolio.loc['2008-01-01':'2009-12-31']
+# Plot portfolio's asset prices during this time
+asset_prices.plot().set_ylabel("Closing Prices, USD")
+plt.show()
+# Compute the portfolio's daily returns
+asset_returns = asset_prices.pct_change()
+portfolio_returns = asset_returns.dot(weights)
+# Plot portfolio returns 
+portfolio_returns.plot().set_ylabel("Daily Return, %")
+plt.show()
+=> The asset prices plot shows how the global financial crisis created a loss in confidence in investment banks from September 2008. There was an event during September that precipitated this decline, and you'll examine this shortly. The 'spikiness' of portfolio returns indicates how uncertain and volatile asset returns became. You'll quantify this volatility using the same dataset in the next exercise.
+
+2) Asset covariance and portfolio volatility
+
+Now that you've examined the return of the portfolio of investment banks, it's time to assess the riskiness of the portfolio using the covariance matrix to determine the portfolio's volatility. First, you'll compute the covariance between the asset_returns and identify which of the banks had the highest volatility during the 2008-2009 crisis period.
+Then, given the weights of an equal-weighted portfolio, you'll find the portfolio's annualized volatility for that period using portfolio_returns.
+Finally, you'll use a 30-day window to create a time series of the volatility and visualize this with a plot.
+
+# Generate the covariance matrix from portfolio assets' returns
+covariance = asset_returns.cov()
+# Annualize the covariance using 252 trading days per year
+covariance = covariance * 252
+# Display the covariance matrix
+print(covariance)
+
+# Compute and display portfolio volatility for 2008 - 2009
+portfolio_variance = np.transpose(weights) @ covariance @ weights
+portfolio_volatility = np.sqrt(portfolio_variance)
+print(portfolio_volatility)
+
+# Calculate the 30-day rolling window of portfolio returns
+returns_windowed = portfolio_returns.rolling(30)
+# Compute the annualized volatility series
+volatility_series = returns_windowed.std()*np.sqrt(252)
+# Plot the portfolio volatility
+volatility_series.plot().set_ylabel("Annualized Volatility, 30-day Window")
+plt.show()
+=> Output: <script.py> output:
+                    Citibank  Morgan Stanley  Goldman Sachs  J.P. Morgan
+    Citibank           1.475           0.822          0.574        0.725
+    Morgan Stanley     0.822           1.298          0.659        0.561
+    Goldman Sachs      0.574           0.659          0.501        0.427
+    J.P. Morgan        0.725           0.561          0.427        0.686
+0.8475328513962702
+Citibank exhibited the highest volatility during the crisis period, with Morgan Stanley not far behind. The volatility plot shows that an equal-weighted portfolio of all four banks demonstrated a significant increase in volatility from late September 2008, which is around the time the 4th-largest investment bank in the world, Lehman Brothers, went bankrupt. Its bankruptcy was largely due to mismanagement of the risks associated with its holdings of mortgage-backed securities.
+
+3) Frequency resampling primer
+
+Risk factor models often rely upon data that is of different frequencies. A typical example is when using quarterly macroeconomic data, such as prices, unemployment rates, etc., with financial data, which is often daily (or even intra-daily). To use both data sources in the same model, higher frequency data needs to be resampled to match the lower frequency data.
+The DataFrame and Series Pandas objects have a built-in .resample() method that specifies the lower frequency. This method is chained with a method to create the lower-frequency statistic, such as .mean() for the average of the data within the new frequency period, or .min() for the minimum of the data.
+In this exercise, you'll practice converting daily returns data to weekly and quarterly frequency.
+
+# Convert daily returns to quarterly average returns
+returns_q = returns.resample('Q').mean()
+# Examine the beginning of the quarterly series
+print(returns_q.head())
+# Now convert daily returns to weekly minimum returns
+returns_w = returns.resample('W').min()
+# Examine the beginning of the weekly series
+print(returns_w.head())
+=> Output: <script.py> output:
+    Date
+    2004-12-31          NaN
+    2005-03-31   -3.667e-04
+    2005-06-30   -3.655e-04
+    2005-09-30    6.155e-04
+    2005-12-31    1.323e-03
+    Freq: Q-DEC, dtype: float64
+    Date
+    2005-01-02          NaN
+    2005-01-09   -1.115e-02
+    2005-01-16   -7.643e-03
+    2005-01-23   -1.108e-02
+    2005-01-30   -4.429e-04
+    Freq: W-SUN, dtype: float64
+Resampling is an oft-overlooked but extremely important tool for time series and risk factor analysis, and we'll use it in the following exercise.
+
+4) Visualizing risk factor correlation
+
+Investment banks heavily invested in mortgage-backed securities (MBS) before and during the financial crisis. This makes MBS a likely risk factor for the investment bank portfolio. You'll assess this using scatterplots between portfolio returns and an MBS risk measure, the 90-day mortgage delinquency rate mort_del.
+mort_del is only available as quarterly data. So portfolio_returns first needs to be transformed from daily to quarterly frequency using the DataFrame .resample() method.
+Your workspace contains both portfolio_returns for an equal-weighted portfolio and the delinquency rate mort_del variable. For the scatterplots, plot_average and plot_min are plot axes in your workspace--you'll add your scatterplots to them using the .scatter() method.
+
+# Transform the daily portfolio_returns into quarterly average returns
+portfolio_q_average = portfolio_returns.resample('Q').mean().dropna()
+# Create a scatterplot between delinquency and quarterly average returns
+plot_average.scatter(mort_del, portfolio_q_average)
+# Transform daily portfolio_returns returns into quarterly minimum returns
+portfolio_q_min = portfolio_returns.resample('Q').min().dropna()
+# Create a scatterplot between delinquency and quarterly minimum returns
+plot_min.scatter(mort_del, portfolio_q_min)
+plt.show()
+=> Your initial assessment indicates that there is little correlation between average returns and mortgage delinquencies, but a stronger negative correlation exists between _minimum_ returns and delinquency. In the following exercises, you'll quantify this using least-squares regression.
+
+5) Least-squares factor model
+
+As you've seen, there is a negative correlation between minimum quarterly returns and mortgage delinquency rates from 2005 - 2010. This can be made more precise with an OLS regression factor model. You'll compare three-factor models with three different quarterly dependent variables: average returns, minimum returns, and average volatility. The independent variable is the mortgage delinquency rate. In the regression summary, examine the coefficients' t-statistic for statistical significance, as well as the overall R-squared for goodness of fit.
+The statsmodels.api library is available as sm.
+
+## a) Regress average returns, port_q_mean, against delinquencies mort_del with statsmodels.api's .OLS() method.
+# Add a constant to the regression
+mort_del = sm.add_constant(mort_del)
+# Create the regression factor model and fit it to the data
+results = sm.OLS(port_q_mean, mort_del).fit()
+# Print a summary of the results
+print(results.summary())
+=> Output: <script.py> output:
+                                OLS Regression Results                            
+    ==============================================================================
+    Dep. Variable:                      y   R-squared:                       0.021
+    Model:                            OLS   Adj. R-squared:                 -0.023
+    Method:                 Least Squares   F-statistic:                    0.4801
+    Date:                Thu, 13 Nov 2025   Prob (F-statistic):              0.496
+    Time:                        21:07:26   Log-Likelihood:                 113.89
+    No. Observations:                  24   AIC:                            -223.8
+    Df Residuals:                      22   BIC:                            -221.4
+    Df Model:                           1                                         
+    Covariance Type:            nonrobust                                         
+    =============================================================================================
+                                    coef    std err          t      P>|t|      [0.025      0.975]
+    ---------------------------------------------------------------------------------------------
+    const                        -0.0001      0.001     -0.175      0.862      -0.002       0.002
+    Mortgage Delinquency Rate     0.0083      0.012      0.693      0.496      -0.016       0.033
+    ==============================================================================
+    Omnibus:                        0.081   Durbin-Watson:                   1.604
+    Prob(Omnibus):                  0.960   Jarque-Bera (JB):                0.293
+    Skew:                          -0.071   Prob(JB):                        0.864
+    Kurtosis:                       2.477   Cond. No.                         26.7
+    ==============================================================================
+
+## b) Next regress minimum returns, port_q_min, against mort_del with the .OLS() and .fit() methods.
+# Add a constant to the regression
+mort_del = sm.add_constant(mort_del)
+# Create the regression factor model and fit it to the data
+results = sm.OLS(port_q_min, mort_del).fit()
+# Print a summary of the results
+print(results.summary())
+=> Output: <script.py> output:
+                                OLS Regression Results                            
+    ==============================================================================
+    Dep. Variable:                      y   R-squared:                       0.178
+    Model:                            OLS   Adj. R-squared:                  0.141
+    Method:                 Least Squares   F-statistic:                     4.761
+    Date:                Thu, 13 Nov 2025   Prob (F-statistic):             0.0401
+    Time:                        21:07:49   Log-Likelihood:                 39.937
+    No. Observations:                  24   AIC:                            -75.87
+    Df Residuals:                      22   BIC:                            -73.52
+    Df Model:                           1                                         
+    Covariance Type:            nonrobust                                         
+    =============================================================================================
+                                    coef    std err          t      P>|t|      [0.025      0.975]
+    ---------------------------------------------------------------------------------------------
+    const                        -0.0279      0.017     -1.611      0.121      -0.064       0.008
+    Mortgage Delinquency Rate    -0.5664      0.260     -2.182      0.040      -1.105      -0.028
+    ==============================================================================
+    Omnibus:                       13.525   Durbin-Watson:                   0.513
+    Prob(Omnibus):                  0.001   Jarque-Bera (JB):               12.333
+    Skew:                          -1.534   Prob(JB):                      0.00210
+    Kurtosis:                       4.710   Cond. No.                         26.7
+    ==============================================================================
+
+## c) Finally, regress average volatility, vol_q_mean, against mort_del with the .OLS() and .fit() methods.
+# Add a constant to the regression
+mort_del = sm.add_constant(mort_del)
+# Create the regression factor model and fit it to the data
+results = sm.OLS(vol_q_mean, mort_del).fit()
+# Print a summary of the results
+print(results.summary())
+=> Output: <script.py> output:
+                                OLS Regression Results                            
+    ==============================================================================
+    Dep. Variable:                      y   R-squared:                       0.190
+    Model:                            OLS   Adj. R-squared:                  0.154
+    Method:                 Least Squares   F-statistic:                     5.174
+    Date:                Thu, 13 Nov 2025   Prob (F-statistic):             0.0330
+    Time:                        21:08:52   Log-Likelihood:                 60.015
+    No. Observations:                  24   AIC:                            -116.0
+    Df Residuals:                      22   BIC:                            -113.7
+    Df Model:                           1                                         
+    Covariance Type:            nonrobust                                         
+    =============================================================================================
+                                    coef    std err          t      P>|t|      [0.025      0.975]
+    ---------------------------------------------------------------------------------------------
+    const                         0.0100      0.007      1.339      0.194      -0.006       0.026
+    Mortgage Delinquency Rate     0.2558      0.112      2.275      0.033       0.023       0.489
+    ==============================================================================
+    Omnibus:                       19.324   Durbin-Watson:                   0.517
+    Prob(Omnibus):                  0.000   Jarque-Bera (JB):               23.053
+    Skew:                           1.814   Prob(JB):                     9.87e-06
+    Kurtosis:                       6.145   Cond. No.                         26.7
+    ==============================================================================
+
+CONCLUSION: As seen from the regressions, mortgage delinquencies are acting as a systematic risk factor for both minimum quarterly returns and average volatility of returns, but _not_ for average quarterly returns. The R-squared goodness of fit isn't high in any case, but a model with more factors would likely generate greater explanatory power.
+
+6) Practice with PyPortfolioOpt: returns
+
+# Load the investment portfolio price data into the price variable.
+prices = pd.read_csv("portfolio.csv")
+# Convert the 'Date' column to a datetime index
+prices['Date'] = pd.to_datetime(prices['Date'], format='%d/%m/%Y')
+prices.set_index(['Date'], inplace = True)
+
+# Import the mean_historical_return method
+from pypfopt.expected_returns import mean_historical_return
+# Compute the annualized average historical return
+mean_returns = mean_historical_return(prices, frequency = 252)
+# Plot the annualized average historical return
+plt.plot(mean_returns, linestyle = 'None', marker = 'o')
+plt.show()
+=> The average historical return is usually available as a proxy for expected returns, but is not always accurate--a more thorough estimate of expected returns requires an assumption about the return _distribution_, which we'll discuss in the context of Loss Distributions later in the course.
+
+7) Practice with PyPortfolioOpt: covariance
+
+Portfolio optimization relies upon an unbiased and efficient estimate of asset covariance. Although sample covariance is unbiased, it is not efficient--extreme events tend to be overweighted. One approach to alleviate this is through "covariance shrinkage", where large errors are reduced ('shrunk') to improve efficiency. In this exercise, you'll use pypfopt.risk_models's CovarianceShrinkage object to transform sample covariance into an efficient estimate. The textbook error shrinkage method, .ledoit_wolf(), is a method of this object. Asset prices are available in your workspace. Note that although the CovarianceShrinkage object takes prices as input, it actually calculates the covariance matrix of asset returns, not prices.
+
+# Import the CovarianceShrinkage object
+from pypfopt.risk_models import CovarianceShrinkage
+# Create the CovarianceShrinkage instance variable
+cs = CovarianceShrinkage(prices)
+
+# Compute the sample covariance matrix of returns
+sample_cov = prices.pct_change().cov() * 252
+# Compute the efficient covariance matrix of returns
+e_cov = cs.ledoit_wolf()
+# Display both the sample covariance_matrix and the efficient e_cov estimate
+print("Sample Covariance Matrix\n", sample_cov, "\n")
+print("Efficient Covariance Matrix\n", e_cov, "\n")
+=> Output: <script.py> output:
+    Sample Covariance Matrix
+                     Citibank  Morgan Stanley  Goldman Sachs  J.P. Morgan
+    Citibank           0.536           0.305          0.218        0.270
+    Morgan Stanley     0.305           0.492          0.259        0.218
+    Goldman Sachs      0.218           0.259          0.218        0.171
+    J.P. Morgan        0.270           0.218          0.171        0.264 
+    
+    Efficient Covariance Matrix
+                     Citibank  Morgan Stanley  Goldman Sachs  J.P. Morgan
+    Citibank           0.528           0.289          0.206        0.255
+    Morgan Stanley     0.289           0.486          0.245        0.207
+    Goldman Sachs      0.206           0.245          0.226        0.162
+    J.P. Morgan        0.255           0.207          0.162        0.270 
+Although the differences between the sample covariance and the efficient covariance (found by shrinking errors) may seem small, they have a huge impact on the estimation of the optimal portfolio weights and the generation of the efficient frontier. Practitioners generally use some form of efficient covariance for Modern Portfolio Theory.
+
+8) Breaking down the financial crisis
+
+In the video, you saw the efficient frontier for the portfolio of investment banks over the entire period 2005 - 2010, which includes time before, during, and after the global financial crisis. Here you'll break down this period into three sub-periods, or epochs: 2005-2006 (before), 2007-2008 (during), and 2009-2010 (after). For each period, you'll compute the efficient covariance matrix and compare it to the other.
+The portfolio's prices for 2005 - 2010 are available in your workspace, as is the CovarianceShrinkage object from PyPortfolioOpt.
+
+# Create a dictionary of time periods (or 'epochs')
+epochs = { 'before' : {'start': '1-1-2005', 'end': '31-12-2006'},
+           'during' : {'start': '1-1-2007', 'end': '31-12-2008'},
+           'after'  : {'start': '1-1-2009', 'end': '31-12-2010'}
+         }
+# Compute the efficient covariance for each epoch
+e_cov = {}
+for x in epochs.keys():
+  sub_price = prices.loc[epochs[x]['start']:epochs[x]['end']]
+  e_cov[x] = CovarianceShrinkage(sub_price).ledoit_wolf()
+# Display the efficient covariance matrices for all epochs
+print("Efficient Covariance Matrices\n", e_cov)
+=> Output: <script.py> output:
+    Efficient Covariance Matrices
+     {'before':                 Citibank  Morgan Stanley  Goldman Sachs  J.P. Morgan
+    Citibank           0.018           0.014          0.013        0.014
+    Morgan Stanley     0.014           0.043          0.031        0.017
+    Goldman Sachs      0.013           0.031          0.044        0.018
+    J.P. Morgan        0.014           0.017          0.018        0.024, 'during':                 Citibank  Morgan Stanley  Goldman Sachs  J.P. Morgan
+    Citibank           0.713           0.465          0.324        0.365
+    Morgan Stanley     0.465           0.994          0.435        0.299
+    Goldman Sachs      0.324           0.435          0.409        0.225
+    J.P. Morgan        0.365           0.299          0.225        0.423, 'after':                 Citibank  Morgan Stanley  Goldman Sachs  J.P. Morgan
+    Citibank           0.841           0.345          0.253        0.357
+    Morgan Stanley     0.345           0.389          0.232        0.280
+    Goldman Sachs      0.253           0.232          0.245        0.224
+    J.P. Morgan        0.357           0.280          0.224        0.382}
+The breakdown of the 2005 - 2010 period into sub-periods shows how the portfolio's risk increased during the crisis, and this changed the risk-return trade-off after the crisis. For future reference, also note that although we used a loop in this exercise, a dictionary comprehension could also have been used to create the efficient covariance matrix.
+
+9) The efficient frontier and the financial crisis
+
+Previously, you examined the covariance matrix of the investment bank portfolio before, during, and after the financial crisis. Now you will visualize the changes that took place in the efficient frontier, showing how the crisis created a much higher baseline risk for any given return.
+Using the PyPortfolioOpt pypfopt library's Critical Line Algorithm (CLA) object, you will derive and visualize the efficient frontier during the crisis period, and add it to a scatterplot already displaying the efficient frontiers before and after the crisis.
+Expected returns returns_during and the efficient covariance matrix ecov_during are available, as is the CLA object from pypfopt. (Remember that DataCamp plots can be expanded to their own window, which can increase readability.)
+
+# Initialize the Critical Line Algorithm object
+efficient_portfolio_during = CLA(returns_during, ecov_during)
+# Find the minimum volatility portfolio weights and display them
+print(efficient_portfolio_during.min_volatility())
+# Compute the efficient frontier
+(ret, vol, weights) = efficient_portfolio_during.efficient_frontier()
+# Add the frontier to the plot showing the 'before' and 'after' frontiers
+plt.scatter(vol, ret, s = 4, c = 'g', marker = '.', label = 'During')
+plt.legend()
+plt.show()
+=> Output: <script.py> output:
+    OrderedDict([('Morgan Stanley', 0.0), ('Goldman Sachs', 0.5153607711481254), ('J.P. Morgan', 0.4846392288518745)])
+
+10) VaR for the Normal distribution
+
+To get accustomed to the Value at Risk (VaR) measure, it helps to apply it to a known distribution. The Normal (or Gaussian) distribution is especially appealing as it 1) has an analytically simple form, and 2) represents a wide variety of empirical phenomena. For this exercise, you'll assume that the loss of a portfolio is normally distributed, i.e., the higher the value drawn from the distribution, the higher the loss.
+You'll learn how to apply both scipy.stats.norm's ppf() (percent point function) and numpy's quantile() function to find the VaR at the 95% and 99% confidence levels, respectively, for a standard Normal distribution. You'll also visualize the VaR as a threshold on a Normal distribution plot.
+
+# Create the VaR measure at the 95% confidence level using norm.ppf()
+VaR_95 = norm.ppf(0.95)
+# Create the VaR measure at the 99% confidence level using numpy.quantile()
+draws = norm.rvs(size = 100000)
+VaR_99 = np.quantile(draws, 0.99)
+# Compare the 95% and 99% VaR
+print("95% VaR: ", VaR_95, "; 99% VaR: ", VaR_99)
+# Plot the normal distribution histogram and 95% VaR
+plt.hist(draws, bins = 100)
+plt.axvline(x = VaR_95, c='r', label = "VaR at 95% Confidence Level")
+plt.legend(); plt.show()
+=> Output: <script.py> output:
+    95% VaR:  1.6448536269514722 ; 99% VaR:  2.3111538222136265
+As your plot shows, the 95% VaR is about 1.65, which is the maximum loss that is expected to occur 95% of the time. You've also used both the inverse cumulative density function (the percent point function) and the quantile function to find the VaR.
+
+11) Comparing CVaR and VaR
+
+The conditional value at risk (CVaR), or expected shortfall (ES), asks what the average loss will be, conditional upon losses exceeding some threshold at a certain confidence level. It uses VaR as a point of departure, but contains more information because it takes into consideration the tail of the loss distribution. You'll first compute the 95% VaR for a Normal distribution of portfolio losses, with the same mean and standard deviation as the 2005-2010 investment bank portfolio_losses. You'll then use the VaR to compute the 95% CVaR, and plot both against the Normal distribution. The portfolio_losses are available in your workspace, as well as the norm Normal distribution from scipy.stats.
+
+# Compute the mean and standard deviation of the portfolio losses
+pm = portfolio_losses.mean()
+ps = portfolio_losses.std()
+# Compute the 95% VaR using the .ppf()
+VaR_95 = norm.ppf(0.95, loc = pm, scale = ps)
+# Compute the expected tail loss and the CVaR in the worst 5% of cases
+tail_loss = norm.expect(lambda x: x, loc = pm, scale = ps, lb = VaR_95)
+CVaR_95 = (1 / (1 - 0.95)) * tail_loss
+# Plot the normal distribution histogram and add lines for the VaR and CVaR
+plt.hist(norm.rvs(size = 100000, loc = pm, scale = ps), bins = 100)
+plt.axvline(x = VaR_95, c='r', label = "VaR, 95% confidence level")
+plt.axvline(x = CVaR_95, c='g', label = "CVaR, worst 5% of outcomes")
+plt.legend(); plt.show()
+=> Output: The CVaR is a richer measure of risk than the VaR, but can be more difficult to compute when the distribution of losses (or returns) is unknown, or is more complicated than a Normal distribution. Nevertheless, both measures are used in risk management to identify 'danger signs' when portfolio losses approach the VaR or CVaR threshold.
+
+12) VaR and risk exposure
+
+Previously, you computed the VaR and CVaR when losses were normally distributed. Here you'll find the VaR using another common loss distribution, the Student's t-distribution (or T) contained in scipy.stats. You'll compute an array of 99% VaR measures from the T distribution (with 30 - 1 = 29 degrees of freedom), using 30-day rolling windows from investment bank portfolio losses. First you'll find the mean and standard deviation of each window, creating a list of rolling_parameters. You'll use these to compute the 99% VaR array of measures.
+Then you'll use this array to plot the risk exposure for a portfolio initially worth $100,000. Recall that risk exposure is the probability of loss (this is 1%) multiplied by the loss amount (this is the loss given by the 99% VaR).
+
+# Import the Student's t-distribution
+from scipy.stats import t
+# Create rolling window parameter list
+mu = losses.rolling(30).mean()
+sigma = losses.rolling(30).std()
+rolling_parameters = [(29, mu[i], s) for i,s in enumerate(sigma)]
+# Compute the 99% VaR array using the rolling window parameters
+VaR_99 = np.array( [ t.ppf(0.99, *params) 
+                    for params in rolling_parameters ] )
+# Plot the minimum risk exposure over the 2005-2010 time period
+plt.plot(losses.index, 0.01 * VaR_99 * 100000)
+plt.show()
+=> Because the confidence level was fixed at 99%, we kept the probability of loss at 1%. This means the risk exposure is just a rescaled VaR measure of the maximum portfolio loss 99% of the time. You can see how much larger the risk exposure was during the heart of the crisis in 2009.
+
+13) CVaR and risk exposure
+
+Recall that CVaR is the expected value of loss given a minimum loss threshold. So CVaR is already in the form of a risk exposure--it is the sum (or integral) of the probability of loss in the distribution tail multiplied by the loss amount. To derive the 99% CVaR, you'll first fit a T distribution to available crisis_losses portfolio data from 2008 - 2009, using the t.fit() method. This returns the T distribution parameters p used to find the VaR with the .ppf() method. Next, you'll compute the 99% VaR, since it's used to find the CVaR.
+Finally, you'll compute the 99% CVaR measure using the t.expect() method, which is the same method you used to compute CVaR for the Normal distribution in an earlier exercise.
+The t distribution from scipy.stats is also available.
+
+# Fit the Student's t distribution to crisis losses
+p = t.fit(crisis_losses)
+# Compute the VaR_99 for the fitted distribution
+VaR_99 = t.ppf(0.99, *p)
+# Use the fitted parameters and VaR_99 to compute CVaR_99
+tail_loss = t.expect( lambda y: y, args = (p[0],), loc = p[1], scale = p[2], lb = VaR_99 )
+CVaR_99 = (1 / (1 - 0.99)) * tail_loss
+print(CVaR_99)
+=> Output: <script.py> output:
+    0.3380538488604617
+The Student's t-distribution is widely used when the Normal distribution is too restrictive for portfolio losses, but still allows convergence to the Normal when the sample size becomes very large.
+
+14) VaR from a fitted distribution
+
+Minimizing CVaR requires calculating the VaR at a confidence level, say 95%. Previously, you derived the VaR as a quantile from a Normal (or Gaussian) distribution, but minimizing the CVaR more generally requires computing the quantile from a distribution that best fits the data. In this exercise, a fitted loss distribution is provided, which fits losses from an equal-weighted investment bank portfolio from 2005-2010. You'll first plot this distribution using its .evaluate() method (fitted distributions will be covered in more detail in Chapter 4).
+Next, you'll use the .resample() method of the fitted object to draw a random sample of 100,000 observations from the fitted distribution.
+Finally, using np.quantile() on the random sample will then compute the 95% VaR.
+
+# Visualize the fitted distribution with a plot
+x = np.linspace(-0.25,0.25,1000)
+plt.plot(x,fitted.evaluate(x))
+plt.show()
+# Create a random sample of 100,000 observations from the fitted distribution
+sample = fitted.resample(100000)
+# Compute and display the 95% VaR from the random sample
+VaR_95 = np.quantile(sample, 0.95)
+print(VaR_95)
+=> Output: <script.py> output:
+    0.043128245436064166
+Resampling from a fitted distribution is a common technique to build statistics such as quantiles, which are needed for VaR risk measurement. Although you derived the VaR explicitly here, in the following exercise, this will be automatically performed as part of the CVaR minimization routine.
+
+15) Minimizing CVaR
+
+This exercise will give you practice with PyPortfolioOpt's tools for CVaR minimization as a risk management objective.
+You'll load the pypfopt.efficient_frontier module and retrieve the EfficientCVaR class, creating an instance of the class using the investment bank assets over the 2005 - 2010 period.
+You'll then use the instance's min_cvar() method to find the optimal portfolio weights that minimize the CVaR.
+Portfolio asset returns are in the returns vector--this exercise also uses a names dictionary to map portfolio weights to bank names.
+
+# Import the EfficientCVaR class
+from pypfopt.efficient_frontier import EfficientCVaR
+# Create the efficient frontier for CVaR minimization
+ec = EfficientCVaR(None, returns)
+# Find the cVar-minimizing portfolio weights at the default 95% confidence level
+optimal_weights = ec.min_cvar()
+# Map the values in optimal_weights to the bank names
+optimal_weights = {names[i] : optimal_weights[i] for i in optimal_weights}
+# Display the optimal weights
+print(optimal_weights)
+=> Output: <script.py> output:
+    {'Citibank': 1.2e-14, 'Morgan Stanley': 1.4e-15, 'Goldman Sachs': 0.669324359403484, 'J.P. Morgan': 0.3306756405965026}
+The CVaR minimizing portfolio over the 2005-2010 period is essentially weighted for Goldman Sachs and J.P. Morgan. In what follows, we'll see if this conclusion continues to hold for the periods before, during, and after the crisis.
+
+16)
 
