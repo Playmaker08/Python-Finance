@@ -1020,5 +1020,41 @@ print(optimal_weights)
     {'Citibank': 1.2e-14, 'Morgan Stanley': 1.4e-15, 'Goldman Sachs': 0.669324359403484, 'J.P. Morgan': 0.3306756405965026}
 The CVaR minimizing portfolio over the 2005-2010 period is essentially weighted for Goldman Sachs and J.P. Morgan. In what follows, we'll see if this conclusion continues to hold for the periods before, during, and after the crisis.
 
-16)
+16) CVaR risk management and the crisis
 
+In this exercise, you'll derive the 95% CVaR-minimizing portfolio for 2005-2006, 2007-2008, and 2009-2010. These are the periods (or 'epochs') before, during and after the crisis. To help with this, asset returns in returns_dict is available as a Python dictionary, with epoch keys 'before', 'during' and 'after'. Minimum volatility portfolios are also saved in a dictionary called min_vol_dict, with the same keys--be sure to check them out in the console.
+After deriving each epoch's CVaR-minimizing portfolios, you'll compare them to the min_vol_dict portfolios. This will show how active risk management against conditional losses changes the portfolio weights. The EfficientCVaR class is available.
+
+# Initialize the efficient portfolio dictionary
+ec_dict = {}
+# For each epoch, assign an efficient frontier cvar instance to ec
+for x in ['before', 'during', 'after']: 
+    ec_dict[x] = EfficientCVaR(None, returns_dict[x])
+
+# Initialize the dictionary of optimal weights
+opt_wts_dict = {}
+# Find and display the CVaR-minimizing portfolio weights at the default 95% confidence level
+for x in ['before', 'during', 'after']:
+    opt_wts_dict[x] = ec_dict[x].min_cvar()
+    # map bank names to optimal weights
+    opt_wts_dict[x] = {names[i] : opt_wts_dict[x][i] for i in opt_wts_dict[x]}
+# Compare the CVaR-minimizing weights to the minimum volatility weights for the 'before' epoch
+print("CVaR:\n", pd.DataFrame.from_dict(opt_wts_dict['before']), "\n")
+print("Min Vol:\n", pd.DataFrame.from_dict(min_vol_dict['before']), "\n")
+=> Output: <script.py> output:
+    CVaR:
+                     Weight
+    Citibank         0.461
+    Morgan Stanley   0.055
+    Goldman Sachs    0.015
+    J.P. Morgan      0.469 
+    
+    Min Vol:
+                     Weight
+    Citibank         0.658
+    Morgan Stanley   0.048
+    Goldman Sachs    0.040
+    J.P. Morgan      0.254 
+Goldman Sachs is held in the minimum variance and CVaR-minimizing portfolios for all epochs of the crisis.
+
+17)
