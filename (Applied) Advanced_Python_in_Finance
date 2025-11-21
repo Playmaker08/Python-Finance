@@ -1360,5 +1360,244 @@ print("Reserve amount: ", 1000000 * CVaR_99)
     Reserve amount:  148202.41307731598
 As you can see, to cover the expected maximum weekly loss you'd need a reserve of roughly 15% of the portfolio value, which is significant. Although the financial crisis was largely over by 2010, new international regulations were implemented requiring higher reserves for banks and institutional investors using both the VaR and CVaR risk measures.
 
-32)
+32) KDE of a loss distribution
+
+Kernel density estimation (KDE) can fit distributions with 'fat tails', i.e. distributions with occasionally large deviations from the mean (such as the distribution of portfolio losses).
+You learned about the Student's T distribution, which for low degrees of freedom can also capture this feature of portfolio losses.
+You'll compare a Gaussian KDE with a T distribution, each fitted to provided portfolio losses from 2008 - 2009. You'll visualize the relative fits of each using a histogram. (Recall the T distribution uses fitted parameters params, while the gaussian_kde, being non-parametric, returns a function.)
+The function gaussian_kde() is available, as is the t distribution, both from scipy.stats. Plots may be added to the provided axis object.
+
+# Generate a fitted T distribution over losses
+params = t.fit(losses)
+# Generate a Gaussian kernal density estimate over losses
+kde = gaussian_kde(losses)
+# Add the PDFs of both estimates to a histogram, and display
+loss_range = np.linspace(np.min(losses), np.max(losses), 1000)
+axis.plot(loss_range, t.pdf(loss_range, *params), label = 'T dist')
+axis.plot(loss_range, kde.pdf(loss_range), label = 'Gaussian KDE')
+plt.legend(); plt.show()
+=> Both estimates fit the portfolio data better than a Normal distribution. In this example, while the T fits the peak of the data histogram better, the Gaussian KDE fits the tails better. Both parametric and non-parametric estimation are used extensively in statistics and risk management.
+
+Note: The T and Gaussian KDE estimates are both good fits, each in a different way: the T captures the peak well, while the KDE captures the tails better.
+
+33) CVaR and loss cover selection
+
+In previous exercises you saw that both the T and the Gaussian KDE distributions fit portfolio losses for the crisis period fairly well. Given this, which of these is best for risk management? One way to choose is to select the distribution that provides the largest loss cover, to cover the "worst worst-case scenario" of losses.
+The t and kde distributions are available and have been fit to 2007-2008 portfolio losses (t fitted parameters are in p). You'll derive the one day 99% CVaR estimate for each distribution; the largest CVaR estimate is then the 'safest' reserve amount to hold, covering expected losses that exceed the 99% VaR.
+The kde instance has been given a special .expect() method, just for this exercise, to compute the expected value needed for the CVaR.
+
+# Find the VaR as a quantile of random samples from the distributions
+VaR_99_T   = np.quantile(t.rvs(size=1000, *p), 0.99)
+VaR_99_KDE = np.quantile(kde.resample(size=1000), 0.99)
+# Find the expected tail losses, with lower bounds given by the VaR measures
+integral_T   = t.expect(lambda x: x, args = (p[0],), loc = p[1], scale = p[2], lb = VaR_99_T)
+integral_KDE = kde.expect(lambda x: x, lb = VaR_99_KDE)
+# Create the 99% CVaR estimates
+CVaR_99_T   = (1 / (1 - 0.99)) * integral_T
+CVaR_99_KDE = (1 / (1 - 0.99)) * integral_KDE
+# Display the results
+print("99% CVaR for T: ", CVaR_99_T, "; 99% CVaR for KDE: ", CVaR_99_KDE)
+=> Output: <script.py> output:
+    99% CVaR for T:  0.27162015871420747 ; 99% CVaR for KDE:  0.2395800993943245
+As you can see, the T distribution returns a larger estimated CVaR, although the KDE estimate is fairly close. In any case, using the T distribution's 99% CVaR estimate to specify a reserve amount ensures both possible maximum expected losses are covered.
+
+34) Single layer neural networks
+
+To become comfortable using neural networks it will be helpful to start with a simple approximation of a function. You'll train a neural network to approximate a mapping between an input, x, and an output, y. They are related by the square root function, i.e. y = sqrt(x).
+The input vector x is given to you. You'll first compute the square root of x using Numpy's sqrt() function, generating the output series y. Then you'll create a simple neural network and train the network on the x series.
+After training, you'll then plot both the y series and the output of the neural network, to see how closely the network approximates the square root function.
+
+# Create the training values from the square root function
+y = np.sqrt(x)
+# Create the neural network
+model = Sequential()
+model.add(Dense(16, input_dim=1, activation='relu'))
+model.add(Dense(1))
+# Train the network
+model.compile(loss='mean_squared_error', optimizer='rmsprop')
+model.fit(x, y, epochs=100)
+## Plot the resulting approximation and the training values
+plt.plot(x, y, x, model.predict(x))
+plt.show()
+=> Output: <script.py> output:
+    Epoch 1/100
+    
+ 1/32 [..............................] - ETA: 7s - loss: 5.2230
+32/32 [==============================] - 0s 640us/step - loss: 2.8609
+    Epoch 2/100
+    
+ 1/32 [..............................] - ETA: 0s - loss: 1.2615
+32/32 [==============================] - 0s 561us/step - loss: 0.6061
+    Epoch 3/100
+    
+ 1/32 [..............................] - ETA: 0s - loss: 0.1896
+32/32 [==============================] - 0s 571us/step - loss: 0.1160
+
+You can see from the output of the model.fit() method that the mean squared error falls rapidly, even for a relatively simple network of a single hidden layer with 4 neurons. Adding more neurons and/or more epochs can improve the error significantly.
+
+35) Asset price prediction
+
+Now you can use a neural network to predict an asset price, which is a large component of quantitative financial analysis as well as risk management. You'll use the 2005-2010 stock prices of Citibank, Goldman Sachs and J. P. Morgan to train a network to predict the price of Morgan Stanley's stock. You'll create and train a neural network with one input layer, one output layer and two hidden layers.
+Then a scatter plot will be shown to see how far the predicted Morgan Stanley prices are from their actual values over 2005-2010. (Recall that if the predictions are perfect, the resulting scatter plot will lie on the 45-degree line of the plot.)
+The Sequential and Dense objects are available, as well as the prices DataFrame with investment bank prices from 2005-2010.
+
+# Set the input and output data
+training_input = prices.drop('Morgan Stanley', axis=1)
+training_output = prices['Morgan Stanley']
+# Create and train the neural network with two hidden layers
+model = Sequential()
+model.add(Dense(16, input_dim=3, activation='sigmoid'))
+model.add(Dense(8, activation='relu'))
+model.add(Dense(1))
+model.compile(loss='mean_squared_logarithmic_error', optimizer='rmsprop')
+model.fit(training_input, training_output, epochs=100)
+# Scatter plot of the resulting model prediction
+axis.scatter(training_output, model.predict(training_input)); plt.show()
+=> Output: You can see that the predicted values fall along the 45-degree line of the scatter plot, showing that the neural network predicts Morgan Stanley's price reasonably well. More robust neural nets use hundreds of hidden layers, and potentially millions of parameters!
+
+36) Real-time risk management
+
+It's time to use what you've learned about neural networks to perform (almost!) real-time risk management.
+
+A 14-day rolling window of asset returns provides enough data to create a time series of minimum volatility portfolios using Modern Portfolio Theory. These minimum_vol portfolio weights are the training values for a neural network. This is a (1497 x 4) matrix. The input is the matrix of weekly average_asset_returns, corresponding to each efficient portfolio. This is a (1497 x 4) matrix.
+Create a Sequential neural network with the proper input dimension and two hidden layers. Training this network would take too long, so you'll use an available pre_trained_model of identical type to predict portfolio weights for a new asset price vector.
+
+# Create neural network model
+model = Sequential()
+model.add(Dense(128, input_dim=4, activation='relu'))
+model.add(Dense(64, activation = 'relu'))
+model.add(Dense(4, activation = 'relu'))
+# Use the pre-trained model to predict portfolio weights given new asset returns
+asset_returns = np.array([0.001060, 0.003832, 0.000726, -0.002787])
+asset_returns.shape = (1,4)
+print("Predicted minimum volatility portfolio: ", pre_trained_model.predict(asset_returns))
+=> Output: <script.py> output:
+    Predicted minimum volatility portfolio:  [[0.         0.28107247 0.         0.7649856 ]]
+ This exercise shows just a small part of the powerful applications of neural networks to regression (approximation) analysis. Neural networks can also be used to classify structural break points, create hedge portfolios to mitigate risk, and much more.
+
+
+CHAPTER 3: CREDIT RISK MODELING
+
+1) Explore the credit data
+
+Begin by looking at the data set cr_loan. In this data set, loan_status shows whether the loan is currently in default with 1 being default and 0 being non-default.
+You have more columns within the data, and many could have a relationship with the values in loan_status. You need to explore the data and these relationships more with further analysis to understand the impact of the data on credit loan defaults. Checking the structure of the data as well as seeing a snapshot helps us better understand what's inside the set. Similarly, visualizations provide a high level view of the data in addition to important trends and patterns.
+The data set cr_loan has already been loaded in the workspace.
+
+# Check the structure
+print(cr_loan.dtypes)
+# Check the first five rows
+print(cr_loan.head())
+=> Output: <script.py> output:
+    person_age                      int64
+    person_income                   int64
+    person_home_ownership          object
+    person_emp_length             float64
+    loan_intent                    object
+    loan_grade                     object
+    loan_amnt                       int64
+    loan_int_rate                 float64
+    loan_status                     int64
+    loan_percent_income           float64
+    cb_person_default_on_file      object
+    cb_person_cred_hist_length      int64
+    dtype: object
+       person_age  person_income person_home_ownership  person_emp_length loan_intent  ... loan_int_rate  loan_status  loan_percent_income  cb_person_default_on_file  cb_person_cred_hist_length
+    0          22          59000                  RENT              123.0    PERSONAL  ...         16.02            1                 0.59                          Y                           3
+    1          21           9600                   OWN                5.0   EDUCATION  ...         11.14            0                 0.10                          N                           2
+    2          25           9600              MORTGAGE                1.0     MEDICAL  ...         12.87            1                 0.57                          N                           3
+    3          23          65500                  RENT                4.0     MEDICAL  ...         15.23            1                 0.53                          N                           2
+    4          24          54400                  RENT                8.0     MEDICAL  ...         14.27            1                 0.55                          Y                           4
+    
+    [5 rows x 12 columns]
+
+# Look at the distribution of loan amounts with a histogram
+n, bins, patches = plt.hist(x=cr_loan['loan_amnt'], bins='auto', color='blue',alpha=0.7, rwidth=0.85)
+plt.xlabel("Loan Amount")
+plt.show()
+
+# Plot a scatter plot of income against age
+plt.scatter(cr_loan['person_income'], cr_loan['person_age'],c='blue', alpha=0.5)
+plt.xlabel('Personal Income')
+plt.ylabel('Person Age')
+plt.show()
+=> Starting with data exploration helps us keep from getting a.head() of ourselves! We can already see a positive correlation with age and income, which could mean these older recipients are further along in their career and therefore earn higher salaries. There also appears to be an outlier in the data.
+
+2) Crosstab and pivot tables
+
+Often, financial data is viewed as a pivot table in spreadsheets like Excel.
+With cross tables, you get a high level view of selected columns and even aggregation like a count or average. For most credit risk models, especially for probability of default, columns like person_emp_length and person_home_ownership are common to begin investigating.
+You will be able to see how the values are populated throughout the data, and visualize them. For now, you need to check how loan_status is affected by factors like home ownership status, loan grade, and loan percentage of income.
+
+# Create a cross table of the loan intent and status
+print(pd.crosstab(cr_loan['loan_intent'], cr_loan['loan_status'], margins = True))
+=> Output: <script.py> output:
+    loan_status            0     1    All
+    loan_intent                          
+    DEBTCONSOLIDATION   3722  1490   5212
+    EDUCATION           5342  1111   6453
+    HOMEIMPROVEMENT     2664   941   3605
+    MEDICAL             4450  1621   6071
+    PERSONAL            4423  1098   5521
+    VENTURE             4872   847   5719
+    All                25473  7108  32581
+
+# Create a cross table of home ownership, loan status, and grade
+print(pd.crosstab(cr_loan['person_home_ownership'],[cr_loan['loan_status'],cr_loan['loan_grade']]))
+=> Output: <script.py> output:
+    loan_status               0                        ...    1                   
+    loan_grade                A     B     C    D    E  ...    C     D    E   F   G
+    person_home_ownership                              ...                        
+    MORTGAGE               5219  3729  1934  658  178  ...  321   553  161  61  31
+    OTHER                    23    29    11    9    2  ...    6    11    6   2   0
+    OWN                     860   770   464  264   26  ...   31    18   31   8   5
+    RENT                   3602  4222  2710  554  137  ...  981  1559  423  99  27
+    
+    [4 rows x 14 columns]
+
+# Create a cross table of home ownership, loan status, and average percent income
+print(pd.crosstab(cr_loan['person_home_ownership'], cr_loan['loan_status'],
+                  values=cr_loan['loan_percent_income'], aggfunc='mean'))
+=> Output: <script.py> output:
+    loan_status                0      1
+    person_home_ownership              
+    MORTGAGE               0.147  0.185
+    OTHER                  0.144  0.300
+    OWN                    0.180  0.297
+    RENT                   0.145  0.265
+
+# Create a box plot of percentage income by loan status
+cr_loan.boxplot(column = ['loan_percent_income'], by = 'loan_status')
+plt.title('Average Percent Income by Loan Status')
+plt.suptitle('')
+plt.show()
+=> It looks like the average percentage of income for defaults is higher. This could indicate those recipients have a debt-to-income ratio that's already too high.
+
+3) Finding outliers with cross tables
+
+Now you need to find and remove outliers you suspect might be in the data. For this exercise, you can use cross tables and aggregate functions. Have a look at the person_emp_length column. You've used the aggfunc = 'mean' argument to see the average of a numeric column before, but to detect outliers you can use other functions like min and max.
+It may not be possible for a person to have an employment length of less than 0 or greater than 60. You can use cross tables to check the data and see if there are any instances of this!
+
+# Create the cross table for loan status, home ownership, and the max employment length
+print(pd.crosstab(cr_loan['loan_status'],cr_loan['person_home_ownership'],
+                  values=cr_loan['person_emp_length'], aggfunc='max'))
+# Create an array of indices where employment length is greater than 60
+indices = cr_loan[cr_loan['person_emp_length'] > 60].index
+# Drop the records from the data based on the indices and create a new dataframe
+cr_loan_new = cr_loan.drop(indices)
+# Create the cross table from earlier and include minimum employment length
+print(pd.crosstab(cr_loan_new['loan_status'],cr_loan_new['person_home_ownership'],
+            values=cr_loan_new['person_emp_length'], aggfunc=['min','max']))
+=> Output: <script.py> output:
+    person_home_ownership  MORTGAGE  OTHER   OWN   RENT
+    loan_status                                        
+    0                         123.0   24.0  31.0   41.0
+    1                          34.0   11.0  17.0  123.0
+                               min                      max                  
+    person_home_ownership MORTGAGE OTHER  OWN RENT MORTGAGE OTHER   OWN  RENT
+    loan_status                                                              
+    0                          0.0   0.0  0.0  0.0     38.0  24.0  31.0  41.0
+    1                          0.0   0.0  0.0  0.0     34.0  11.0  17.0  27.0
+
+4)
 
