@@ -1598,6 +1598,7 @@ print(pd.crosstab(cr_loan_new['loan_status'],cr_loan_new['person_home_ownership'
     loan_status                                                              
     0                          0.0   0.0  0.0  0.0     38.0  24.0  31.0  41.0
     1                          0.0   0.0  0.0  0.0     34.0  11.0  17.0  27.0
+Generally with credit data, key columns like person_emp_length are of high quality, but there is always room for error. With this in mind, we build our intuition for detecting outliers!
 
 4)
 
