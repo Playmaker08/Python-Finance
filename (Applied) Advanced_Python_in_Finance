@@ -1600,5 +1600,963 @@ print(pd.crosstab(cr_loan_new['loan_status'],cr_loan_new['person_home_ownership'
     1                          0.0   0.0  0.0  0.0     34.0  11.0  17.0  27.0
 Generally with credit data, key columns like person_emp_length are of high quality, but there is always room for error. With this in mind, we build our intuition for detecting outliers!
 
-4)
+4) Visualizing credit outliers
+
+You discovered outliers in person_emp_length where values greater than 60 were far above the norm. person_age is another column in which a person can use a common sense approach to say it is very unlikely that a person applying for a loan will be over 100 years old. Visualizing the data here can be another easy way to detect outliers. You can use other numeric columns like loan_amnt and loan_int_rate to create plots with person_age to search for outliers.
+
+# Create the scatter plot for age and amount
+plt.scatter(cr_loan['person_age'], cr_loan['loan_amnt'], c='blue', alpha=0.5)
+plt.xlabel("Person Age")
+plt.ylabel("Loan Amount")
+plt.show()
+
+# Use Pandas to drop the record from the data frame and create a new one
+cr_loan_new = cr_loan.drop(cr_loan[cr_loan['person_age'] > 100].index)
+# Create a scatter plot of age and interest rate
+colors = ["blue","red"]
+plt.scatter(cr_loan_new['person_age'], cr_loan_new['loan_int_rate'],
+            c = cr_loan_new['loan_status'],
+            cmap = matplotlib.colors.ListedColormap(colors),
+            alpha=0.5)
+plt.xlabel("Person Age")
+plt.ylabel("Loan Interest Rate")
+plt.show()
+=> You really .drop() those rows like they're hot! Notice that in the last plot we have loan_status as a label for colors. This shows a different color depending on the class. In this case, it's loan default and non-default, and it looks like there are more defaults with high interest rates.
+
+5) Replacing missing credit data
+
+Now, you should check for missing data. If you find missing data within loan_status, you would not be able to use the data for predicting probability of default because you wouldn't know if the loan was a default or not. Missing data within person_emp_length would not be as damaging, but would still cause training errors.
+So, check for missing data in the person_emp_length column and replace any missing values with the median.
+
+# Print an array of columns with null values
+print(cr_loan.columns[cr_loan.isnull().any()])
+# Print the top five rows with nulls for employment length
+print(cr_loan[cr_loan['person_emp_length'].isnull()].head())
+# Replace the null values with the median value for all employment lengths
+cr_loan['person_emp_length'].fillna((cr_loan['person_emp_length'].median()), inplace=True)
+# Create a histogram of employment length
+n, bins, patches = plt.hist(cr_loan['person_emp_length'], bins='auto', color='blue')
+plt.xlabel("Person Employment Length")
+plt.show()
+=> Output: <script.py> output:
+    Index(['person_emp_length', 'loan_int_rate'], dtype='object')
+N.o  person_age  person_income person_home_ownership person_emp_length   loan_intent  loan_int_rate  loan_status  loan_percent_income  cb_person_default_on_file  cb_person_cred_hist_length
+103  22          12600         MORTGAGE              NaN                  PERSONAL        5.42            1                 0.16                          N                           4
+218  24          185000        MORTGAGE              NaN                  EDUCATION       12.42           0                 0.19                          N                           2
+375  24          16800         MORTGAGE              NaN              DEBTCONSOLIDATION   NaN             1                 0.23                          N                           3
+403  25          52000         RENT                  NaN                  PERSONAL        10.74           1                 0.46                          N                           2
+404  22          17352         MORTGAGE              NaN                  EDUCATION       15.27           0                 0.13                          Y                           3
+
+6) Removing missing data
+
+You replaced missing data in person_emp_length, but in the previous exercise you saw that loan_int_rate has missing data as well. Similar to having missing data within loan_status, having missing data within loan_int_rate will make predictions difficult. Because interest rates are set by your company, having missing data in this column is very strange. It's possible that data ingestion issues created errors, but you cannot know for sure. For now, it's best to .drop() these records before moving forward.
+
+# Print the number of nulls
+print(cr_loan['loan_int_rate'].isnull().sum())
+# Store the array on indices
+indices = cr_loan[cr_loan['loan_int_rate'].isnull()].index
+# Save the new data without missing data
+cr_loan_clean = cr_loan.drop(indices)
+=> Output: Now that the missing data and outliers have been processed, the data is ready for modeling! More often than not, financial data is fairly tidy, but it's always good to practice preparing data for analytical work.
+
+7) Logistic regression basics
+
+You've now cleaned up the data and created the new data set cr_loan_clean. Think back to the final scatter plot from chapter 1 which showed more defaults with high loan_int_rate. Interest rates are easy to understand, but what how useful are they for predicting the probability of default?
+Since you haven't tried predicting the probability of default yet, test out creating and training a logistic regression model with just loan_int_rate. Also check the model's internal parameters, which are like settings, to see the structure of the model with this one column.
+
+# Create the X and y data sets
+X = cr_loan_clean[['loan_int_rate']]
+y = cr_loan_clean[['loan_status']]
+# Create and fit a logistic regression model
+clf_logistic_single = LogisticRegression(solver='lbfgs')
+clf_logistic_single.fit(X, np.ravel(y))
+# Print the parameters of the model
+print(clf_logistic_single.get_params())
+# Print the intercept of the model
+print(clf_logistic_single.intercept_)
+=> Output: <script.py> output:
+    {'C': 1.0, 'class_weight': None, 'dual': False, 'fit_intercept': True, 'intercept_scaling': 1, 'l1_ratio': None, 'max_iter': 100, 'multi_class': 'auto', 'n_jobs': None, 'penalty': 'l2', 'random_state': None, 'solver': 'lbfgs', 'tol': 0.0001, 'verbose': 0, 'warm_start': False}
+    [-4.45785901]
+
+8) Multivariate logistic regression
+
+Generally, you won't use only loan_int_rate to predict the probability of default. You will want to use all the data you have to make predictions. With this in mind, try training a new model with different columns, called features, from the cr_loan_clean data. Will this model differ from the first one? For this, you can easily check the .intercept_ of the logistic regression. Remember that this is the y-intercept of the function and the overall log-odds of non-default.
+The cr_loan_clean data has been loaded in the workspace along with the previous model clf_logistic_single.
+
+# Create X data for the model
+X_multi = cr_loan_clean[['loan_int_rate','person_emp_length']]
+# Create a set of y data for training
+y = cr_loan_clean[['loan_status']]
+# Create and train a new logistic regression
+clf_logistic_multi = LogisticRegression(solver='lbfgs').fit(X_multi, np.ravel(y))
+# Print the intercept of the model
+print(clf_logistic_multi.intercept_)
+
+9) Creating training and test sets
+
+You've just trained LogisticRegression() models on different columns. You know that the data should be separated into training and test sets. test_train_split() is used to create both at the same time. The training set is used to make predictions, while the test set is used for evaluation. Without evaluating the model, you have no way to tell how well it will perform on new loan data. In addition to the intercept_, which is an attribute of the model, LogisticRegression() models also have the .coef_ attribute. This shows how important each training column is for predicting the probability of default.
+
+# Create the X and y data sets
+X = cr_loan_clean[['loan_int_rate','person_emp_length','person_income']]
+y = cr_loan_clean[['loan_status']]
+# Use test_train_split to create the training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.4, random_state=123)
+# Create and fit the logistic regression model
+clf_logistic = LogisticRegression(solver='lbfgs').fit(X_train, np.ravel(y_train))
+# Print the models coefficients
+print(clf_logistic.coef_)
+=> Output: <script.py> output:
+    [[ 1.28517496e-09 -2.27622202e-09 -2.17211991e-05]]
+Do you see that three columns were used for training and there are three values in .coef_? This tells you how important each column, or feature, was for predicting. The more positive the value, the more it predicts defaults. Look at the value for loan_int_rate.
+
+10) Changing coefficients
+
+With this understanding of the coefficients of a LogisticRegression() model, have a closer look at them to see how they change depending on what columns are used for training. Will the column coefficients change from model to model? You should .fit() two different LogisticRegression() models on different groups of columns to check. You should also consider what the potential impact on the probability of default might be.
+The data set cr_loan_clean has already been loaded into the workspace along with the training sets X1_train, X2_train, and y_train.
+
+# Print the first five rows of each training set
+print(X1_train.head())
+print(X2_train.head())
+# Create and train a model on the first training data
+clf_logistic1 = LogisticRegression(solver='lbfgs').fit(X1_train, np.ravel(y_train))
+# Create and train a model on the second training data
+clf_logistic2 = LogisticRegression(solver='lbfgs').fit(X2_train, np.ravel(y_train))
+# Print the coefficients of each model
+print(clf_logistic1.coef_)
+print(clf_logistic2.coef_)
+=> Output: <script.py> output:
+           person_income  person_emp_length  loan_amnt
+    22105          72000                  3       9000
+    2296           21000                  2       3000
+    14465           4800                  0       1200
+    6311           92000                  0       6000
+    12541          96000                  1       7000
+           person_income  loan_percent_income  cb_person_cred_hist_length
+    22105          72000                 0.13                           6
+    2296           21000                 0.14                           2
+    14465           4800                 0.25                           2
+    6311           92000                 0.07                           3
+    12541          96000                 0.07                           4
+    [[-4.02643517e-05 -3.06659219e-08  1.06277246e-04]]
+    [[-2.17213449e-05  5.29012401e-10 -2.80735543e-09]]
+Notice that the coefficient for the person_income changed when we changed the data from X1 to X2. This is a reason to keep most of the data like we did in chapter 1, because the models will learn differently depending on what data they're given!
+
+11) One-hot encoding credit data
+
+It's time to prepare the non-numeric columns so they can be added to your LogisticRegression() model. Once the new columns have been created using one-hot encoding, you can concatenate them with the numeric columns to create a new data frame which will be used throughout the rest of the course for predicting probability of default.
+Remember to only one-hot encode the non-numeric columns. Doing this to the numeric columns would create an incredibly wide data set!
+
+# Create two data sets for numeric and non-numeric data
+cred_num = cr_loan_clean.select_dtypes(exclude=['object'])
+cred_str = cr_loan_clean.select_dtypes(include=['object'])
+# One-hot encode the non-numeric columns
+cred_str_onehot = pd.get_dummies(cred_str)
+# Union the one-hot encoded columns to the numeric ones
+cr_loan_prep = pd.concat([cred_num, cred_str_onehot], axis=1)
+# Print the columns in the new data set
+print(cr_loan_prep.columns)
+=> Output: <script.py> output:
+    Index(['person_age', 'person_income', 'person_emp_length', 'loan_amnt', 'loan_int_rate', 'loan_status', 'loan_percent_income', 'cb_person_cred_hist_length', 'person_home_ownership_MORTGAGE',
+           'person_home_ownership_OTHER', 'person_home_ownership_OWN', 'person_home_ownership_RENT', 'loan_intent_DEBTCONSOLIDATION', 'loan_intent_EDUCATION', 'loan_intent_HOMEIMPROVEMENT',
+           'loan_intent_MEDICAL', 'loan_intent_PERSONAL', 'loan_intent_VENTURE', 'loan_grade_A', 'loan_grade_B', 'loan_grade_C', 'loan_grade_D', 'loan_grade_E', 'loan_grade_F', 'loan_grade_G',
+           'cb_person_default_on_file_N', 'cb_person_default_on_file_Y'],
+          dtype='object')
+
+12) Predicting probability of default
+
+All of the data processing is complete and it's time to begin creating predictions for probability of default. You want to train a LogisticRegression() model on the data, and examine how it predicts the probability of default. So that you can better grasp what the model produces with predict_proba, you should look at an example record alongside the predicted probability of default. How do the first five predictions look against the actual values of loan_status?
+The data set cr_loan_prep along with X_train, X_test, y_train, and y_test have already been loaded in the workspace.
+
+# Train the logistic regression model on the training data
+clf_logistic = LogisticRegression(solver='lbfgs').fit(X_train, np.ravel(y_train))
+# Create predictions of probability for loan status using test data
+preds = clf_logistic.predict_proba(X_test)
+# Create dataframes of first five predictions, and first five true labels
+preds_df = pd.DataFrame(preds[:,1][0:5], columns = ['prob_default'])
+true_df = y_test.head()
+# Concatenate and print the two data frames for comparison
+print(pd.concat([true_df.reset_index(drop = True), preds_df], axis = 1))
+=> Output: <script.py> output:
+       loan_status  prob_default
+    0            1         0.446
+    1            1         0.223
+    2            0         0.289
+    3            0         0.169
+    4            1         0.114
+We have some predictions now, but they don't look very accurate do they? It looks like most of the rows with loan_status at 1 have a low probability of default. How good are the rest of the predictions?
+
+13) Default classification reporting
+
+It's time to take a closer look at the evaluation of the model. Here is where setting the threshold for probability of default will help you analyze the model's performance through classification reporting. Creating a data frame of the probabilities makes them easier to work with, because you can use all the power of pandas. Apply the threshold to the data and check the value counts for both classes of loan_status to see how many predictions of each are being created. This will help with insight into the scores from the classification report.
+The cr_loan_prep data set, trained logistic regression clf_logistic, true loan status values y_test, and predicted probabilities, preds are loaded in the workspace.
+
+# Create a dataframe for the probabilities of default
+preds_df = pd.DataFrame(preds[:,1], columns = ['prob_default'])
+# Reassign loan status based on the threshold
+preds_df['loan_status'] = preds_df['prob_default'].apply(lambda x: 1 if x > 0.50 else 0)
+# Print the row counts for each loan status
+print(preds_df['loan_status'].value_counts())
+# Print the classification report
+target_names = ['Non-Default', 'Default']
+print(classification_report(y_test, preds_df['loan_status'], target_names=target_names))
+=> Output: <script.py> output:
+    0    11175
+    1      609
+    Name: loan_status, dtype: int64
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.81      0.98      0.89      9198
+         Default       0.71      0.17      0.27      2586
+    
+        accuracy                           0.80     11784
+       macro avg       0.76      0.57      0.58     11784
+    weighted avg       0.79      0.80      0.75     11784
+It looks like almost all of our test set was predicted to be non-default. The recall for defaults is 0.16 meaning 16% of our true defaults were predicted correctly.
+
+14) Selecting report metrics
+
+The classification_report() has many different metrics within it, but you may not always want to print out the full report. Sometimes you just want specific values to compare models or use for other purposes. There is a function within scikit-learn that pulls out the values for you. That function is precision_recall_fscore_support() and it takes in the same parameters as classification_report.
+
+It is imported and used like this:
+# Import function
+from sklearn.metrics import precision_recall_fscore_support
+# Select all non-averaged values from the report
+precision_recall_fscore_support(y_true,predicted_values)
+
+The cr_loan_prep data set along with the predictions in preds_df have already been loaded in the workspace.
+
+# Print the classification report
+target_names = ['Non-Default', 'Default']
+print(classification_report(y_test, preds_df['loan_status'], target_names=target_names))
+# Print all the non-average values from the report
+print(precision_recall_fscore_support(y_test,preds_df['loan_status']))
+# Print the first two numbers from the report
+print(precision_recall_fscore_support(y_test,preds_df['loan_status'])[0])
+=> Output: <script.py> output:
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.81      0.98      0.89      9198
+         Default       0.71      0.17      0.27      2586
+    
+        accuracy                           0.80     11784
+       macro avg       0.76      0.57      0.58     11784
+    weighted avg       0.79      0.80      0.75     11784
+
+<script.py> output:
+    (array([0.80742729, 0.71264368]), array([0.98097412, 0.16782676]), array([0.8857802 , 0.27167449]), array([9198, 2586]))
+
+<script.py> output:
+    [0.80742729 0.71264368]
+Now we know how to pull out specific values from the report to either store later for comparison, or use to check against portfolio performance. Remember the impact of recall for defaults? This way, you can store that value for later calculations.
+
+15) Visually scoring credit models
+
+Now, you want to visualize the performance of the model. In ROC charts, the X and Y axes are two metrics you've already looked at: the false positive rate (fall-out), and the true positive rate (sensitivity).
+You can create a ROC chart of it's performance with the following code:
+fallout, sensitivity, thresholds = roc_curve(y_test, prob_default)
+plt.plot(fallout, sensitivity)
+To calculate the AUC score, you use roc_auc_score().
+The credit data cr_loan_prep along with the data sets X_test and y_test have all been loaded into the workspace. A trained LogisticRegression() model named clf_logistic has also been loaded into the workspace.
+
+# Create predictions and store them in a variable
+preds = clf_logistic.predict_proba(X_test)
+# Print the accuracy score the model
+print(clf_logistic.score(X_test, y_test))
+# Plot the ROC curve of the probabilities of default
+prob_default = preds[:, 1]
+fallout, sensitivity, thresholds = roc_curve(y_test, prob_default)
+plt.plot(fallout, sensitivity, color = 'darkorange')
+plt.plot([0, 1], [0, 1], linestyle='--')
+plt.show()
+# Compute the AUC and store it in a variable
+auc = roc_auc_score(y_test, prob_default)
+=> Output: <script.py> output:
+    0.8025288526816021
+So the accuracy for this model is about 80% and the AUC score is 76%. Notice that what the ROC chart shows us is the tradeoff between all values of our false positive rate (fallout) and true positive rate (sensitivity).
+
+16) Thresholds and confusion matrices
+
+You've looked at setting thresholds for defaults, but how does this impact overall performance? To do this, you can start by looking at the effects with confusion matrices.
+Set different values for the threshold on probability of default, and use a confusion matrix to see how the changing values affect the model's performance.
+The data frame of predictions, preds_df, as well as the model clf_logistic have been loaded in the workspace.
+
+# Set the threshold for defaults to 0.5
+preds_df['loan_status'] = preds_df['prob_default'].apply(lambda x: 1 if x > 0.5 else 0)
+# Print the confusion matrix
+print(confusion_matrix(y_test,preds_df['loan_status']))
+=> <script.py> output:
+    [[9023  175]
+     [2152  434]]
+
+# Set the threshold for defaults to 0.4
+preds_df['loan_status'] = preds_df['prob_default'].apply(lambda x: 1 if x > 0.4 else 0)
+# Print the confusion matrix
+print(confusion_matrix(y_test,preds_df['loan_status']))
+=> <script.py> output:
+    [[8476  722]
+     [1386 1200]]
+So, threshold 0.4 gives us the highest value for default recall
+
+17) How thresholds affect performance
+
+Setting the threshold to 0.4 shows promising results for model evaluation. Now you can assess the financial impact using the default recall which is selected from the classification reporting using the function precision_recall_fscore_support(). For this, you will estimate the amount of unexpected loss using the default recall to find what proportion of defaults you did not catch with the new threshold. This will be a dollar amount which tells you how much in losses you would have if all the unfound defaults were to default all at once.
+The average loan value, avg_loan_amnt has been calculated and made available in the workspace along with preds_df and y_test.
+
+# Reassign the values of loan status based on the new threshold
+preds_df['loan_status'] = preds_df['prob_default'].apply(lambda x: 1 if x > 0.4 else 0)
+# Store the number of loan defaults from the prediction data
+num_defaults = preds_df['loan_status'].value_counts()[1]
+# Store the default recall from the classification report
+default_recall = precision_recall_fscore_support(y_test,preds_df['loan_status'])[1][1]
+# Calculate the estimated impact of the new default recall rate
+print(num_defaults * avg_loan_amnt * (1 - default_recall))
+=> Output: <script.py> output:
+    9872265.223119883
+By our estimates, this loss would be around $9.8 million. That seems like a lot! Try rerunning this code with threshold values of 0.3 and 0.5. Do you see the estimated losses changing? How do we find a good threshold value based on these metrics alone?
+
+18) Threshold selection
+
+You know there is a trade off between metrics like default recall, non-default recall, and model accuracy. One easy way to approximate a good starting threshold value is to look at a plot of all three using matplotlib. With this graph, you can see how each of these metrics look as you change the threshold values and find the point at which the performance of all three is good enough to use for the credit data.
+The threshold values thresh, default recall values def_recalls, the non-default recall values nondef_recalls and the accuracy scores accs have been loaded into the workspace. To make the plot easier to read, the array ticks for x-axis tick marks has been loaded as well.
+
+plt.plot(thresh,def_recalls)
+plt.plot(thresh,nondef_recalls)
+plt.plot(thresh,accs)
+plt.xlabel("Probability Threshold")
+plt.xticks(ticks)
+plt.legend(["Default Recall","Non-default Recall","Model Accuracy"])
+plt.show()
+=> The 2.75 starting threshold value would maximize these scores (Default & Non-default Recall, Model Accuracy) evenly.
+
+19) Trees for defaults
+
+You will now train a gradient boosted tree model on the credit data, and see a sample of some of the predictions. Do you remember when you first looked at the predictions of the logistic regression model? They didn't look good. Do you think this model be different?
+The credit data cr_loan_prep, the training sets X_train and y_train, and the test data X_test is available in the workspace. The XGBoost package is loaded as xgb.
+
+# Train a model
+import xgboost as xgb
+clf_gbt = xgb.XGBClassifier().fit(X_train, np.ravel(y_train))
+# Predict with a model
+gbt_preds = clf_gbt.predict_proba(X_test)
+# Create dataframes of first five predictions, and first five true labels
+preds_df = pd.DataFrame(gbt_preds[:,1][0:5], columns = ['prob_default'])
+true_df = y_test.head()
+# Concatenate and print the two data frames for comparison
+print(pd.concat([true_df.reset_index(drop = True), preds_df], axis = 1))
+=> Output: <script.py> output:
+       loan_status  prob_default
+    0            1     9.909e-01
+    1            1     9.840e-01
+    2            0     8.074e-04
+    3            0     1.239e-03
+    4            1     8.489e-02
+The predictions don't look the same as with the LogisticRegression(), do they? Notice that this model is already accurately predicting the probability of default for some loans with a true value of 1 in loan_status.
+
+20) Gradient boosted portfolio performance
+
+At this point you've looked at predicting probability of default using both a LogisticRegression() and XGBClassifier(). You've looked at some scoring and have seen samples of the predictions, but what is the overall affect on portfolio performance? Try using expected loss as a scenario to express the importance of testing different models.
+A data frame called portfolio has been created to combine the probabilities of default for both models, the loss given default (assume 20% for now), and the loan_amnt which will be assumed to be the exposure at default.
+expected_loss = prob_default * lgd * loan_amnt
+The data frame cr_loan_prep along with the X_train and y_train training sets have been loaded into the workspace.
+
+# Print the first five rows of the portfolio data frame
+print(portfolio.head())
+# Create expected loss columns for each model using the formula
+portfolio['gbt_expected_loss'] = portfolio['gbt_prob_default'] * portfolio['lgd'] * portfolio['loan_amnt']
+portfolio['lr_expected_loss'] = portfolio['lr_prob_default'] * portfolio['lgd'] * portfolio['loan_amnt']
+# Print the sum of the expected loss for lr
+print('LR expected loss: ', np.sum(portfolio['lr_expected_loss']))
+# Print the sum of the expected loss for gbt
+print('GBT expected loss: ', np.sum(portfolio['gbt_expected_loss']))
+=> Output: <script.py> output:
+       gbt_prob_default  lr_prob_default  lgd  loan_amnt
+    0         9.909e-01            0.446  0.2      15000
+    1         9.840e-01            0.223  0.2      11200
+    2         8.074e-04            0.289  0.2      15000
+    3         1.239e-03            0.169  0.2      10800
+    4         8.489e-02            0.114  0.2       3000
+    LR expected loss:  5596776.979852879
+    GBT expected loss:  5383982.809227714
+It looks like the total expected loss for the XGBClassifier() model is quite a bit lower. When we talk about accuracy and precision, the goal is to generate models which have a low expected loss. Looking at a classification_report() helps as well.
+
+21) Assessing gradient boosted trees
+
+So you've now used XGBClassifier() models to predict probability of default. These models can also use the .predict() method for creating predictions that give the actual class for loan_status. You should check the model's initial performance by looking at the metrics from the classification_report(). Keep in mind that you have not set thresholds for these models yet. The data sets cr_loan_prep, X_test, and y_test have already been loaded in the workspace. The model clf_gbt has been loaded as well. The classification_report() for the logistic regression will print automatically.
+              precision    recall  f1-score   support
+
+ Non-Default       0.81      0.98      0.89      9198
+     Default       0.71      0.17      0.27      2586
+
+    accuracy                           0.80     11784
+   macro avg       0.76      0.57      0.58     11784
+weighted avg       0.79      0.80      0.75     11784
+
+# Predict the labels for loan status
+gbt_preds = clf_gbt.predict(X_test)
+# Check the values created by the predict method
+print(gbt_preds)
+# Print the classification report of the model
+target_names = ['Non-Default', 'Default']
+print(classification_report(y_test, gbt_preds, target_names=target_names))
+=> Output: <script.py> output:
+    [1 1 0 ... 0 0 0]
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.93      0.99      0.96      9198
+         Default       0.94      0.74      0.83      2586
+    
+        accuracy                           0.93     11784
+       macro avg       0.94      0.86      0.89     11784
+    weighted avg       0.93      0.93      0.93     11784
+
+22) Column importance and default prediction
+
+When using multiple training sets with many different groups of columns, it's important to keep and eye on which columns matter and which do not. It can be expensive or time-consuming to maintain a set of columns even though they might not have any impact on loan_status.
+The X data for this exercise was created with the following code:
+X = cr_loan_prep[['person_income','loan_int_rate',
+                  'loan_percent_income','loan_amnt',
+                  'person_home_ownership_MORTGAGE','loan_grade_F']]
+Train an XGBClassifier() model on this data, and check the column importance to see how each one performs to predict loan_status.
+The cr_loan_pret data set along with X_train and y_train have been loaded in the workspace.
+
+# Create and train the model on the training data
+clf_gbt = xgb.XGBClassifier().fit(X_train,np.ravel(y_train))
+# Print the column importances from the model
+print(clf_gbt.get_booster().get_score(importance_type = 'weight'))
+=> Output: <script.py> output:
+    {'person_income': 1299.0, 'loan_int_rate': 1001.0, 'loan_percent_income': 515.0, 'loan_amnt': 519.0, 'person_home_ownership_MORTGAGE': 116.0, 'loan_grade_F': 9.0}
+So, the importance for loan_grade_F is only 6 in this case. This could be because there are so few of the F-grade loans. While the F-grade loans don't add much to predictions here, they might affect the importance of other training columns.
+
+23) Visualizing column importance
+
+When the model is trained on different sets of columns it changes the performance, but does the importance for the same column change depending on which group it's in?
+The data sets X2 and X3 have been created with the following code:
+X2 = cr_loan_prep[['loan_int_rate','person_emp_length']]
+X3 = cr_loan_prep[['person_income','loan_int_rate','loan_percent_income']]
+Understanding how different columns are used to arrive at a loan_status prediction is very important for model interpretability.
+The data sets cr_loan_prep, X2_train, X2_test, X3_train, X3_test, y_train, y_test are loaded in the workspace.
+
+# Train a model on the X data with 2 columns
+clf_gbt2 = xgb.XGBClassifier().fit(X2_train,np.ravel(y_train))
+# Plot the column importance for this model
+xgb.plot_importance(clf_gbt2, importance_type = 'weight')
+plt.show()
+
+# Train a model on the X data with 3 columns
+clf_gbt3 = xgb.XGBClassifier().fit(X3_train,np.ravel(y_train))
+# Plot the column importance for this model
+xgb.plot_importance(clf_gbt3, importance_type = 'weight')
+plt.show()
+=>  Take a closer look at the plots. Did you notice that the importance of loan_int_rate went from 456 to 195? Initially, this was the most important column, but person_income ended up taking the top spot here.
+
+24) Column selection and model performance
+
+Creating the training set from different combinations of columns affects the model and the importance values of the columns. Does a different selection of columns also affect the F-1 scores, the combination of the precision and recall, of the model? You can answer this question by training two different models on two different sets of columns, and checking the performance. Inaccurately predicting defaults as non-default can result in unexpected losses if the probability of default for these loans was very low. You can use the F-1 score for defaults to see how the models will accurately predict the defaults.
+The credit data, cr_loan_prep and the two training column sets X and X2 have been loaded in the workspace. The models gbt and gbt2 have already been trained.
+
+# Predict the loan_status using each model
+gbt_preds = gbt.predict(X_test)
+gbt2_preds = gbt2.predict(X2_test)
+# Print the classification report of the first model
+target_names = ['Non-Default', 'Default']
+print(classification_report(y_test, gbt_preds, target_names=target_names))
+# Print the classification report of the second model
+print(classification_report(y_test, gbt2_preds, target_names=target_names))
+=> Output: <script.py> output:
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.91      0.95      0.93      9198
+         Default       0.79      0.66      0.72      2586
+    
+        accuracy                           0.89     11784
+       macro avg       0.85      0.81      0.83     11784
+    weighted avg       0.88      0.89      0.88     11784
+    
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.91      0.97      0.94      9198
+         Default       0.88      0.66      0.75      2586
+    
+        accuracy                           0.90     11784
+       macro avg       0.89      0.82      0.85     11784
+    weighted avg       0.90      0.90      0.90     11784
+
+The highest F-1 score for predicting defaults is 0.72; originally, it looked like the selection of columns affected model accuracy the most, but now we see that the selection of columns also affects recall by quite a bit.
+
+25) Cross validating credit models
+
+Credit loans and their data change over time, and it won't always look like what's been loaded into the current test sets. So, you can use cross-validation to try several smaller training and test sets which are derived from the original X_train and y_train. Use the XGBoost function cv() to perform cross-validation. You will need to set up all the parameters for cv() to use on the test data. The data sets X_train, y_train are loaded in the workspace along with the trained model gbt, and the parameter dictionary params which will print once the exercise loads; The parameters dictionary contains:  {'objective': 'binary:logistic', 'seed': 123, 'eval_metric': 'auc'}
+
+# Set the values for number of folds and stopping iterations
+n_folds = 5
+early_stopping = 10
+# Create the DTrain matrix for XGBoost
+DTrain = xgb.DMatrix(X_train, label = y_train)
+# Create the data frame of cross validations
+cv_df = xgb.cv(params, DTrain, num_boost_round = 5, nfold=n_folds,
+            early_stopping_rounds=early_stopping)
+# Print the cross validations data frame
+print(cv_df)
+=> Output: <script.py> output:
+       train-auc-mean  train-auc-std  test-auc-mean  test-auc-std
+    0           0.898          0.001          0.893         0.005
+    1           0.909          0.002          0.903         0.005
+    2           0.914          0.002          0.907         0.004
+    3           0.919          0.001          0.911         0.005
+    4           0.922          0.002          0.914         0.004
+Do you see how the AUC for both train-auc-mean and test-auc-mean improves at each iteration of cross-validation? As the iterations progress the scores get better, but will they eventually reach 1.0?
+
+26) Limits to cross-validation testing
+
+You can specify very large numbers for both nfold and num_boost_round if you want to perform an extreme amount of cross-validation. The data frame cv_results_big has already been loaded in the workspace and was created with the following code:
+cv = xgb.cv(params, DTrain, num_boost_round = 600, nfold=10,
+            shuffle = True)
+Here, cv() performed 600 iterations of cross-validation! The parameter shuffle tells the function to shuffle the records each time.
+Have a look at this data to see what the AUC are, and check to see if they reach 1.0 using cross validation. You should also plot the test AUC score to see the progression.
+The data frame cv_results_big has been loaded into the workspace.
+
+# Print the first five rows of the CV results data frame
+print(cv_results_big.head())
+# Calculate the mean of the test AUC scores
+print(np.mean(cv_results_big['test-auc-mean']).round(2))
+# Plot the test AUC scores for each iteration
+plt.plot(cv_results_big['test-auc-mean'])
+plt.title('Test AUC Score Over 600 Iterations')
+plt.xlabel('Iteration Number')
+plt.ylabel('Test AUC Score')
+plt.show()
+=> Output: <script.py> output:
+       train-auc-mean  train-auc-std  test-auc-mean  test-auc-std
+    0           0.898      9.093e-04          0.893         0.008
+    1           0.907      2.611e-03          0.901         0.008
+    2           0.914      1.403e-03          0.908         0.008
+    3           0.919      9.209e-04          0.912         0.007
+    4           0.923      1.097e-03          0.915         0.007
+    0.94
+
+Notice that the test AUC score never quite reaches 1.0 and begins to decrease slightly after 100 iterations. This is because this much cross-validation can actually cause the model to become overfit. So, there is a limit to how much cross-validation you should to.
+
+27) Cross-validation scoring
+
+Now, you should use cross-validation scoring with cross_val_score() to check the overall performance. This is exercise presents an excellent opportunity to test out the use of the hyperparameters learning_rate and max_depth. Remember, hyperparameters are like settings which can help create optimum performance.
+The data sets cr_loan_prep, X_train, and y_train have already been loaded in the workspace.
+
+# Create a gradient boosted tree model using two hyperparameters
+gbt = xgb.XGBClassifier(learning_rate = 0.1, max_depth = 7)
+# Calculate the cross validation scores for 4 folds
+cv_scores = cross_val_score(gbt, X_train, np.ravel(y_train), cv = 4)
+# Print the cross validation scores
+print(cv_scores)
+# Print the average accuracy and standard deviation of the scores
+print("Average accuracy: %0.2f (+/- %0.2f)" % (cv_scores.mean(),
+                                              cv_scores.std() * 2))
+=> Output: <script.py> output:
+    [0.94048427 0.93256393 0.93324282 0.92462653]
+    Average accuracy: 0.93 (+/- 0.01)
+Your average cv_score for this course is getting higher! With only a couple of hyperparameters and cross-validation, we can get the average accuracy up to 93%. This is a great way to validate how robust the model is.
+
+28) Undersampling training data
+
+It's time to undersample the training set yourself with a few lines of code from Pandas. Once the undersampling is complete, you can check the value counts for loan_status to verify the results. 0    13798 ; 1     3877 ; Name: loan_status, dtype: int64
+X_y_train, count_nondefault, and count_default are already loaded in the workspace. They have been created using the following code:
+X_y_train = pd.concat([X_train.reset_index(drop = True),
+                       y_train.reset_index(drop = True)], axis = 1)
+count_nondefault, count_default = X_y_train['loan_status'].value_counts()
+The .value_counts() for the original training data will print automatically.
+
+# Create data sets for defaults and non-defaults
+nondefaults = X_y_train[X_y_train['loan_status'] == 0]
+defaults = X_y_train[X_y_train['loan_status'] == 1]
+# Undersample the non-defaults
+nondefaults_under = nondefaults.sample(count_default)
+# Concatenate the undersampled nondefaults with defaults
+X_y_train_under = pd.concat([nondefaults_under.reset_index(drop = True),
+                             defaults.reset_index(drop = True)], axis = 0)
+# Print the value counts for loan status
+print(X_y_train_under['loan_status'].value_counts())
+=> Output: <script.py> output:
+    0    3877
+    1    3877
+    Name: loan_status, dtype: int64
+Now, our training set has an even number of defaults and non-defaults. Let's test out some machine learning models on this new undersampled data set and compare their performance to the models trained on the regular data set.
+
+29) Undersampled tree performance
+
+You've undersampled the training set and trained a model on the undersampled set. The performance of the model's predictions not only impact the probability of default on the test set, but also on the scoring of new loan applications as they come in. You also now know that it is even more important that the recall of defaults be high, because a default predicted as non-default is more costly. The next crucial step is to compare the new model's performance to the original model. The original predictions are stored as gbt_preds and the new model's predictions stored as gbt2_preds.
+The model predictions gbt_preds and gbt2_preds are already stored in the workspace in addition to y_test.
+
+# Print the classification_report() for both the old model and new model
+target_names = ['Non-Default', 'Default']
+print(classification_report(y_test, gbt_preds, target_names=target_names))
+print(classification_report(y_test, gbt2_preds, target_names=target_names))
+=> <script.py> output:
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.93      0.99      0.96      9198
+         Default       0.95      0.73      0.83      2586
+    
+        accuracy                           0.93     11784
+       macro avg       0.94      0.86      0.89     11784
+    weighted avg       0.93      0.93      0.93     11784
+    
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.95      0.91      0.93      9198
+         Default       0.72      0.84      0.77      2586
+    
+        accuracy                           0.89     11784
+       macro avg       0.83      0.87      0.85     11784
+    weighted avg       0.90      0.89      0.89     11784
+
+# Print the confusion matrix for both old and new models
+print(confusion_matrix(y_test,gbt_preds))
+print(confusion_matrix(y_test,gbt2_preds))
+=> <script.py> output:
+    [[9105   93]
+     [ 691 1895]]
+    [[8338  860]
+     [ 426 2160]]
+
+# Print and compare the AUC scores of the old and new models
+print(roc_auc_score(y_test, gbt_preds))
+print(roc_auc_score(y_test, gbt2_preds))
+=> <script.py> output:
+    0.8613405315086655
+    0.870884117348218
+Looks like this is classified as a success! Undersampling the training data results in more false positives, but the recall for defaults and the AUC score are both higher than the original model. This means overall it predicts defaults much more accurately.
+
+30) Comparing model reports
+
+You've used logistic regression models and gradient boosted trees. It's time to compare these two to see which model will be used to make the final predictions. One of the easiest first steps for comparing different models' ability to predict the probability of default is to look at their metrics from the classification_report(). With this, you can see many different scoring metrics side-by-side for each model. Because the data and models are normally unbalanced with few defaults, focus on the metrics for defaults for now. The trained models clf_logistic and clf_gbt have been loaded into the workspace along with their predictions preds_df_lr and preds_df_gbt. A cutoff of 0.4 was used for each. The test set y_test is also available.
+
+# Print the logistic regression classification report
+target_names = ['Non-Default', 'Default']
+print(classification_report(y_test, preds_df_lr['loan_status'], target_names=target_names))
+# Print the gradient boosted tree classification report
+print(classification_report(y_test, preds_df_gbt['loan_status'], target_names=target_names))
+# Print the default F-1 scores for the logistic regression
+print(precision_recall_fscore_support(y_test,preds_df_lr['loan_status'], average = 'macro')[2])
+# Print the default F-1 scores for the gradient boosted tree
+print(precision_recall_fscore_support(y_test,preds_df_gbt['loan_status'], average = 'macro')[2])
+=> Output: <script.py> output:
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.86      0.92      0.89      9198
+         Default       0.62      0.46      0.53      2586
+    
+        accuracy                           0.82     11784
+       macro avg       0.74      0.69      0.71     11784
+    weighted avg       0.81      0.82      0.81     11784
+    
+                  precision    recall  f1-score   support
+    
+     Non-Default       0.93      0.99      0.96      9198
+         Default       0.94      0.73      0.82      2586
+    
+        accuracy                           0.93     11784
+       macro avg       0.93      0.86      0.89     11784
+    weighted avg       0.93      0.93      0.93     11784
+    
+    0.7108943782814463
+    0.8909014142736051
+There is a noticeable difference between these two models. Do you see that the scores from the classification_report() are all higher for the gradient boosted tree? This means the tree model is better in all of these aspects. Let's check the ROC curve.
+
+31) Comparing with ROCs
+
+You should use ROC charts and AUC scores to compare the two models. Sometimes, visuals can really help you and potential business users understand the differences between the various models under consideration. With the graph in mind, you will be more equipped to make a decision. The lift is how far the curve is from the random prediction. The AUC is the area between the curve and the random prediction. The model with more lift, and a higher AUC, is the one that's better at making predictions accurately. The trained models clf_logistic and clf_gbt have been loaded into the workspace. The predictions for the probability of default clf_logistic_preds and clf_gbt_preds have been loaded as well.
+
+# ROC chart components
+fallout_lr, sensitivity_lr, thresholds_lr = roc_curve(y_test, clf_logistic_preds)
+fallout_gbt, sensitivity_gbt, thresholds_gbt = roc_curve(y_test, clf_gbt_preds)
+# ROC Chart with both
+plt.plot(fallout_lr, sensitivity_lr, color = 'blue', label='%s' % 'Logistic Regression')
+plt.plot(fallout_gbt, sensitivity_gbt, color = 'green', label='%s' % 'GBT')
+plt.plot([0, 1], [0, 1], linestyle='--', label='%s' % 'Random Prediction')
+plt.title("ROC Chart for LR and GBT on the Probability of Default")
+plt.xlabel('Fall-out')
+plt.ylabel('Sensitivity')
+plt.legend()
+plt.show()
+
+# Print the logistic regression AUC with formatting
+print("Logistic Regression AUC Score: %0.2f" % roc_auc_score(y_test, clf_logistic_preds))
+# Print the gradient boosted tree AUC with formatting
+print("Gradient Boosted Tree AUC Score: %0.2f" % roc_auc_score(y_test, clf_gbt_preds))
+=> Output: <script.py> output:
+    Logistic Regression AUC Score: 0.76
+    Gradient Boosted Tree AUC Score: 0.94
+Look at the ROC curve for the gradient boosted tree. Not only is the lift much higher, the calculated AUC score is also quite a bit higher. It's beginning to look like the gradient boosted tree is best.
+
+32) Calibration curves
+
+You now know that the gradient boosted tree clf_gbt has the best overall performance. You need to check the calibration of the two models to see how stable the default prediction performance is across probabilities. You can use a chart of each model's calibration to check this by calling the calibration_curve() function. Calibration curves can require many lines of code in python, so you will go through each step slowly to add the different components.
+The two sets of predictions clf_logistic_preds and clf_gbt_preds have already been loaded into the workspace. Also, the output from calibration_curve() for each model has been loaded as: frac_of_pos_lr, mean_pred_val_lr, frac_of_pos_gbt, and mean_pred_val_gbt.
+
+# Create the calibration curve plot with the guideline
+plt.plot([0, 1], [0, 1], 'k:', label='Perfectly calibrated')    
+plt.ylabel('Fraction of positives')
+plt.xlabel('Average Predicted Probability')
+plt.legend()
+plt.title('Calibration Curve')
+plt.show()
+
+# Add the calibration curve for the logistic regression to the plot
+plt.plot([0, 1], [0, 1], 'k:', label='Perfectly calibrated')    
+plt.plot(mean_pred_val_lr, frac_of_pos_lr,
+         's-', label='%s' % 'Logistic Regression')
+plt.ylabel('Fraction of positives')
+plt.xlabel('Average Predicted Probability')
+plt.legend()
+plt.title('Calibration Curve')
+plt.show()
+
+# Add the calibration curve for the gradient boosted tree
+plt.plot([0, 1], [0, 1], 'k:', label='Perfectly calibrated')    
+plt.plot(mean_pred_val_lr, frac_of_pos_lr,
+         's-', label='%s' % 'Logistic Regression')
+plt.plot(mean_pred_val_gbt, frac_of_pos_gbt,
+         's-', label='%s' % 'Gradient Boosted Tree')
+plt.ylabel('Fraction of positives')
+plt.xlabel('Average Predicted Probability')
+plt.legend()
+plt.title('Calibration Curve')
+plt.show()
+=> Expand the plot window and take a good look at this. Notice that for the logistic regression, the calibration for probabilities starts off great but then gets more erratic as it the average probability approaches 0.4. Something similar happens to the gradient boosted tree around 0.5, but the model eventually stabilizes. We will be focusing on only the gbt model from now on.
+
+33) Acceptance rates
+
+Setting an acceptance rate and calculating the threshold for that rate can be used to set the percentage of new loans you want to accept. For this exercise, assume the test data is a fresh batch of new loans. You will need to use the quantile() function from numpy to calculate the threshold. The threshold should be used to assign new loan_status values. Does the number of defaults and non-defaults in the data change? The trained model clf_gbt and the data frame of it's predictions, test_pred_df, are available.
+
+# Check the statistics of the probabilities of default
+print(test_pred_df['prob_default'].describe())
+# Calculate the threshold for a 85% acceptance rate
+threshold_85 = np.quantile(test_pred_df['prob_default'], 0.85)
+# Apply acceptance rate threshold
+test_pred_df['pred_loan_status'] = test_pred_df['prob_default'].apply(lambda x: 1 if x > threshold_85 else 0)
+# Print the counts of loan status after the threshold
+print(test_pred_df['pred_loan_status'].value_counts())
+=> Output: <script.py> output:
+    count    1.178e+04
+    mean     2.169e-01
+    std      3.330e-01
+    min      3.538e-04
+    25%      2.225e-02
+    50%      6.563e-02
+    75%      1.778e-01
+    max      9.996e-01
+    Name: prob_default, dtype: float64
+    0    10016
+    1     1768
+    Name: pred_loan_status, dtype: int64
+In the results of .describe() do you see how it's not until 75% that you start to see double-digit numbers? That's because the majority of our test set is non-default loans. Next let's look at how the acceptance rate and threshold split up the data.
+
+34) Visualizing quantiles of acceptance
+
+You know how quantile() works to compute a threshold, and you've seen an example of what it does to split the loans into accepted and rejected. What does this threshold look like for the test set, and how can you visualize it?
+To check this, you can create a histogram of the probabilities and add a reference line for the threshold. With this, you can visually show where the threshold exists in the distribution.
+
+# Plot the predicted probabilities of default
+plt.hist(clf_gbt_preds, color = 'blue', bins = 40)
+# Calculate the threshold with quantile
+threshold = np.quantile(clf_gbt_preds, 0.85)
+# Add a reference line to the plot for the threshold
+plt.axvline(x = threshold, color = 'red')
+plt.show()
+=> Here, you can see where the threshold is on the range of predicted probabilities. Not only can you see how many loans will be accepted (left side), but also how many loans will be rejected (right side). I recommend that you re-run this code with different threshold values to better understand how this affects the acceptance rate.
+
+35) Bad rates
+
+With acceptance rate in mind, you can now analyze the bad rate within the accepted loans. This way you will be able to see the percentage of defaults that have been accepted. Think about the impact of the acceptance rate and bad rate. We set an acceptance rate to have fewer defaults in the portfolio because defaults are more costly. Will the bad rate be less than the percentage of defaults in the test data? The predictions data frame test_pred_df has been loaded into the workspace.
+
+# Print the top 5 rows of the new data frame
+print(test_pred_df.head())
+# Create a subset of only accepted loans
+accepted_loans = test_pred_df[test_pred_df['pred_loan_status'] == 0]
+# Calculate the bad rate
+print(np.sum(accepted_loans['true_loan_status']) / accepted_loans['true_loan_status'].count())
+=> Output: <script.py> output:
+       true_loan_status  prob_default  pred_loan_status
+    0                 1         0.982                 1
+    1                 1         0.975                 1
+    2                 0         0.003                 0
+    3                 0         0.005                 0
+    4                 1         0.120                 0
+    0.08256789137380191
+This bad rate doesn't look half bad! The bad rate with the threshold set by the 85% quantile() is about 8%. This means that of all the loans we've decided to accept from the test set, only 8% were actual defaults! If we accepted all loans, the percentage of defaults would be around 22%.
+
+36) Acceptance rate impact
+
+Now, look at the loan_amnt of each loan to understand the impact on the portfolio for the acceptance rates. You can use cross tables with calculated values, like the average loan amount, of the new set of loans X_test. For this, you will multiply the number of each with an average loan_amnt value.
+When printing these values, try formatting them as currency so that the numbers look more realistic. After all, credit risk is all about money. This is accomplished with the following code: pd.options.display.float_format = '${:,.2f}'.format
+The predictions data frame test_pred_df, which now includes the loan_amnt column from X_test, has been loaded in the workspace.
+
+# Print the statistics of the loan amount column
+print(test_pred_df['loan_amnt'].describe())
+# Store the average loan amount
+avg_loan = np.mean(test_pred_df['loan_amnt'])
+# Set the formatting for currency, and print the cross tab
+pd.options.display.float_format = '${:,.2f}'.format
+print(pd.crosstab(test_pred_df['true_loan_status'],
+                 test_pred_df['pred_loan_status_15']).apply(lambda x: x * avg_loan, axis = 0))
+=> Output: <script.py> output:
+    count    11784.000
+    mean      9556.284
+    std       6238.006
+    min        500.000
+    25%       5000.000
+    50%       8000.000
+    75%      12000.000
+    max      35000.000
+    Name: loan_amnt, dtype: float64
+    pred_loan_status_15              0              1
+    true_loan_status                                 
+    0                   $87,812,693.16     $86,006.56
+    1                    $7,903,046.82 $16,809,503.46
+With this, we can see that our bad rate of about 8% represents an estimated loan value of about 7.9 million dollars. This may seem like a lot at first, but compare it to the total value of non-default loans! With this, we are ready to start talking about our acceptance strategy going forward.
+
+37) Making the strategy table
+
+Before you implement a strategy, you should first create a strategy table containing all the possible acceptance rates you wish to look at along with their associated bad rates and threshold values. This way, you can begin to see each part of your strategy and how it affects your portfolio.
+Automatically calculating all of these values only requires a for loop, but requires many lines of python code. Don't worry, most of the code is already there. Remember the calculations for threshold and bad rate. The array accept_rates has already been populated and loaded into the workspace along with the data frames preds_df_gbt and test_pred_df. The arrays thresholds and bad_rates have not been populated.
+
+# Print accept rates
+print(accept_rates)
+=> <script.py> output:
+    [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05]
+
+# Populate the arrays for the strategy table with a for loop
+for rate in accept_rates:
+    # Calculate the threshold for the acceptance rate
+    thresh = np.quantile(preds_df_gbt['prob_default'], rate).round(3)
+    # Add the threshold value to the list of thresholds
+    thresholds.append(np.quantile(preds_df_gbt['prob_default'], rate).round(3))
+    # Reassign the loan_status value using the threshold
+    test_pred_df['pred_loan_status'] = test_pred_df['prob_default'].apply(lambda x: 1 if x > thresh else 0)
+    # Create a set of accepted loans using this acceptance rate
+    accepted_loans = test_pred_df[test_pred_df['pred_loan_status'] == 0]
+    # Calculate and append the bad rate using the acceptance rate
+    bad_rates.append(np.sum((accepted_loans['true_loan_status']) / len(accepted_loans['true_loan_status'])).round(3))
+
+# Create a data frame of the strategy table
+strat_df = pd.DataFrame(zip(accept_rates, thresholds, bad_rates),
+                        columns = ['Acceptance Rate','Threshold','Bad Rate'])
+# Print the entire table
+print(strat_df)
+=> Output: <script.py> output:
+        Acceptance Rate  Threshold  Bad Rate
+    0              1.00      1.000     0.219
+    1              0.95      0.992     0.179
+    2              0.90      0.976     0.132
+    3              0.85      0.804     0.083
+    4              0.80      0.254     0.061
+    5              0.75      0.178     0.052
+    6              0.70      0.138     0.043
+    7              0.65      0.111     0.036
+    8              0.60      0.093     0.030
+    9              0.55      0.078     0.027
+    10             0.50      0.066     0.023
+    11             0.45      0.055     0.020
+    12             0.40      0.045     0.017
+    13             0.35      0.037     0.014
+    14             0.30      0.030     0.010
+    15             0.25      0.022     0.008
+    16             0.20      0.015     0.005
+    17             0.15      0.008     0.001
+    18             0.10      0.004     0.000
+    19             0.05      0.002     0.000
+That for loop was a lot of code, but look at this sweet strategy table we have now. This uses our specific predictions on the credit data, and can be used to see the acceptance rates, bad rates, and financial impact all at once. One of these values has the highest estimated value.
+
+38) Visualizing the strategy
+
+Now you have the extended strategy table strat_df. The table is not so big that it's difficult to analyze, but visuals can help you see the overview all at once. You should check at the distribution of each column with a box plot. If the distribution of Acceptance Rate looks the same as the Bad Rate column, that could be a problem. That means that the model's calibration is likely much worse than you thought. You can also visualize the strategy curve with a line plot. The Acceptance Rate would be the independent variable with the Bad Rate as the dependent variable.
+
+# Visualize the distributions in the strategy table with a boxplot
+strat_df.boxplot()
+plt.show()
+
+# Plot the strategy curve
+plt.plot(strat_df['Acceptance Rate'], strat_df['Bad Rate'])
+plt.xlabel('Acceptance Rate')
+plt.ylabel('Bad Rate')
+plt.title('Acceptance and Bad Rates')
+plt.axes().yaxis.grid()
+plt.axes().xaxis.grid()
+plt.show()
+=> The boxplot shows us the distribution for each column. Look at the strategy curve. The bad rates are very low up until the acceptance rate 0.6 where they suddenly increase. This suggests that many of the accepted defaults may have a prob_default value between 0.6 and 0.8.
+
+39) Estimated value profiling
+
+The strategy table, strat_df, can be used to maximize the estimated portfolio value and minimize expected loss. Extending this table and creating some plots can be very helpful to this end. The strat_df data frame is loaded and has been enhanced already with the following columns:
+Column	            Description
+Num Accepted Loans	The number of accepted loans based on the threshold
+Avg Loan Amnt	The average loan amount of the entire test set
+Estimated value	The estimated net value of non-defaults minus defaults
+
+# Print the contents of the strategy df
+print(strat_df)
+=> <script.py> output:
+        Acceptance Rate  Threshold  Bad Rate  Num Accepted Loans  Avg Loan Amnt  Estimated Value
+    0              1.00      1.000     0.219               11379        9556.28        6.111e+07
+    1              0.95      0.992     0.179               10591        9556.28        6.498e+07
+    2              0.90      0.976     0.132               10025        9556.28        7.051e+07
+    3              0.85      0.804     0.083                9390        9556.28        7.484e+07
+    4              0.80      0.254     0.061                8857        9556.28        7.431e+07
+    5              0.75      0.178     0.052                8229        9556.28        7.046e+07
+    6              0.70      0.138     0.043                7685        9556.28        6.712e+07
+    7              0.65      0.111     0.036                7104        9556.28        6.300e+07
+    8              0.60      0.093     0.030                6456        9556.28        5.799e+07
+    9              0.55      0.078     0.027                5870        9556.28        5.307e+07
+    10             0.50      0.066     0.023                5288        9556.28        4.821e+07
+    11             0.45      0.055     0.020                4726        9556.28        4.336e+07
+    12             0.40      0.045     0.017                4131        9556.28        3.813e+07
+    13             0.35      0.037     0.014                3536        9556.28        3.284e+07
+    14             0.30      0.030     0.010                2941        9556.28        2.754e+07
+    15             0.25      0.022     0.008                2359        9556.28        2.218e+07
+    16             0.20      0.015     0.005                1768        9556.28        1.673e+07
+    17             0.15      0.008     0.001                1187        9556.28        1.132e+07
+    18             0.10      0.004     0.000                 576        9556.28        5.504e+06
+    19             0.05      0.002     0.000                 405        9556.28        3.870e+06
+
+# Create a line plot of estimated value
+plt.plot(strat_df['Acceptance Rate'],strat_df['Estimated Value'])
+plt.title('Estimated Value by Acceptance Rate')
+plt.xlabel('Acceptance Rate')
+plt.ylabel('Estimated Value')
+plt.axes().yaxis.grid()
+plt.show()
+
+# Print the row with the max estimated value
+print(strat_df.loc[strat_df['Estimated Value'] == np.max(strat_df['Estimated Value'])])
+=> Output: <script.py> output:
+       Acceptance Rate  Threshold  Bad Rate  Num Accepted Loans  Avg Loan Amnt  Estimated Value
+    3             0.85      0.804     0.083                9390        9556.28        7.484e+07
+With our credit data and our estimated averag loan value, we clearly see that the acceptance rate 0.85 has the highest potential estimated value. Normally, the allowable bad rate is set, but we can use analyses like this to explore other options.
+
+40) Total expected loss
+
+It's time to estimate the total expected loss given all your decisions. The data frame test_pred_df has the probability of default for each loan and that loan's value. Use these two values to calculate the expected loss for each loan. Then, you can sum those values and get the total expected loss. For this exercise, you will assume that the exposure is the full value of the loan, and the loss given default is 100%. This means that a default on each the loan is a loss of the entire amount.
+The data frame test_pred_df has been loaded into the workspace.
+
+# Print the first five rows of the data frame
+print(test_pred_df.head())
+# Calculate the bank's expected loss and assign it to a new column
+test_pred_df['expected_loss'] = test_pred_df['prob_default'] * test_pred_df['loan_amnt'] * test_pred_df['loss_given_default']
+# Calculate the total expected loss to two decimal places
+tot_exp_loss = round(np.sum(test_pred_df['expected_loss']),2)
+# Print the total expected loss
+print('Total expected loss: ', '${:,.2f}'.format(tot_exp_loss))
+=> Output: <script.py> output:
+       true_loan_status  prob_default  loan_amnt  loss_given_default
+    0                 1         0.982      15000                 1.0
+    1                 1         0.975      11200                 1.0
+    2                 0         0.003      15000                 1.0
+    3                 0         0.005      10800                 1.0
+    4                 1         0.120       3000                 1.0
+    Total expected loss:  $27,084,153.38
+This is the total expected loss for the entire portfolio using the gradient boosted tree. $27 million may seem like a lot, but the total expected loss would have been over $28 million with the logistic regression. Some losses are unavoidable, but your work here might have saved the company a million dollars!
+
+
+CHAPTER 4: GARCH MODELS IN PYTHON
+
+1)
 
