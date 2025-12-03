@@ -2558,5 +2558,719 @@ This is the total expected loss for the entire portfolio using the gradient boos
 
 CHAPTER 4: GARCH MODELS IN PYTHON
 
-1)
+1) Observe volatility clustering
 
+Volatility clustering is frequently observed in financial market data, and it poses a challenge for time series modeling. In this exercise, you will get familiar with the S&P 500 daily price dataset. You will calculate daily returns as the percentage price changes, plot the results and observe its behavior over time.
+Historical S&P 500 daily price data has been preloaded in sp_price for you.
+
+# Calculate daily returns as percentage price changes
+sp_price['Return'] = 100 * (sp_price['Close'].pct_change())
+# View the data
+print(sp_price.tail(10))
+# plot the data
+plt.plot(sp_price['Return'], color = 'tomato', label = 'Daily Returns')
+plt.legend(loc='upper right')
+plt.show()
+=> Output: <script.py> output:
+                  Close  Return
+    Date                       
+    2019-09-27  2961.79  -0.532
+    2019-09-30  2976.74   0.505
+    2019-10-01  2940.25  -1.226
+    2019-10-02  2887.61  -1.790
+    2019-10-03  2910.63   0.797
+    2019-10-04  2952.01   1.422
+    2019-10-07  2938.79  -0.448
+    2019-10-08  2893.06  -1.556
+    2019-10-09  2919.40   0.910
+    2019-10-10  2938.13   0.642
+As shown in the plot, the market exhibited periods of high volatility followed by periods of low volatility. Next up, let's see how GARCH models tackle the challenge posed by volatility clustering.
+
+2) Calculate volatility
+
+In this exercise, you will practice how to compute and convert volatility of price returns in Python. Firstly, you will compute the daily volatility as the standard deviation of price returns. Then convert the daily volatility to monthly and annual volatility.
+S&P 500 time series has been preloaded in sp_data, and the percentage price return is stored in the ’Return’ column.
+
+# Plot the price returns
+plt.plot(sp_data['Return'], color = 'orange')
+plt.show()
+# Calculate daily std of returns
+std_daily = sp_data['Return'].std()
+print('Daily volatility: ', '{:.2f}%'.format(std_daily))
+# Convert daily volatility to monthly volatility
+std_monthly = math.sqrt(21) * std_daily
+print ('Monthly volatility: ', '{:.2f}%'.format(std_monthly))
+# Convert daily volatility to annual volatility
+std_annual = math.sqrt(252) * std_daily
+print ('Annual volatility: ', '{:.2f}%'.format(std_annual))
+=> Output: <script.py> output:
+    Daily volatility:  0.94%
+    Monthly volatility:  4.31%
+    Annual volatility:  14.92%
+
+3) Simulate ARCH and GARCH series
+
+In this exercise, you will simulate an ARCH(1) and GARCH(1,1) time series, respectively, using a predefined function simulate_GARCH(n, omega, alpha, beta = 0).
+Recall the difference between an ARCH(1) and a GARCH(1,1) model is: besides an autoregressive component of alpha multiplying lag-1 residual squared, a GARCH model includes a moving average component of beta multiplying lag-1 variance. The predefined function will simulate an ARCH/GARCH series based on n (number of simulations), omega, alpha, and beta (0 by default) you specify. It will return simulated residuals and variances. Afterwards, you will plot and observe the simulated variances from the ARCH and GARCH process.
+
+# Simulate a ARCH(1) series
+arch_resid, arch_variance = simulate_GARCH(n= 200, 
+                                           omega = 0.1, alpha = 0.7)
+# Simulate a GARCH(1,1) series
+garch_resid, garch_variance = simulate_GARCH(n= 200, 
+                                             omega = 0.1, alpha = 0.7, 
+                                             beta = 0.1)
+# Plot the ARCH variance
+plt.plot(arch_variance, color = 'red', label = 'ARCH Variance')
+# Plot the GARCH variance
+plt.plot(garch_variance, color = 'orange', label = 'GARCH Variance')
+plt.legend()
+plt.show()
+=> Output: As you can see, the overall GARCH model generated higher volatility estimates due to the additional moving average component.
+
+4) Observe the impact of model parameters
+
+In this exercise, you will call the predefined function simulate_GARCH() again and study the impact of GARCH model parameters on simulated results.
+Specifically, you will simulate two GARCH(1,1) time series; they have the same omega and alpha, but different beta as input.
+Recall in GARCH(1,1), since beta is the coefficient of lag-1 variance, if the alpha is fixed, the larger the beta, the longer the duration of the impact. In other words, high or low volatility periods tend to persist. Pay attention to the plotted results and see whether you can verify the beta impact.
+
+# First simulated GARCH
+sim_resid, sim_variance = simulate_GARCH(n = 200,  omega = 0.1, 
+                                          alpha = 0.3, beta = 0.2)
+plt.plot(sim_variance, color = 'orange', label = 'Variance')
+plt.plot(sim_resid, color = 'green', label = 'Residuals')
+plt.legend(loc='upper right')
+plt.show()
+
+# Second simulated GARCH
+sim_resid, sim_variance = simulate_GARCH(n = 200,  omega = 0.1, 
+                                          alpha = 0.3, beta = 0.6)
+plt.plot(sim_variance, color = 'red', label = 'Variance')
+plt.plot(sim_resid, color = 'deepskyblue', label = 'Residuals')
+plt.legend(loc='upper right')
+plt.show()
+=> Notice the second simulated GARCH time series has bigger variances in general. The shock that occurred earlier had a persistent impact on later data points.
+
+5) Implement a basic GARCH model
+
+In this exercise, you will get familiar with the Python arch package, and use its functions such as arch_model() to implement a GARCH(1,1) model. First define a basic GARCH(1,1) model, then fit the model, review the model fitting summary, and plot the results.
+The data to use S&P 500 price return data has been preloaded as sp_data. Also the arch package has been imported for you.
+
+# Specify GARCH model assumptions
+basic_gm = arch_model(sp_data['Return'], p = 1, q = 1,
+                      mean = 'constant', vol = 'GARCH', dist = 'normal')
+# Fit the model
+gm_result = basic_gm.fit(update_freq = 4)
+# Display model fitting summary
+print(gm_result.summary())
+# Plot fitted results
+gm_result.plot()
+plt.show()
+=> Output: <script.py> output:
+    Iteration:      4,   Func. Count:     31,   Neg. LLF: 3733.82264970074
+    Iteration:      8,   Func. Count:     54,   Neg. LLF: 2771.9655475955396
+    Iteration:     12,   Func. Count:     73,   Neg. LLF: 2771.963828246917
+    Optimization terminated successfully    (Exit mode 0)
+                Current function value: 2771.963828246164
+                Iterations: 12
+                Function evaluations: 73
+                Gradient evaluations: 12
+                         Constant Mean - GARCH Model Results                      
+    ==============================================================================
+    Dep. Variable:                 Return   R-squared:                       0.000
+    Mean Model:             Constant Mean   Adj. R-squared:                  0.000
+    Vol Model:                      GARCH   Log-Likelihood:               -2771.96
+    Distribution:                  Normal   AIC:                           5551.93
+    Method:            Maximum Likelihood   BIC:                           5574.95
+                                            No. Observations:                 2336
+    Date:                Wed, Dec 03 2025   Df Residuals:                     2335
+    Time:                        07:04:34   Df Model:                            1
+                                    Mean Model                                
+    ==========================================================================
+                     coef    std err          t      P>|t|    95.0% Conf. Int.
+    --------------------------------------------------------------------------
+    mu             0.0772  1.445e-02      5.345  9.031e-08 [4.892e-02,  0.106]
+                                  Volatility Model                              
+    ============================================================================
+                     coef    std err          t      P>|t|      95.0% Conf. Int.
+    ----------------------------------------------------------------------------
+    omega          0.0396  9.181e-03      4.312  1.619e-05 [2.159e-02,5.758e-02]
+    alpha[1]       0.1680  2.690e-02      6.243  4.284e-10     [  0.115,  0.221]
+    beta[1]        0.7865  2.722e-02     28.897 1.303e-183     [  0.733,  0.840]
+    ============================================================================
+    
+    Covariance estimator: robust
+
+6) Make forecast with GARCH models
+
+Previously you have implemented a basic GARCH(1,1) model with the Python arch package. In this exercise, you will practice making a basic volatility forecast. You will again use the historical returns of S&P 500 time series. First define and fit a GARCH(1,1) model with all available observations, then call .forecast() to make a prediction. By default it produces a 1-step ahead estimate. You can use horizon = n to specify longer forward periods.
+The arch package has been preloaded for you.
+
+# Specify a GARCH(1,1) model
+basic_gm = arch_model(sp_data['Return'], p = 1, q = 1, 
+                      mean = 'constant', vol = 'GARCH', dist = 'normal')
+# Fit the model
+gm_result = basic_gm.fit()
+# Make 5-period ahead forecast
+gm_forecast = gm_result.forecast(horizon = 5)
+# Print the forecast variance
+print(gm_forecast.variance[-1:])
+=> Output: <script.py> output:
+    Iteration:      1,   Func. Count:      6,   Neg. LLF: 14832.611200289291
+    Iteration:      2,   Func. Count:     16,   Neg. LLF: 22318901155.18984
+    Iteration:      3,   Func. Count:     24,   Neg. LLF: 4226.89994318323
+    Iteration:      4,   Func. Count:     31,   Neg. LLF: 3733.82264970074
+    Iteration:      5,   Func. Count:     37,   Neg. LLF: 2782.9233125218548
+    Iteration:      6,   Func. Count:     43,   Neg. LLF: 2775.3216574742
+    Iteration:      7,   Func. Count:     49,   Neg. LLF: 2771.988661563638
+    Iteration:      8,   Func. Count:     54,   Neg. LLF: 2771.9655475955396
+    Iteration:      9,   Func. Count:     59,   Neg. LLF: 2771.9642779830683
+    Iteration:     10,   Func. Count:     64,   Neg. LLF: 2771.963838327781
+    Iteration:     11,   Func. Count:     69,   Neg. LLF: 2771.963828246164
+    Iteration:     12,   Func. Count:     73,   Neg. LLF: 2771.963828246917
+    Optimization terminated successfully    (Exit mode 0)
+                Current function value: 2771.963828246164
+                Iterations: 12
+                Function evaluations: 73
+                Gradient evaluations: 12
+                  h.1    h.2    h.3    h.4    h.5
+    Date                                         
+    2019-10-10  0.994  0.988  0.983  0.978  0.973
+
+7) Plot distribution of standardized residuals
+
+GARCH models make distribution assumptions of the standardized residuals. Recall residuals are the differences between predicted returns and the mean returns. And standardized residuals are the residuals divided by the model estimated volatility. In this exercise, you will practice computing the standardized residuals from a fitted GARCH model, and then plot its histogram together with a standard normal distribution normal_resid.
+A GARCH model has been defined and fitted with S&P 500 price return data. The fitted result can be accessed as gm_result. In addition matplotlib has been preloaded as plt.
+
+# Obtain model estimated residuals and volatility
+gm_resid = gm_result.resid
+gm_std = gm_result.conditional_volatility
+# Calculate the standardized residuals
+gm_std_resid = gm_resid /gm_std
+# Plot the histogram of the standardized residuals
+plt.hist(gm_std_resid, bins = 50, 
+         facecolor = 'orange', label = 'standardized residuals')
+plt.hist(normal_resid, bins = 50, 
+         facecolor = 'tomato', label = 'Normal residuals')
+plt.legend(loc = 'upper left')
+plt.show()
+=> Notice that compared with a standard normal distribution, the distribution curve of standardized residuals from the GARCH models exhibits more peaks, asymmetry, and has a negative skew.
+
+8) Fit a GARCH with skewed t-distribution
+
+The default normal distribution assumption of the standardized residuals used in GARCH models are not representative of the real financial world. Fat tails and skewness are frequently observed in financial return data. In this exercise, you will improve the GARCH model by using a skewed Student's t-distribution assumption. In addition, you will compare the model estimated volatility with that from a model with a normal distribution assumption by plotting them together.
+A GARCH model with the default normal distribution assumption has been fitted for you, and its volatility estimation is saved in normal_vol.
+
+# Specify GARCH model assumptions
+skewt_gm = arch_model(sp_data['Return'], p = 1, q = 1, mean = 'constant', vol = 'GARCH', dist = 'skewt')
+# Fit the model
+skewt_result = skewt_gm.fit()
+# Get model estimated volatility
+skewt_vol = skewt_result.conditional_volatility
+# Plot model fitting results
+plt.plot(skewt_vol, color = 'gold', label = 'Skewed-t Volatility')
+plt.plot(normal_vol, color = 'red', label = 'Normal Volatility')
+plt.plot(sp_data['Return'], color = 'grey', 
+         label = 'Daily Returns', alpha = 0.4)
+plt.legend(loc = 'upper right')
+plt.show()
+=> Output: <script.py> output:
+    Iteration:      1,   Func. Count:      8,   Neg. LLF: 77926.86112265919
+    Iteration:      2,   Func. Count:     19,   Neg. LLF: 147440.0251835162
+    Iteration:      3,   Func. Count:     28,   Neg. LLF: 53482.232549969376
+    Iteration:      4,   Func. Count:     36,   Neg. LLF: 5832.5998015417335
+    Iteration:      5,   Func. Count:     46,   Neg. LLF: 93659.75814882081
+    Iteration:      6,   Func. Count:     55,   Neg. LLF: 5423.856962822037
+    Iteration:      7,   Func. Count:     63,   Neg. LLF: 4658.65008552914
+    Iteration:      8,   Func. Count:     71,   Neg. LLF: 2690.3468398195937
+    Iteration:      9,   Func. Count:     78,   Neg. LLF: 2691.2805584555344
+    Iteration:     10,   Func. Count:     86,   Neg. LLF: 2690.4857728893876
+    Iteration:     11,   Func. Count:     94,   Neg. LLF: 2689.990911767527
+    Iteration:     12,   Func. Count:    101,   Neg. LLF: 2689.9812755508756
+    Iteration:     13,   Func. Count:    108,   Neg. LLF: 2689.979806553789
+    Iteration:     14,   Func. Count:    115,   Neg. LLF: 2689.97955138009
+    Iteration:     15,   Func. Count:    122,   Neg. LLF: 2689.9795443769394
+    Iteration:     16,   Func. Count:    128,   Neg. LLF: 2689.9795443769117
+    Optimization terminated successfully    (Exit mode 0)
+                Current function value: 2689.9795443769394
+                Iterations: 16
+                Function evaluations: 128
+                Gradient evaluations: 16
+As you can see with skewed Student’s t-distribution assumption, GARCH model estimation is more in line with the actual observations.
+
+9) Effect of mean model on volatility predictions
+
+In practice, returns and volatility are modeled in separate processes. Typically the mean assumptions influence predicted returns, but have a minor effect on the volatility estimations. In this exercise, you will examine the impact of GARCH model mean assumptions on volatility estimations by comparing two GARCH models. They have been defined with different mean assumptions and fitted with S&P 500 data.
+The model with "constant mean" assumption has results saved in cmean_result, and estimated volatility saved in cmean_vol. The model with "AR(1)" or 1-lag autoregressive mean assumption has results saved in armean_result, and estimated volatility saved in armean_vol. The matplotlib.pyplot and numpy modules have been imported as plt and np respectively.
+
+# Print model summary of GARCH with constant mean
+print(cmean_result.summary())
+# Print model summary of GARCH with AR mean
+print(armean_result.summary())
+# Plot model volatility 
+plt.plot(cmean_vol, color = 'blue', label = 'Constant Mean Volatility')
+plt.plot(armean_vol, color = 'red', label = 'AR Mean Volatility')
+plt.legend(loc = 'upper right')
+plt.show()
+# Check correlation of volatility estimations
+print(np.corrcoef(cmean_vol, armean_vol)[0,1])
+=> Output: <script.py> output:
+                         Constant Mean - GARCH Model Results                      
+    ==============================================================================
+    Dep. Variable:                 Return   R-squared:                       0.000
+    Mean Model:             Constant Mean   Adj. R-squared:                  0.000
+    Vol Model:                      GARCH   Log-Likelihood:               -2771.96
+    Distribution:                  Normal   AIC:                           5551.93
+    Method:            Maximum Likelihood   BIC:                           5574.95
+                                            No. Observations:                 2336
+    Date:                Wed, Dec 03 2025   Df Residuals:                     2335
+    Time:                        07:18:05   Df Model:                            1
+                                    Mean Model                                
+    ==========================================================================
+                     coef    std err          t      P>|t|    95.0% Conf. Int.
+    --------------------------------------------------------------------------
+    mu             0.0772  1.445e-02      5.345  9.031e-08 [4.892e-02,  0.106]
+                                  Volatility Model                              
+    ============================================================================
+                     coef    std err          t      P>|t|      95.0% Conf. Int.
+    ----------------------------------------------------------------------------
+    omega          0.0396  9.181e-03      4.312  1.619e-05 [2.159e-02,5.758e-02]
+    alpha[1]       0.1680  2.690e-02      6.243  4.284e-10     [  0.115,  0.221]
+    beta[1]        0.7865  2.722e-02     28.897 1.303e-183     [  0.733,  0.840]
+    ============================================================================
+    
+    Covariance estimator: robust
+                               AR - GARCH Model Results                           
+    ==============================================================================
+    Dep. Variable:                 Return   R-squared:                       0.001
+    Mean Model:                        AR   Adj. R-squared:                  0.001
+    Vol Model:                      GARCH   Log-Likelihood:               -2767.54
+    Distribution:                  Normal   AIC:                           5545.08
+    Method:            Maximum Likelihood   BIC:                           5573.86
+                                            No. Observations:                 2335
+    Date:                Wed, Dec 03 2025   Df Residuals:                     2333
+    Time:                        07:18:05   Df Model:                            2
+                                      Mean Model                                  
+    ==============================================================================
+                     coef    std err          t      P>|t|        95.0% Conf. Int.
+    ------------------------------------------------------------------------------
+    Const          0.0815  1.496e-02      5.444  5.216e-08     [5.213e-02,  0.111]
+    Return[1]     -0.0520  2.311e-02     -2.249  2.451e-02 [-9.727e-02,-6.681e-03]
+                                  Volatility Model                              
+    ============================================================================
+                     coef    std err          t      P>|t|      95.0% Conf. Int.
+    ----------------------------------------------------------------------------
+    omega          0.0394  9.118e-03      4.318  1.572e-05 [2.150e-02,5.724e-02]
+    alpha[1]       0.1691  2.731e-02      6.191  5.976e-10     [  0.116,  0.223]
+    beta[1]        0.7857  2.749e-02     28.578 1.247e-179     [  0.732,  0.840]
+    ============================================================================
+    
+    Covariance estimator: robust
+    0.9993806542897596
+The correlation coefficient is close to 1, and the plot shows volatility estimation from both models are very close. In fact, the impact of the mean model assumptions on volatility estimation is so small that, if the interest is only in the volatility dynamics, usually one can just assume the most simple specification, namely the constant mean model.
+
+10) Fit GARCH models to cryptocurrency
+
+Financial markets tend to react to positive and negative news shocks very differently, and one example is the dramatic swings observed in the cryptocurrency market in recent years.
+In this exercise, you will implement a GJR-GARCH and an EGARCH model respectively in Python, which are popular choices to model the asymmetric responses of volatility. You will work with a cryptocurrency dataset bitcoin_data, which contains two columns: "Close" price and "Return".
+The bitcoin_data dataset has been preloaded for you, and the historical prices in the column "Close" have been plotted.
+
+# Specify model assumptions (GJR-GARCH model)
+gjr_gm = arch_model(bitcoin_data['Return'], p = 1, q = 1, o = 1, vol = 'GARCH', dist = 't')
+# Fit the model
+gjrgm_result = gjr_gm.fit(disp = 'off')
+# Print model fitting summary
+print(gjrgm_result.summary())
+
+# Specify model assumptions (EGARCH)
+egarch_gm = arch_model(bitcoin_data['Return'], p = 1, q = 1, o = 1, vol = 'EGARCH', dist = 't')
+# Fit the model
+egarch_result = egarch_gm.fit(disp = 'off')
+# Print model fitting summary
+print(egarch_result.summary())
+
+11) Compare GJR-GARCH with EGARCH
+
+Previously you have fitted a GJR-GARCH and EGARCH model with Bitcoin return time series. In this exercise, you will compare the estimated conditional volatility from the two models by plotting their results. The GJR-GARCH model estimated volatility is saved in gjrgm_vol, and EGARCH model estimated volatility is saved in egarch_vol. You will plot them together with actual Bitcoin return observations, which can be accessed by column ”Return” in bitcoin_data.
+
+# Plot the actual Bitcoin returns
+plt.plot(bitcoin_data['Return'], color = 'grey', alpha = 0.4, label = 'Price Returns')
+# Plot GJR-GARCH estimated volatility
+plt.plot(gjrgm_vol, color = 'gold', label = 'GJR-GARCH Volatility')
+# Plot EGARCH  estimated volatility
+plt.plot(egarch_vol, color = 'red', label = 'EGARCH Volatility')
+plt.legend(loc = 'upper right')
+plt.show()
+=> Overall both GJR-GARCH and EGARCH models did a good job of fitting the actual data. Comparatively, GJR-GARCH is more conservative in volatility estimation when applying it to the Bitcoin dataset.
+
+12) Fixed rolling window forecast
+
+Rolling-window forecasts are very popular for financial time series modeling. In this exercise, you will practice how to implement GARCH model forecasts with a fixed rolling window. First define the window size inside .fit(), and perform the forecast with a for-loop. Note since the window size remains fixed, both the start and end points increment after each iteration.
+The S&P 500 return series has been preloaded as sp_data, and a GARCH(1,1) model has been predefined in basic_gm. The start and end points of the initial sample window has been pre-defined in start_loc and end_loc respectively.
+
+for i in range(30):
+    # Specify fixed rolling window size for model fitting
+    gm_result = basic_gm.fit(first_obs = i + start_loc, 
+                             last_obs = i + end_loc, update_freq = 5)
+    # Conduct 1-period variance forecast and save the result
+    temp_result = gm_result.forecast(horizon = 1).variance
+    fcast = temp_result.iloc[i + end_loc]
+    forecasts[fcast.name] = fcast
+# Save all forecast to a DataFrame       
+forecast_var = pd.DataFrame(forecasts).T
+
+# Plot the forecast variance
+plt.plot(forecast_var, color = 'red')
+plt.plot(sp_data.Return['2019-4-1':'2019-5-10'], color = 'green')
+plt.show()
+
+13) Compare forecast results
+
+Different rolling window approaches can generate different forecast results. In this exercise, let's take a closer look by comparing these forecast results. First, you will use a GARCH model to predict Bitcoin return volatility with an expanding window and a fixed rolling window approach respectively. Then you will plot both forecast results together to visualize the difference.
+The Bitcoin dataset is preloaded in bitcoin_data, and feel free to explore its columns 'Close' and 'Return'. Variance forecast generated with an expanding window approach is saved in variance_expandwin, and that with a fixed rolling window approach is saved in variance_fixedwin.
+
+# Print header of variance forecasts with expanding and fixed window
+print(variance_expandwin.head())
+print(variance_fixedwin.head())
+
+# Calculate volatility from variance forecast with an expanding window
+vol_expandwin = np.sqrt(variance_expandwin)
+# Calculate volatility from variance forecast with a fixed rolling window
+vol_fixedwin = np.sqrt(variance_fixedwin)
+
+# Plot volatility forecast with an expanding window
+plt.plot(vol_expandwin, color = 'blue')
+# Plot volatility forecast with a fixed rolling window
+plt.plot(vol_fixedwin, color = 'red')
+plt.plot(bitcoin_data.Return['2019-4-1':'2019-9-15'], color = 'chocolate')
+plt.show()
+=> By comparison, volatility forecast with a fixed rolling window approach is more responsive to recent return shocks than forecast with an expanding window approach.
+
+14) Simplify the model with p-values
+
+Leonardo da Vinci once said: "Simplicity is the ultimate sophistication." It also applies to data science modeling. In this exercise, you will practice using the p-values to decide the necessity of model parameters, and define a parsimonious model without insignificant parameters.
+The null hypothesis is the parameter value is zero. If the p-value is larger than a given confidence level, the null hypothesis cannot be rejected, meaning the parameter is not statistically significant, hence not necessary.
+A GARCH model has been defined and fitted by the Bitcoin return data. The model result is saved in gm_result.
+
+# Print model fitting summary
+print(gm_result.summary())
+# Get parameter stats from model summary
+para_summary = pd.DataFrame({'parameter':gm_result.params,
+                             'p-value': gm_result.pvalues})
+# Print out parameter stats
+print(para_summary)
+=> Output: <script.py> output:
+                            Constant Mean - EGARCH Model Results                        
+    ====================================================================================
+    Dep. Variable:                       Return   R-squared:                       0.000
+    Mean Model:                   Constant Mean   Adj. R-squared:                  0.000
+    Vol Model:                           EGARCH   Log-Likelihood:               -3954.19
+    Distribution:      Standardized Student's t   AIC:                           7920.38
+    Method:                  Maximum Likelihood   BIC:                           7952.19
+                                                  No. Observations:                 1483
+    Date:                      Wed, Dec 03 2025   Df Residuals:                     1482
+    Time:                              07:38:16   Df Model:                            1
+                                    Mean Model                                
+    ==========================================================================
+                     coef    std err          t      P>|t|    95.0% Conf. Int.
+    --------------------------------------------------------------------------
+    mu             0.1557  5.185e-02      3.003  2.670e-03 [5.410e-02,  0.257]
+                                   Volatility Model                              
+    =============================================================================
+                     coef    std err          t      P>|t|       95.0% Conf. Int.
+    -----------------------------------------------------------------------------
+    omega          0.2190  8.755e-02      2.502  1.236e-02    [4.743e-02,  0.391]
+    alpha[1]       0.4406      0.106      4.156  3.242e-05      [  0.233,  0.648]
+    gamma[1]       0.0171  3.122e-02      0.547      0.584 [-4.411e-02,7.829e-02]
+    beta[1]        0.9796  1.076e-02     91.011      0.000      [  0.959,  1.001]
+                                  Distribution                              
+    ========================================================================
+                     coef    std err          t      P>|t|  95.0% Conf. Int.
+    ------------------------------------------------------------------------
+    nu             2.3343      0.144     16.266  1.711e-59 [  2.053,  2.616]
+    ========================================================================
+    
+    Covariance estimator: robust
+              parameter    p-value
+    mu            0.156  2.670e-03
+    omega         0.219  1.236e-02
+    alpha[1]      0.441  3.242e-05
+    gamma[1]      0.017  5.842e-01
+    beta[1]       0.980  0.000e+00
+    nu            2.334  1.711e-59
+Its p-value is larger than 0.05, so the null hypnosis claiming the parameter value is zero cannot be rejected. In this case, an asymmetric GARCH model seems to be an overkill.
+
+15) Simplify the model with t-statistics
+
+Besides p-values, t-statistics can also help decide the necessity of model parameters. In this exercise, you will practice using t-statistics to assess the significance of model parameters. The t-statistic is computed as the estimated parameter value subtracted by its expected mean (zero in this case), and divided by its standard error. The absolute value of the t-statistic is a distance measure, that tells you how many standard errors the estimated parameter is away from 0. As a rule of thumb, if the t-statistic is larger than 2, you can reject the null hypothesis.
+You will work with the same GARCH model as the previous exercise. You can access the model fitting summary in gm_result.
+
+# Get parameter stats from model summary
+para_summary = pd.DataFrame({'parameter':gm_result.params,
+                             'std-err': gm_result.std_err, 
+                             't-value': gm_result.tvalues})
+# Verify t-value by manual calculation
+calculated_t = para_summary['parameter']/para_summary['std-err']
+# Print calculated t-statistic
+print(calculated_t)
+# Print parameter stats
+print(para_summary)
+=> Output: <script.py> output:
+    mu           3.003
+    omega        2.502
+    alpha[1]     4.156
+    gamma[1]     0.547
+    beta[1]     91.011
+    nu          16.266
+    dtype: float64
+              parameter  std-err  t-value
+    mu            0.156    0.052    3.003
+    omega         0.219    0.088    2.502
+    alpha[1]      0.441    0.106    4.156
+    gamma[1]      0.017    0.031    0.547
+    beta[1]       0.980    0.011   91.011
+    nu            2.334    0.144   16.266
+The t-statistics are in agreement with p-values, pointing out that the gamma parameter is not statistically significant and should be left out of the model.
+
+16) ACF plot
+
+If a GARCH model is doing a good job, the standardized residuals should not exhibit autocorrelations. In this exercise, you will practice using an ACF plot to detect autocorrelations in the data. The coefficient of correlation between two values in a time series is called the autocorrelation function (ACF), and an ACF plot is a visual representation of correlations between different lags. There are pre-defined functions in Python statsmodels packages that enable you to generate ACF plots easily.
+A GARCH model has been fitted with the S&P 500 return data, and its standardized residuals have been calculated and saved in std_resid. The matplotlib.pyplot has been imported as plt.
+
+# Import the Python module
+from statsmodels.graphics.tsaplots import plot_acf
+# Plot the standardized residuals
+plt.plot(std_resid)
+plt.title('Standardized Residuals')
+plt.show()
+# Generate ACF plot of the standardized residuals
+plot_acf(std_resid, alpha = 0.05)
+plt.show()
+=> The ACF plot shows the majority of the data points are within the confidence interval, so the model is doing a decent job.
+
+17) Ljung-Box test
+
+Another powerful tool to check autocorrelations in the data is the Ljung-Box test. In this exercise, you will practice detecting autocorrelation in the standardized residuals by performing a Ljung-Box test. The null hypothesis of Ljung-Box test is: the data is independently distributed. If the p-value is larger than the specified significance level, the null hypothesis cannot be rejected. In other words, there is no clear sign of autocorrelations and the model is valid.
+You will use the same GARCH model as the previous exercise. Its standardized residuals are saved in std_resid.
+
+# Import the Python module
+from statsmodels.stats.diagnostic import acorr_ljungbox
+# Perform the Ljung-Box test
+lb_test = acorr_ljungbox(std_resid , lags = 10, return_df = True)
+# Print the p-values
+print('P-values are: ', lb_test.iloc[0,1])
+=> Output: <script.py> output:
+    P-values are:  0.20245459759895268
+All the p-values are larger than 5% so the null hypothesis cannot be rejected. In other words, no autocorrelations detected and the model is doing a decent job.
+
+18) Pick a winner based on log-likelihood
+
+In this exercise, you will practice using log-likelihood to choose a model with the best fit. GARCH models use the maximum likelihood method to estimate parameters. In general, the bigger the log-likelihood, the better the model since it implies a bigger probability of having observed the data you got.
+Two GARCH models with different distribution assumptions have been defined and fitted with the S&P 500 return data. The normal distribution GARCH is saved in normal_result, and the skewed Student's t-distribution GARCH is saved in skewt_result.
+
+# Print normal GARCH model summary
+print(normal_result.summary())
+# Print skewed GARCH model summary
+print(skewt_result.summary())
+
+# Print the log-likelihood of normal GARCH
+print('Log-likelihood of normal GARCH :', normal_result.loglikelihood)
+# Print the log-likelihood of skewt GARCH
+print('Log-likelihood of skewt GARCH :', skewt_result.loglikelihood)
+=> Output: <script.py> output:
+                         Constant Mean - GARCH Model Results                      
+    ==============================================================================
+    Dep. Variable:                 Return   R-squared:                       0.000
+    Mean Model:             Constant Mean   Adj. R-squared:                  0.000
+    Vol Model:                      GARCH   Log-Likelihood:               -2771.96
+    Distribution:                  Normal   AIC:                           5551.93
+    Method:            Maximum Likelihood   BIC:                           5574.95
+                                            No. Observations:                 2336
+    Date:                Wed, Dec 03 2025   Df Residuals:                     2335
+    Time:                        07:47:43   Df Model:                            1
+                                    Mean Model                                
+    ==========================================================================
+                     coef    std err          t      P>|t|    95.0% Conf. Int.
+    --------------------------------------------------------------------------
+    mu             0.0772  1.445e-02      5.345  9.031e-08 [4.892e-02,  0.106]
+                                  Volatility Model                              
+    ============================================================================
+                     coef    std err          t      P>|t|      95.0% Conf. Int.
+    ----------------------------------------------------------------------------
+    omega          0.0396  9.181e-03      4.312  1.619e-05 [2.159e-02,5.758e-02]
+    alpha[1]       0.1680  2.690e-02      6.243  4.284e-10     [  0.115,  0.221]
+    beta[1]        0.7865  2.722e-02     28.897 1.303e-183     [  0.733,  0.840]
+    ============================================================================
+    
+    Covariance estimator: robust
+                               Constant Mean - GARCH Model Results                           
+    =========================================================================================
+    Dep. Variable:                            Return   R-squared:                       0.000
+    Mean Model:                        Constant Mean   Adj. R-squared:                  0.000
+    Vol Model:                                 GARCH   Log-Likelihood:               -2689.98
+    Distribution:      Standardized Skew Student's t   AIC:                           5391.96
+    Method:                       Maximum Likelihood   BIC:                           5426.50
+                                                       No. Observations:                 2336
+    Date:                           Wed, Dec 03 2025   Df Residuals:                     2335
+    Time:                                   07:47:43   Df Model:                            1
+                                     Mean Model                                 
+    ============================================================================
+                     coef    std err          t      P>|t|      95.0% Conf. Int.
+    ----------------------------------------------------------------------------
+    mu             0.0671  1.373e-02      4.882  1.048e-06 [4.013e-02,9.397e-02]
+                                  Volatility Model                              
+    ============================================================================
+                     coef    std err          t      P>|t|      95.0% Conf. Int.
+    ----------------------------------------------------------------------------
+    omega          0.0252  6.691e-03      3.762  1.682e-04 [1.206e-02,3.829e-02]
+    alpha[1]       0.1679  2.551e-02      6.581  4.658e-11     [  0.118,  0.218]
+    beta[1]        0.8146  2.493e-02     32.674 3.602e-234     [  0.766,  0.864]
+                                    Distribution                               
+    ===========================================================================
+                     coef    std err          t      P>|t|     95.0% Conf. Int.
+    ---------------------------------------------------------------------------
+    eta            5.2437      0.575      9.118  7.678e-20    [  4.116,  6.371]
+    lambda        -0.0822  2.541e-02     -3.235  1.216e-03 [ -0.132,-3.241e-02]
+    ===========================================================================
+    
+    Covariance estimator: robust
+    Log-likelihood of normal GARCH : -2771.963828246164
+    Log-likelihood of skewt GARCH : -2689.9795443769394
+The GARCH model with skewed Student's t-distribution assumption has a higher log-likelihood, hence is relatively better.
+
+19) Pick a winner based on AIC/BIC
+
+In this exercise, you will practice using information criteria to choose a model with the best fit. Information criteria intend to measure the trade-off between goodness of fit and model complexity. AIC and BIC are two commonly used information criteria for model selection. They both impose penalties on model with more parameters, or more complex models. The lower the AIC or BIC, the better the model.
+A GJR-GARCH model and EGARCH model have been defined and fitted with the S&P 500 return data. Their results can be accessed in gjrgm_result and egarch_result respectively.
+
+# Print the AIC GJR-GARCH
+print('AIC of GJR-GARCH model :', gjrgm_result.aic)
+# Print the AIC of EGARCH
+print('AIC of EGARCH model :', egarch_result.aic)
+
+# Print the BIC GJR-GARCH
+print('BIC of GJR-GARCH model :', gjrgm_result.bic)
+# Print the BIC of EGARCH
+print('BIC of EGARCH model :', egarch_result.bic)
+=> Output: <script.py> output:
+    AIC of GJR-GARCH model : 5294.232558095527
+    AIC of EGARCH model : 5268.7919908309295
+    BIC of GJR-GARCH model : 5328.769730159215
+    BIC of EGARCH model : 5303.329162894618
+Both AIC and BIC of the EGARCH model are lower, hence EGARCH is relatively better.
+
+20) Backtesting with MAE, MSE
+
+In this exercise, you will practice how to evaluate model performance by conducting backtesting. The out-of-sample forecast accuracy is assessed by calculating MSE and MAE.
+You can easily estimate prediction errors MSE and MAE with pre-defined functions in the sklearn.metrics package. The actual variance and predicted variance have been preloaded in actual_var and forecast_var respectively.
+
+def evaluate(observation, forecast): 
+    # Call sklearn function to calculate MAE
+    mae = mean_absolute_error(observation, forecast)
+    print('Mean Absolute Error (MAE): {:.3g}'.format(mae))
+    # Call sklearn function to calculate MSE
+    mse = mean_squared_error(observation, forecast)
+    print('Mean Squared Error (MSE): {:.3g}'.format(mse))
+    return mae, mse
+# Backtest model with MAE, MSE
+evaluate(actual_var, forecast_var)
+=> Output: <script.py> output:
+    Mean Absolute Error (MAE): 0.802
+    Mean Squared Error (MSE): 2.37
+Note MSE is usually larger than MAE due to the squared effect. Next chapter let's explore some practical GARCH model applications in the financial world!
+
+21) Compute parametric VaR
+
+In this exercise, you will practice estimating dynamic 5% daily VaRs with a parametric approach.
+
+Recall there are three steps to perform a forward VaR estimation. Step 1 is to use a GARCH model to make variance forecasts. Step 2 is to obtain the GARCH forward-looking mean and volatility. And Step 3 is to compute the quantile according to a given confidence level. The parametric approach estimates quantiles from an assumed distribution assumption.
+A GARCH model has been fitted with historical Bitcoin return data up to 1/1/2019, then it has generated mean and variance forecasts, saved in mean_forecast and variance_forecast respectively. The GARCH model assumes a Student's t-distribution, and its  (degree of freedom) is saved in nu.
+
+# Obtain the parametric quantile
+q_parametric = basic_gm.distribution.ppf(0.05, nu)
+print('5% parametric quantile: ', q_parametric) 
+# Calculate the VaR
+VaR_parametric = mean_forecast.values + np.sqrt(variance_forecast).values * q_parametric
+# Save VaR in a DataFrame
+VaR_parametric = pd.DataFrame(VaR_parametric, columns = ['5%'], index = variance_forecast.index)
+# Plot the VaR
+plt.plot(VaR_parametric, color = 'red', label = '5% Parametric VaR')
+plt.scatter(variance_forecast.index,bitcoin_data.Return['2019-1-1':], color = 'orange', label = 'Bitcoin Daily Returns' )
+plt.legend(loc = 'upper right')
+plt.show()
+=> Output: <script.py> output:
+    5% parametric quantile:  -1.3613388948720162
+Pay attention to the dots that fell below the VaR threshold. For 5% VaR there are less than 13 exceedances observed over 1 year, so the model is doing a decent job.
+
+22) Compute empirical VaR
+
+In this exercise, you will practice estimating dynamic 5% daily VaRs with an empirical approach. The difference between parametric VaR and empirical VaR is how the quantiles are estimated. The parametric approach estimates quantiles from an assumed distribution assumption, while the empirical approach estimates quantiles from an observed distribution of the standardized residuals. You will use the same GARCH model as the previous exercise. The mean and variance forecasts are saved in mean_forecast and variance_forecast respectively. The empirical standardized residuals have also been calculated and saved in std_resid.
+
+# Obtain the empirical quantile
+q_empirical = std_resid.quantile(0.05)
+print('5% empirical quantile: ', q_empirical)
+# Calculate the VaR
+VaR_empirical = mean_forecast.values + np.sqrt(variance_forecast).values * q_empirical
+# Save VaR in a DataFrame
+VaR_empirical = pd.DataFrame(VaR_empirical, columns = ['5%'], index = variance_forecast.index)
+# Plot the VaRs
+plt.plot(VaR_empirical, color = 'brown', label = '5% Empirical VaR')
+plt.plot(VaR_parametric, color = 'red', label = '5% Parametric VaR')
+plt.scatter(variance_forecast.index,bitcoin_data.Return['2019-1-1':], color = 'orange', label = 'Bitcoin Daily Returns' )
+plt.legend(loc = 'upper right')
+plt.show()
+=> Output: <script.py> output:
+    5% empirical quantile:  -1.5667091349687168
+Overall both VaRs are very close, but the empirical VaRs have bigger loss estimations, which implies VaRs based on the theoretical Student’s t-distribution assumption may underestimate the downside risks.
+
+23) Compute GARCH covariance
+
+Covariance describes the relationship of movement between two price return series. Recall dynamic covariance can be computed by ρ * σ1 * σ2, where σ1, σ2 are volatility estimates from GARCH models, and ρ is the simple correlation between GARCH standardized residuals.
+In this exercise, you will practice computing dynamic covariance with GARCH models. Specifically you will use two foreign exchange time series data: EUR/USD and USD/CAD (shown in the plot). Their price returns have been fitted by two GARCH models, and the volatility estimates are saved in vol_eur and vol_cad. In addition, their standardized residuals are saved in resid_eur and resid_cad respectively. In addition, the numpy package has been imported as np.
+
+# Calculate correlation
+corr = np.corrcoef(resid_eur, resid_cad)[0,1]
+print('Correlation: ', corr)
+# Calculate GARCH covariance
+covariance =  corr * vol_eur * vol_cad
+# Plot the data
+plt.plot(covariance, color = 'gold')
+plt.title('GARCH Covariance')
+plt.show()
+=> Output: <script.py> output:
+    Correlation:  -0.4386427497572238
+Notice the EUR/USD and USD/CAD rates tend to move in the opposite directions, so their dynamic covariance is negative and fluctuating over time.
+
+24) Compute dynamic portfolio variance
+
+In this exercise, you will practice computing the variance of a simple two-asset portfolio with GARCH dynamic covariance. The Modern Portfolio Theory states that there is an optimal way to construct a portfolio to take advantage of the diversification effect, so one can obtain a desired level of expected return with the minimum risk. This effect is especially evident when the covariance between asset returns is negative.
+Suppose you have a portfolio with only two assets: EUR/USD and CAD/USD currency pairs. Their variance from the GARCH models have been saved in variance_eur and variance_cad, and their covariance has been calculated and saved in covariance. Compute the overall portfolio variances by varying the weights of the two assets, and visualize their differences.
+
+# Define weights
+Wa1 = 0.9
+Wa2 = 1 - Wa1
+Wb1 = 0.5
+Wb2 = 1 - Wb1
+# Calculate portfolio variance
+portvar_a = Wa1**2 * variance_eur + Wa2**2 * variance_cad + 2*Wa1*Wa2*covariance
+portvar_b = Wb1**2 * variance_eur + Wb2**2 * variance_cad + 2*Wb1*Wb2*covariance
+# Plot the data
+plt.plot(portvar_a, color = 'green', label = 'Portfolio a')
+plt.plot(portvar_b, color = 'deepskyblue', label = 'Portfolio b')
+plt.legend(loc = 'upper right')
+plt.show()
+=> Portfolio b is much less volatile compared to portfolio a. Even just for a simple two-asset portfolio, how you structure it can greatly alter the risk profile.
+
+25) Compute dynamic stock Beta
+
+Suppose Elon Musk is your idol and you are considering investing in some Tesla stocks. As a shrewd portfolio manager, you decide to do due diligence by checking Tesla stock Beta over the years. Beta is a measure of a stock's volatility in relation to the market, which can serve as a gauge of investment risks. Recall you need the stock volatility, market (S&P 500 as a proxy) volatility and their return correlation to compute Beta. Correlation can be computed from standardized residuals.
+Model fitted volatility has been preloaded for Tesla in teslaGarch_vol, and for S&P 500 in spGarch_vol. In addition, model standardized residuals are preloaded in teslaGarch_resid and spGarch_resid respectively.
+
+# Compute correlation between SP500 and Tesla
+correlation = np.corrcoef(teslaGarch_resid, spGarch_resid)[0, 1]
+# Compute the Beta for Tesla
+stock_beta = correlation * (teslaGarch_vol / spGarch_vol)
+# Plot the Beta
+plt.title('Tesla Stock Beta')
+plt.plot(stock_beta)
+plt.show()
