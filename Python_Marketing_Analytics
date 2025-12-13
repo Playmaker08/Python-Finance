@@ -46,9 +46,1266 @@ print(marketing['is_retained'].dtype)
 => bool
 By changing the data type to boolean, you can now sum the is_retained column to calculate the number of users who were retained.
 
-3)
+3) Adding new columns
+
+Adding new columns that derive information from existing data or are based on domain knowledge is known as Feature Engineering. Even in relatively simple datasets, there are always new characteristics you could pull out to create a more in-depth analysis. One of the most critical skills a data scientist needs to learn is how to identify opportunities for feature engineering.
+In this exercise, you will add two columns to marketing:
+channel_code: represents the numeric value of the subscribing channel
+is_correct_lang: conveys whether the ad was shown to the user in their preferred language
+
+# Mapping for channels
+channel_dict = {"House Ads": 1, "Instagram": 2, 
+                "Facebook": 3, "Email": 4, "Push": 5}
+
+# Map the channel to a channel code
+marketing['channel_code'] = marketing['subscribing_channel'].map(channel_dict)
+
+# Import numpy
+import numpy as np
+
+# Add the new column is_correct_lang
+marketing['is_correct_lang'] = np.where(
+    marketing['language_preferred'] == marketing['language_displayed'], 
+    'Yes', 
+    'No'
+)
+
+4) Date columns
+
+Currently, the date columns in the marketing DataFrame are being incorrectly read as objects. We need to convert these columns to date columns to be able to use Python and pandas' robust date manipulation and formatting capabilities. In this exercise, you will practice reading the CSV with proper date columns and create a day of the week column.--
+
+# Import pandas into the environment
+import pandas as pd
+# Import marketing.csv with date columns
+marketing = pd.read_csv('marketing.csv', 
+                        parse_dates = ['date_served', 'date_subscribed', 'date_canceled'])
+# Add a DoW column
+marketing['DoW'] = marketing['date_subscribed'].dt.dayofweek
+
+5) Calculating conversion rate
+
+In this exercise, you will practice calculating the conversion rate, which is often the first metric you'll want to calculate when evaluating how a marketing campaign performed. On marketing teams, conversion rate is typically the most important metric. It is one of the best ways to determine how effective a marketing team was at gaining new customers.
+As a reminder, conversion rate is the percentage of users who saw our marketing assets and subsequently became subscribers.
+The formula for conversion rate is: Number of people who convert/Total number of people we market to
+
+# Calculate the number of people we marketed to
+total = marketing['user_id'].nunique()
+# Calculate the number of people who subscribed
+subscribers = marketing[marketing["converted"] == True]\
+                            ['user_id'].nunique()
+# Calculate the conversion rate
+conversion_rate = subscribers/total
+print(round(conversion_rate*100, 2), "%")
+Output: <script.py> output:
+    14.09 %
+You might be wondering, is this a good conversion rate? This will depend heavily on your business. There is no particular number that all marketing teams are trying to reach. Instead, when you're working on a marketing team, it helps to look at historical data to determine whether a conversion rate is what you would expect.
+
+6) Calculating retention rate
+
+In this exercise, you will calculate the retention rate, or the number of remaining subscribers from the users who converted to your product. This can give you a sense of whether your marketing campaign converted subscribers who were actually interested in the product.
+Conversion rate and retention rate function hand-in-hand; you could create a business with a high conversion rate by giving users a free trial, but have a low retention rate once users are charged for your services. This isn't inherently a bad thing, but it is important to provide your business stakeholders with insight into what percentage of users remain subscribers.
+The formula for retention rate is: Number of people who remain subscribed/Total number of people who converted
+
+# Calculate the number of subscribers
+total_subscribers = marketing[marketing["converted"] == True]\
+                            ['user_id'].nunique()
+# Calculate the number of people who remained subscribed
+retained = marketing[marketing['is_retained'] == True]\
+                   ['user_id'].nunique()
+# Calculate the retention rate
+retention_rate = retained/total_subscribers
+print(round(retention_rate*100, 2), "%")
+=> Output: <script.py> output:
+    68.45 %
+Much like with conversion rate, there is no retention rate that will apply across businesses and industries. Look at historical retention rates or retention rates of companies in a similar industry to interpret your results.
+
+7) Comparing language conversion rate
+
+# Isolate English speakers
+english_speakers = marketing[marketing['language_displayed'] == 'English']
+# Calculate the total number of English-speaking users
+total = english_speakers['user_id'].nunique()
+# Calculate the number of English speakers who converted
+subscribers = english_speakers[english_speakers['converted'] == True]\
+                            ['user_id'].nunique()
+# Calculate conversion rate
+conversion_rate = subscribers/total
+print('English speaker conversion rate:',  round(conversion_rate*100,2), '%')
+
+# Group by language_displayed and count unique users
+total = marketing.groupby(['language_displayed'])\
+                                  ['user_id'].nunique()
+# Group by language_displayed and count unique conversions
+subscribers = marketing[marketing['converted'] == True]\
+                       .groupby(['language_displayed'])\
+                       ['user_id'].nunique()
+# Calculate the conversion rate for all languages
+language_conversion_rate = subscribers/total
+print(language_conversion_rate)
+=> Output: <script.py> output:
+    English speaker conversion rate: 13.13 %
+        <script.py> output:
+    language_displayed
+    Arabic     0.500
+    English    0.131
+    German     0.716
+    Spanish    0.200
+    Name: user_id, dtype: float64
+You'll notice the conversion rate is much lower for English and Spanish.
+
+8) Aggregating by date
+
+The marketing team wants to know whether there is any difference in the conversion rate based on when in the month your users saw an ad. In this exercise, you will practice .groupby() again, this time looking at how metrics have evolved.
+
+# Group by date_served and count unique users
+total = marketing.groupby(['date_served'])['user_id']\
+                     .nunique()
+# Group by date_served and count unique converted users
+subscribers = marketing[marketing['converted'] == True]\
+                         .groupby(['date_served'])\
+                         ['user_id'].nunique()
+# Calculate the conversion rate per day
+daily_conversion_rate = subscribers/total
+print(daily_conversion_rate)
+=> Output: <script.py> output:
+    date_served
+    2018-01-01    0.099
+    2018-01-02    0.099
+    2018-01-03    0.103
+    2018-01-04    0.108
+    2018-01-05    0.125
+    2018-01-06    0.114
+    2018-01-07    0.142
+    2018-01-08    0.115
+    2018-01-09    0.125
+    2018-01-10    0.119
+    2018-01-11    0.081
+    2018-01-12    0.076
+    2018-01-13    0.085
+    2018-01-14    0.085
+    2018-01-15    0.113
+    2018-01-16    0.255
+    2018-01-17    0.220
+    2018-01-18    0.091
+    2018-01-19    0.059
+    2018-01-20    0.068
+    2018-01-21    0.087
+    2018-01-22    0.124
+    2018-01-23    0.122
+    2018-01-24    0.116
+    2018-01-25    0.125
+    2018-01-26    0.090
+    2018-01-27    0.066
+    2018-01-28    0.062
+    2018-01-29    0.060
+    2018-01-30    0.066
+    2018-01-31    0.053
+    Name: user_id, dtype: float64
+
+9) Visualize conversion rate by language
+
+When you calculated the conversion rate by age group in the previous exercise, you printed out a DataFrame called language_conversion_rate containing your results. While this table provided useful information, it is much easier to compare relative conversion rates visually.
+Data scientists must communicate results clearly to business stakeholders. A strong foundation in data visualization is a key aspect to conveying results, especially when engaging with people who are not as comfortable interpreting data on their own.
+In this exercise, you will build upon the work you did to create language_conversion_rate by visualizing your results in a bar chart.
+
+# Create a bar chart using the language_conversion_rate DataFrame
+language_conversion_rate.plot(kind = 'bar')
+# Add a title and x and y-axis labels
+plt.title('Conversion rate by language\n', size = 16)
+plt.ylabel('Conversion rate (%)', size = 14)
+plt.xlabel('Language', size = 14)
+# Display the plot
+plt.show()
+=> Output: This plot shows that German and Arabic speakers have much higher conversion rates than English and Spanish speakers.
+
+10) Creating a daily conversion rate DataFrame
+
+To understand trends over time, you will create a new DataFrame that includes the conversion rate each day. You will follow essentially the same steps as before when you calculated the overall conversion rate, this time also grouping by the date a user subscribed.
+Looking at the daily conversion rate is crucial to contextualize whether the conversion rate on a particular day was good or bad. Additionally, looking at conversion rate over time can help to surface trends such as a conversion rate that appears to be going down over time. These kinds of trends are crucial to identify for your marketing stakeholders as early as possible.
+
+# Group by date_served and count unique users
+total = marketing.groupby(['date_served'])['user_id']\
+                     .nunique()
+# Group by date_served and calculate subscribers
+subscribers = marketing[marketing['converted'] == True]\
+                         .groupby(['date_served'])\
+                         ['user_id'].nunique()
+# Calculate the conversion rate for all languages
+daily_conversion_rates = subscribers/total
+
+11) Setting up our data to visualize daily conversion
+
+When you want to understand how your campaign performed, it is essential to look at how key metrics changed throughout the campaign. Your key metrics can help you catch problems that may have happened during the campaign, such as a bug in the checkout system that led to a dip in conversion toward the end of your campaign. Metrics over time can also surface trends like gaining more subscribers over the weekends or on specific holidays.
+In this exercise, you will build upon the daily conversion rate Series daily_conversion_rates you built in a previous exercise. Before you can begin visualizing, you need to transform your data into an easier format to use with pandas and matplotlib.
+
+# Reset index to turn the results into a DataFrame
+daily_conversion_rate = pd.DataFrame(daily_conversion_rates.reset_index(0))
+# Rename columns
+daily_conversion_rate.columns = ['date_served', 
+                                 'conversion_rate']
+
+12) Visualize the daily conversion rate
+
+Now that you have formatted the data into a more manageable format for visualization, you will proceed to create a line chart. Strong visualization skills are crucial for a data scientist because they will allow you and your marketing stakeholders to derive deeper insights from the data. In this case, creating a line plot will make it much easier to notice peaks and valleys in our conversion rate over time, as well as any overall trends.
+
+# Create a line chart using daily_conversion_rate DataFrame
+daily_conversion_rate.plot('date_served', 
+                           'conversion_rate')
+
+plt.title('Daily conversion rate\n', size = 16)
+plt.ylabel('Conversion rate (%)', size = 14)
+plt.xlabel('Date', size = 14)
+# Set the y-axis to begin at 0
+plt.ylim(0)
+# Display the plot
+plt.show()
+=> As you can see, the conversion rate is relatively steady except for one day in January.
+
+13) Marketing channels across age groups
+
+Some marketing stakeholders want to know if their marketing channels are reaching all users equally or if some marketing channels are serving specific age demographics.
+Within a marketing team, it is common to get requests that require quick analysis and visualization. The better you are at visualizing the results, the more likely that you will effectively communicate your findings to your stakeholders.
+In this exercise, you will create a grouped bar chart showing how many people each marketing channel reached by age group.
+
+channel_age = marketing.groupby(['marketing_channel', 'age_group'])\
+                                ['user_id'].count()
+# Unstack channel_age and transform it into a DataFrame
+channel_age_df = pd.DataFrame(channel_age.unstack(level = 1))
+# Plot the results
+channel_age_df.plot(kind = 'bar')
+plt.title('Marketing channels by age group')
+plt.xlabel('Age Group')
+plt.ylabel('Users')
+# Add a legend to the plot
+plt.legend(loc = 'upper right', 
+           labels = channel_age_df.columns.values)
+plt.show()
+=> As you can see, email is not reaching older age groups, and Facebook is not reaching many people under 18.
+
+14) Grouping and counting by multiple columns
+
+Stakeholders have begun competing to see whose channel had the best retention rate from the campaign. You must first determine how many subscribers came from the campaign and how many of those subscribers have stayed on the service.
+It's important to identify how each marketing channel is performing because this will affect company strategy going forward. If one channel is outperforming others, it might signal the channel merits further investment.
+You will build on what we have learned about .groupby() in previous exercises, this time grouping by multiple columns.
+
+# Count the subs by subscribing channel and date subscribed
+retention_total = marketing.groupby(['date_subscribed',
+                                     'subscribing_channel'])\
+                                       ['user_id'].nunique()
+# Print results
+print(retention_total.head())
+=> Output: <script.py> output:
+    date_subscribed  subscribing_channel
+    2018-01-01       Email                   1
+                     Facebook                8
+                     House Ads              16
+                     Instagram               8
+                     Push                    3
+    Name: user_id, dtype: int64
+
+# Count the retained subs by subscribing channel and date subscribed
+retention_subs = marketing[marketing['is_retained'] == True]\
+                           .groupby(['date_subscribed',
+                                     'subscribing_channel'])\
+                            ['user_id'].nunique()
+# Print results
+print(retention_subs.head())
+=> Output: <script.py> output:
+    date_subscribed  subscribing_channel
+    2018-01-01       Email                   1
+                     Facebook                7
+                     House Ads              11
+                     Instagram               6
+                     Push                    3
+    Name: user_id, dtype: int64
+
+15) Analyzing retention rates for the campaign
+
+Now that you've calculated the total subscribers and retained subscribers, you can settle the question of which channel had the highest retention rate.
+In this exercise, you will calculate the retention rate for each subscription channel and visualize your results.
+
+# Divide retained subscribers by total subscribers
+retention_rate = retention_subs/retention_total
+retention_rate_df = pd.DataFrame(retention_rate.unstack(level=1))
+# Plot retention rate
+retention_rate_df.plot()
+# Add a title, x-label, y-label, legend and display the plot
+plt.title('Retention Rate by Subscribing Channel')
+plt.xlabel('Date Subscribed')
+plt.ylabel('Retention Rate (%)')
+plt.legend(loc = 'upper right', 
+           labels = retention_rate_df.columns.values)
+plt.show()
+=> Output: Now you can see which channels are driving subscribers with the longest retention rate.
+
+16) Building a conversion function
+
+You've been doing a lot of repetitive calculations. Anytime you notice repetition in your work, consider automation. The more of the low-variance work you can automate, the more time you will have to explore new and interesting data science topics at work. This will both impress your marketing stakeholders and be more fun! Since you know the format of the marketing DataFrame will remain the same over time, you can build a function to enable you to calculate conversion rate across any sub-segment you want on the fly.
+In this exercise, you will build a function that takes a DataFrame and list of column names and outputs the conversion rate across the column(s).
+
+def conversion_rate(dataframe, column_names):
+    # Total number of converted users
+    column_conv = dataframe[dataframe['converted'] == True]\
+                       .groupby(column_names)['user_id'].nunique()
+    # Total number users
+    column_total = dataframe.groupby(column_names)['user_id'].nunique()   
+    # Conversion rate 
+    conversion_rate = column_conv/column_total
+    # Fill missing values with 0
+    conversion_rate = conversion_rate.fillna(0)
+    return conversion_rate
+
+17) Test and visualize conversion function
+
+You've done the hard work of building your conversion rate function—now it's time to test it out! Automating your analyses can be time-consuming up front, but this is where it all pays off.
+In this exercise, you'll see how quickly you can calculate the conversion rate. A task that in previous lessons took multiple steps. By automating the repetitive parts of your work, you'll be able to spend more time doing complex analyses.
+
+# Calculate conversion rate by age_group
+age_group_conv = conversion_rate(marketing, ['date_served',
+                                             'age_group'])
+# Unstack and create a DataFrame
+age_group_df = pd.DataFrame(age_group_conv.unstack(level = 1))
+# Visualize conversion by age_group
+age_group_df.plot()
+plt.title('Conversion rate by age group\n', size = 16)
+plt.ylabel('Conversion rate', size = 14)
+plt.xlabel('Age group', size = 14)
+plt.show()
+
+18) Plotting function
+
+Now that you've looked at conversion rate by age, you want to see if that trend has changed over time. Marketing has been changing their strategy and wants to make sure that their new method isn't alienating age groups that are less comfortable with their product. However, to do so, you need to create a plotting function to make it easier to visualize your results.
+
+def plotting_conv(dataframe):
+    for column in dataframe:
+        # Plot column by dataframe's index
+        plt.plot(dataframe.index, dataframe[column])
+        plt.title('Daily ' + str(column) + ' conversion rate\n', 
+                  size = 16)
+        plt.ylabel('Conversion rate', size = 14)
+        plt.xlabel('Date', size = 14)
+        # Show plot
+        plt.show()
+        plt.clf()
+
+19) Putting it all together
+
+Your marketing stakeholders have requested a report of the daily conversion rate for each age group, and they need it as soon as possible. They want you to refresh this report on a monthly cadence. This is a perfect opportunity to utilize your functions. Not only will the functions help you get this report out promptly today, but it will also help each month when it's time for a refresh of the data. Remember, conversion_rate() takes a DataFrame and a list of columns to calculate the conversion rate.
+
+# Calculate conversion rate by date served and age group
+age_group_conv = conversion_rate(marketing, 
+                                 ['date_served', 'age_group'])
+# Unstack age_group_conv and create a DataFrame
+age_group_df = pd.DataFrame(age_group_conv.unstack(level=1))
+# Plot the results
+plotting_conv(age_group_df)
+
+20) House ads conversion rate
+
+The house ads team has become worried about some irregularities they've noticed in conversion rate. It is common for stakeholders to come to you with concerns they've noticed around changing metrics. As a data scientist, it's your job to determine whether these changes are natural fluctuations or if they require further investigation.
+In this exercise, you'll try out your conversion_rate() and plotting_conv() functions out on marketing looking at conversion rate by 'date_served' and 'marketing_channel'.
+
+# Calculate conversion rate by date served and channel
+daily_conv_channel = conversion_rate(marketing, ['date_served', 
+                                                 'marketing_channel'])
+# Unstack daily_conv_channel and convert it to a DataFrame
+daily_conv_channel = pd.DataFrame(daily_conv_channel.unstack(level = 1))
+# Plot results of daily_conv_channel
+plotting_conv(daily_conv_channel)
+=> A sudden decrease in conversion rate on January 11.
+
+21) Analyzing House ads conversion rate
+
+Now that you have confirmed that house ads conversion has been down since January 11, you will try to identify potential causes for the decrease. As a data scientist supporting a marketing team, you will run into fluctuating metrics all the time. It's vital to identify if the fluctuations are due to expected shifts in user behavior (i.e., differences across the day of the week) versus a larger problem in technical implementation or marketing strategy. In this exercise, we will begin by checking whether users are more likely to convert on weekends compared with weekdays and determine if that could be the cause for the changing house ads conversion rate.
+
+# Add day of week column to marketing
+marketing['DoW_served'] = marketing['date_served'].dt.dayofweek
+# Calculate conversion rate by day of week
+DoW_conversion = conversion_rate(marketing, ['DoW_served', 
+                                             'marketing_channel'])
+# Unstack channels
+DoW_df = pd.DataFrame(DoW_conversion.unstack(level=1))
+# Plot conversion rate by day of week
+DoW_df.plot()
+plt.title('Conversion rate by day of week\n')
+plt.ylim(0)
+plt.show()
+=> As you can see, email is particularly high and may be reflective of a tracking error, but house ads appear stable across the week with a slight peak on Tuesday. You will investigate further
+
+22) House ads conversion by language
+
+Now that you've ruled out natural fluctuations across the day of the week a user saw our marketing assets as they cause for decreasing house ads conversion, you will take a look at conversion by language over time. Perhaps the new marketing campaign does not apply broadly across different cultures.
+Ideally, the marketing team will consider cultural differences prior to launching a campaign, but sometimes mistakes are made, and it will be your job to identify the cause. Often data scientists are the first line of defense to determine what went wrong with a marketing campaign. It's your job to think creatively to identify the cause.
+
+# Isolate the rows where marketing channel is House Ads
+house_ads = marketing[marketing['marketing_channel'] == 'House Ads']
+# Calculate conversion by date served and language displayed
+conv_lang_channel = conversion_rate(house_ads, 
+                                    ['date_served', 
+                                     'language_displayed'])
+# Unstack conv_lang_channel
+conv_lang_df = pd.DataFrame(conv_lang_channel.unstack(level=1))
+# Use plotting function to display results
+plotting_conv(conv_lang_df)
+=> Output: As you can see, the English conversion rate drops around the 11th, and there do not appear to be ads served in other languages for a two week period.
+
+23) Creating a DataFrame for house ads
+
+The house ads team is concerned because they've seen their conversion rate drop suddenly in the past few weeks. In the previous exercises, you confirmed that conversion is down because you noticed a pattern around language preferences.
+As a data scientist, it is your job to provide your marketing stakeholders with as specific feedback as possible as to what went wrong to maximize their ability to correct the problem. It is vital that you not only say "looks like there's a language problem," but instead identify what the problem is specifically so that the team doesn't repeat their mistake.
+
+# Add the new column is_correct_lang
+house_ads['is_correct_lang'] = np.where(
+    house_ads['language_preferred'] == house_ads['language_displayed'], 
+    'Yes', 
+    'No')
+# Groupby date_served and is_correct_lang
+language_check = house_ads.groupby(['date_served','is_correct_lang'])['is_correct_lang'].count()
+# Unstack language_check and fill missing values with 0's
+language_check_df = pd.DataFrame(language_check.unstack(level=1)).fillna(0)
+# Print results
+print(language_check_df)
+=> Output: <script.py> output:
+    is_correct_lang    No    Yes
+    date_served                 
+    2018-01-01        2.0  189.0
+    2018-01-02        3.0  247.0
+    2018-01-03        0.0  220.0
+    2018-01-04        0.0  168.0
+    2018-01-05        0.0  160.0
+    2018-01-06        1.0  151.0
+    2018-01-07        2.0  130.0
+    2018-01-08        0.0  154.0
+    2018-01-09        0.0  157.0
+    2018-01-10        0.0  170.0
+    2018-01-11       20.0  135.0
+    2018-01-12       18.0  130.0
+    2018-01-13       26.0  122.0
+    2018-01-14       20.0  131.0
+    2018-01-15       16.0  192.0
+    2018-01-16       28.0  127.0
+    2018-01-17       21.0  127.0
+    2018-01-18       31.0  121.0
+    2018-01-19       22.0  127.0
+    2018-01-20       28.0  124.0
+    2018-01-21       14.0  100.0
+    2018-01-22       13.0   72.0
+    2018-01-23       16.0   69.0
+    2018-01-24       13.0   83.0
+    2018-01-25       19.0   74.0
+    2018-01-26       24.0   92.0
+    2018-01-27       18.0  149.0
+    2018-01-28       28.0  136.0
+    2018-01-29       24.0  142.0
+    2018-01-30       23.0  145.0
+    2018-01-31       23.0  135.0
+As you can see, the English conversion rate drops around the 11th, and there do not appear to be ads served in other languages for a two week period.
+
+24) Confirming house ads error
+
+Now that you've created a DataFrame that checks whether users see ads in the correct language let's calculate what percentage of users were not being served ads in the right language and plot your results.
+
+# Divide the count where language is correct by the row sum
+language_check_df['pct'] = language_check_df['Yes']/language_check_df.sum(axis=1)
+# Plot and show your results
+plt.plot(language_check_df.index.values, language_check_df['pct'])
+plt.show()
+=> Output: You have shown that house ads have been underperforming due to serving all ads in English rather than each user's preferred language
+
+25) Setting up conversion indexes
+
+Now that you've determined that language is, in fact, the issue with House Ads conversion, stakeholders need to know how many subscribers they lost as a result of this bug.
+In this exercise, you will index non-English language conversion rates against English conversion rates in the time period before the language bug arose.
+
+# Calculate pre-error conversion rate
+house_ads_bug = house_ads[house_ads['date_served'] < '2018-01-11']
+lang_conv = conversion_rate(house_ads_bug, ['language_displayed']) 
+# Index other language conversion rate against English
+spanish_index = lang_conv['Spanish']/lang_conv['English']
+arabic_index = lang_conv['Arabic']/lang_conv['English']
+german_index = lang_conv['German']/lang_conv['English']
+print("Spanish index:", spanish_index)
+print("Arabic index:", arabic_index)
+print("German index:", german_index)
+=> Output: <script.py> output:
+    Spanish index: 1.681924882629108
+    Arabic index: 5.045774647887324
+    German index: 4.485133020344287
+Now that you've created indexes for each language compared with English, you can assess what conversion rate should have been during the rest of the month.
+
+26) Analyzing user preferences
+
+To understand the true impact of the bug, it is crucial to determine how many subscribers we would have expected had there been no language error. This is crucial to understanding the scale of the problem and how important it is to prevent this kind of error in the future.
+In this step, you will create a new DataFrame that you can perform calculations on to determine the expected number of subscribers. This DataFrame will include how many users prefer each language by day. Once you have the DataFrame, you can begin calculating how many subscribers you would have expected to have had the language bug not occurred.
+
+# Group house_ads by date and language
+converted = house_ads.groupby(['date_served', 
+                          'language_preferred'])\
+                        .agg({'user_id':'nunique',
+                              'converted':'sum'})
+# Unstack converted
+converted_df = pd.DataFrame(converted.unstack(level=1))
+
+27) Creating a DataFrame based on indexes
+
+Now that you've created an index to compare English conversion rates against all other languages, you will build out a DataFrame that will estimate what daily conversion rates should have been if users were being served the correct language. An expected conversion DataFrame named converted has been created for you grouping house_ads by date and preferred language. It contains a count of unique users as well as the number of conversions for each language, each day.
+For example, you can access the number of Spanish-speaking users who received house ads using converted[('user_id','Spanish')].
+
+# Create English conversion rate column for affected period
+converted['english_conv_rate'] = converted.loc['2018-01-11':'2018-01-31'][('converted','English')]/converted.loc['2018-01-11':'2018-01-31'][('user_id','English')]
+# Create expected conversion rates for each language
+converted['expected_spanish_rate'] = converted['english_conv_rate']*spanish_index
+converted['expected_arabic_rate'] = converted['english_conv_rate']*arabic_index
+converted['expected_german_rate'] = converted['english_conv_rate']*german_index
+# Multiply number of users by the expected conversion rate
+converted['expected_spanish_conv'] = converted['expected_spanish_rate']/100*converted[('user_id','Spanish')]
+converted['expected_arabic_conv'] = converted['expected_arabic_rate']/100*converted[('user_id','Arabic')]
+converted['expected_german_conv'] = converted['expected_german_rate']/100*converted[('user_id','German')]
+
+28) Assessing bug impact
+
+It's time to calculate how many subscribers were lost due to mistakenly serving users English rather than their preferred language. Once the team has an estimate of the impact of this error, they can determine whether it's worth putting additional checks in place to avoid this in the future—you might be thinking, of course, it's worth it to try to prevent errors! In a way, you're right, but every choice a company makes requires work and funding. The more information your team has, the better they will be able to evaluate this trade-off.
+The DataFrame converted has already been loaded for you. It contains expected subscribers columns for Spanish, Arabic and German language speakers named expected_spanish_conv, expected_arabic_conv and expected_german_conv respectively.
+
+# Use .loc to slice only the relevant dates
+converted = converted.loc['2018-01-11':'2018-01-31']
+# Sum expected subscribers for each language
+expected_subs = converted['expected_spanish_conv'].sum() + converted['expected_arabic_conv'].sum() + converted['expected_german_conv'].sum()
+# Calculate how many subscribers we actually got
+actual_subs = converted[('converted','Spanish')].sum() + converted[('converted','Arabic')].sum() + converted[('converted','German')].sum()
+# Subtract how many subscribers we got despite the bug
+lost_subs = expected_subs - actual_subs
+print(lost_subs)
+=> Output: <script.py> output:
+    32.14414319248826
+32 subscribers may not seem like many, but for a small company this can be vitally important, especially when expanding to new markets.
+
+29) Test allocation
+
+The email portion of this campaign was actually run as an A/B test. Half the emails sent out were generic upsells to your product while the other half contained personalized messaging around the users’ usage of the site.
+Before you begin analyzing the results, you will check to ensure users were allocated equally to the test and control groups.
+
+# Subset the DataFrame
+email = marketing[marketing['marketing_channel'] == 'Email']
+# Group the email DataFrame by variant 
+alloc = email.groupby(['variant'])['user_id'].nunique()
+# Plot a bar chart of the test allocation
+alloc.plot(kind='bar')
+plt.title('Personalization test allocation')
+plt.ylabel('# participants')
+plt.show()
+=> There's a slight difference in allocation, but it's within the expected range so you can continue with your analysis.
+
+30) Comparing conversion rates
+
+Now that we know allocation is relatively even let's look at the conversion rate for the control and personalization. Since we chose conversion rate as our key metrics for this test, it is highly important that we evaluate whether or not conversion was higher in the personalization treatment compared with the control. While we will dive in deeper in subsequent exercises, measuring the difference between the key metric in the control and the treatment is the most important part of evaluating the success of an A/B test.
+The DataFrame email has been loaded in your workspace which contains only rows from the marketing DataFrame where marketing_channel is 'Email'.
+
+# Group marketing by user_id and variant
+subscribers = email.groupby(['user_id', 
+                             'variant'])['converted'].max()
+subscribers_df = pd.DataFrame(subscribers.unstack(level=1)) 
+# Drop missing values from the control column
+control = subscribers_df['control'].dropna()
+# Drop missing values from the personalization column
+personalization = subscribers_df['personalization'].dropna()
+print('Control conversion rate:', np.mean(control))
+print('Personalization conversion rate:', np.mean(personalization))
+=> Output: <script.py> output:
+    Control conversion rate: 0.2814814814814815
+    Personalization conversion rate: 0.3908450704225352
+Great job, you can see that personalization converted users at a higher rate than the control.
+
+31) Creating a lift function
+
+Lift can be calculated by calculating the difference between the treatment effect (or the mean) of the treatment compared to the treatment effect of the control divided by the treatment effect of the control. The formula for lift can be found below:
+(Treatment conversion rate - Control Conversion rate) / Control Conversion rate
+So, the result is the percent difference between the control and treatment.
+In this exercise, you will create a function to automate the process of calculating lift. Many marketing teams run tests constantly. The more that you can automate the parts of the process that occur within every test, the more time you will have to do more interesting analyses.
+
+def lift(a,b):
+    # Calcuate the mean of a and b 
+    a_mean = np.mean(a)
+    b_mean = np.mean(b)
+    # Calculate the lift using a_mean and b_mean
+    lift = (b_mean-a_mean)/a_mean
+    return str(round(lift*100, 2)) + '%'
+# Print lift() with control and personalization as inputs
+print(lift(control, personalization))
+=> Output: <script.py> output:
+    38.85%
+As you can see, there's a large lift, but are your results statistically significant?
+
+32) Building an A/B test segmenting function
+
+In the previous lesson, you observed that your personalization experiment is highly statistically significant. However, when running experiments, it is important to check how new features are affecting specific demographics. Sometimes features that are highly appealing to one group are less appealing to others.
+Since you want to segment our data multiple times, you will build a function ab_segmentation() that analyzes the impact of your A/B tests on segments of data that you can reuse each time you want to conduct this kind of analysis.
+Your function will take in a column name and run through each unique value in that column calculating lift and statistical significance.
+
+def ab_segmentation(segment):
+  # Build a for loop for each segment in marketing
+  for subsegment in np.unique(marketing[segment].values):
+      print(subsegment)
+      # Limit marketing to email and subsegment      
+      email = marketing[(marketing['marketing_channel'] == 'Email') & (marketing[segment] == subsegment)]
+      subscribers = email.groupby(['user_id', 'variant'])['converted'].max()
+      subscribers = pd.DataFrame(subscribers.unstack(level=1)) 
+      control = subscribers['control'].dropna()
+      personalization = subscribers['personalization'].dropna()
+      print('lift:', lift(control, personalization))
+      print('t-statistic:', stats.ttest_ind(control, personalization), '\n\n')
 
 
+33) Using your segmentation function
 
-3)
+Now that you've generated an ab_segmentation() function, it's time to test it out. Often a treatment will not affect all people uniformly. Some people will love a particular marketing campaign while others hate it. As a marketing data scientist, it's your responsibility to enable your marketing stakeholders to target users according to their preferences.
+We will run through two segments in our data that may be relevant to assessing the impact of our test.
+When using the ab_segmentation() function, remember to input the column name in quotes (i.e., 'language_displayed')
+
+# Use ab_segmentation on language displayed
+ab_segmentation('language_displayed')
+=> Output: <script.py> output:
+    Arabic
+    lift: 50.0%
+    t-statistic: Ttest_indResult(statistic=-0.5773502691896255, pvalue=0.5795840000000001) 
+    English
+    lift: 39.0%
+    t-statistic: Ttest_indResult(statistic=-2.2183598646203166, pvalue=0.026991701290720815) 
+    German
+    lift: -1.62%
+    t-statistic: Ttest_indResult(statistic=0.1910083418078718, pvalue=0.8494394170062678) 
+    Spanish
+    lift: 166.67%
+    t-statistic: Ttest_indResult(statistic=-2.3570226039551585, pvalue=0.040156718110477524) 
+
+# Use ab_segmentation on age group
+ab_segmentation('age_group')
+=> Output: <script.py> output:
+    0-18 years
+    lift: 121.4%
+    t-statistic: Ttest_indResult(statistic=-2.966044912142211, pvalue=0.0038724494391297226) 
+    19-24 years
+    lift: 106.24%
+    t-statistic: Ttest_indResult(statistic=-3.03179438478667, pvalue=0.0030623836114689134) 
+    24-30 years
+    lift: 161.19%
+    t-statistic: Ttest_indResult(statistic=-3.861539544326876, pvalue=0.00018743381094867337) 
+    30-36 years
+    lift: -100.0%
+    t-statistic: Ttest_indResult(statistic=3.1859064644147996, pvalue=0.0023238487431765137) 
+    36-45 years
+    lift: -85.23%
+    t-statistic: Ttest_indResult(statistic=2.4317901279318503, pvalue=0.01797568600978829) 
+    45-55 years
+    lift: -72.22%
+    t-statistic: Ttest_indResult(statistic=2.065499127317933, pvalue=0.043062339688201196) 
+    55+ years
+    lift: -100.0%
+    t-statistic: Ttest_indResult(statistic=3.3265654564203397, pvalue=0.0016358623456360435) 
+You found that personalization was extremely effective for younger groups but less effective than the control for older groups. One explanation might be that younger users understand how their data might be used online and think personalization is cool because it gives them more insight into themselves while older people might feel that this is a violation of their privacy.
+
+
+CHAPTER 2: ANALYZING SOCIAL MEDIA DATA IN PYTHON
+
+1) Setting up tweepy authentication
+
+We saw how tweepy can be used to collect Twitter data with the Streaming API. tweepy requires a Twitter API key to authenticate with Twitter. In this exercise, you will load several objects from tweepy and set up the authentication for the package. The API keys access_token, access_token_secret, consumer_key, and consumer_secret have already been defined for you.
+
+from tweepy import OAuthHandler
+from tweepy import API
+# Consumer key authentication
+auth = OAuthHandler(consumer_key, consumer_secret)
+# Access key authentication
+auth.set_access_token(access_token, access_token_secret)
+# Set up the API with the authentication handler
+api  = API(auth)
+
+2) Collecting data on keywords
+
+Now that we've set up the authentication, we can begin to collect Twitter data. Recall that with the Streaming API, we will be collecting real-time Twitter data based on either a sample or filtered by a keyword. In our example, we will collect data on any tweet mentioning #rstats or #python in the tweet text, username, or user description with the filter endpoint.
+The SListener module has already been defined and imported for you.
+
+from tweepy import Stream
+# Set up words to track
+keywords_to_track = ['#rstats', '#python']
+# Instantiate the SListener object 
+listen = SListener(api)
+# Instantiate the Stream object
+stream = Stream(auth, listen, access_token, access_token_secret)
+# Begin collecting data
+stream.filter(track = keywords_to_track)
+
+3) Loading and accessing tweets
+
+In the video, we loaded a tweet we collected using tweepy into Python. Tweets arrive from the Streaming API in JSON format and need to be converted into a Python data structure. In this exercise, we'll load a single tweet into Python and print out some fields. The tweet JSON has been loaded for you and is stored in tweet_json.
+
+# Load JSON
+import json
+# Convert from JSON to Python object
+tweet = json.loads(tweet_json)
+# Print tweet text
+print(tweet['text'])
+# Print tweet id
+print(tweet['id'])
+=> Output: <script.py> output:
+    Writing out the script of my @DataCamp class and I can't help but mentally read it back to myself in @hugobowne's voice.
+    986973961295720449
+
+4) Accessing user data
+
+Much of the data which we want to know about the Twitter data is stored in child JSON objects. We will access several parts of the user's information with the user child JSON object.
+The tweet from the previous exercise has been loaded for you.
+
+# Print user handle
+print(tweet['user']['screen_name'])
+# Print user follower count
+print(tweet['user']['followers_count'])
+# Print user location
+print(tweet['user']['location'])
+# Print user description
+print(tweet['user']['description'])
+=> Output: <script.py> output:
+    alexhanna
+    4267
+    Toronto, ON
+    Assistant professor @UofT. Protest, media, computation. Trans. Roller derby athlete @TOROLLERDERBY (Kate Silver #538). She/her.
+
+5) Accessing retweet data
+
+Now we're going to work with a tweet JSON that contains a retweet. A retweet has the same structure as a regular tweet, except that it has another tweet stored in retweeted_status.
+The new tweet has been loaded as rt.
+
+# Print the text of the tweet
+print(rt['text'])
+# Print the text of tweet which has been retweeted
+print(rt['retweeted_status']['text'])
+# Print the user handle of the tweet
+print(rt['user']['screen_name'])
+# Print the user handle of the tweet which has been retweeted
+print(rt['retweeted_status']['user']['screen_name'])
+=> Output: <script.py> output:
+    RT @hannawallach: ICYMI: NIPS/ICML/ICLR are looking for a full-time programmer to run the conferences' submission/review processes. More in…
+    ICYMI: NIPS/ICML/ICLR are looking for a full-time programmer to run the conferences' submission/review processes. M… https://t.co/aB9Y5tTyHT
+    alexhanna
+    hannawallach
+
+6) Tweet Items and Tweet Flattening
+
+There are multiple fields in the Twitter JSON which contains textual data. In a typical tweet, there's the tweet text, the user description, and the user location. In a tweet longer than 140 characters, there's the extended tweet child JSON. And in a quoted tweet, there's the original tweet text and the commentary with the quoted tweet.
+For this exercise, you'll extract textual elements from a single quoted tweet in which the original tweet has more than 140 characters. Then, to analyze tweets at scale, we will want to flatten the tweet JSON into a single level. This will allow us to store the tweets in a DataFrame format.
+quoted_tweet has been loaded for you.
+
+# Print the tweet text
+print(quoted_tweet['text'])
+# Print the quoted tweet text
+print(quoted_tweet['quoted_status']['text'])
+# Print the quoted tweet's extended (140+) text
+print(quoted_tweet['quoted_status']['extended_tweet']['full_text'])
+# Print the quoted user location
+print(quoted_tweet['quoted_status']['user']['location'])
+=> Output: <script.py> output:
+    maybe if I quote tweet this lil guy https://t.co/BzbLDz9j6g
+    O 280 characters, 280 characters! Wherefore art thou 280 characters?
+    Deny thy JSON and refuse thy key.
+    Or, if thou… https://t.co/MlFg4qFnEC
+    O 280 characters, 280 characters! Wherefore art thou 280 characters?
+    Deny thy JSON and refuse thy key.
+    Or, if thou wilt not, be but sworn my love,
+    And I’ll no longer be a 140 character tweet.
+    Toronto, ON
+
+# Store the user screen_name in 'user-screen_name'
+quoted_tweet['user-screen_name'] = quoted_tweet['user']['screen_name']
+# Store the quoted_status text in 'quoted_status-text'
+quoted_tweet['quoted_status-text'] = quoted_tweet['quoted_status']['text']
+# Store the quoted tweet's extended (140+) text in 
+# 'quoted_status-extended_tweet-full_text'
+quoted_tweet['quoted_status-extended_tweet-full_text'] = quoted_tweet['quoted_status']['extended_tweet']['full_text']
+
+7) A tweet flattening function
+
+We are typically interested in hundreds or thousands of tweets. For this purpose, it makes sense to define a function to flatten JSON file full of tweets. Let's call this function flatten_tweets(). We will use this function multiple times in this course and change it slightly as we deal with different types of data.
+json has been loaded for you.
+
+def flatten_tweets(tweets_json):
+    """ Flattens out tweet dictionaries so relevant JSON
+        is in a top-level dictionary."""
+    tweets_list = []
+    # Iterate through each tweet
+    for tweet in tweets_json:
+        tweet_obj = json.loads(tweet)
+        # Store the user screen name in 'user-screen_name'
+        tweet_obj['user-screen_name'] = tweet_obj['user']['screen_name']
+        # Check if this is a 140+ character tweet
+        if 'extended_tweet' in tweet_obj:
+            # Store the extended tweet text in 'extended_tweet-full_text'
+            tweet_obj['extended_tweet-full_text'] = tweet_obj['extended_tweet']['full_text']
+        if 'retweeted_status' in tweet_obj:
+            # Store the retweet user screen name in 'retweeted_status-user-screen_name'
+            tweet_obj['retweeted_status-user-screen_name'] = tweet_obj['retweeted_status']['user']['screen_name']
+            # Store the retweet text in 'retweeted_status-text'
+            tweet_obj['retweeted_status-text'] = tweet_obj['retweeted_status']['text']
+        tweets_list.append(tweet_obj)
+    return tweets_list
+
+8) Loading tweets into a DataFrame
+
+# Import pandas
+import pandas as pd
+# Flatten the tweets and store in `tweets`
+tweets = flatten_tweets(data_science_json)
+# Create a DataFrame from `tweets`
+ds_tweets = pd.DataFrame(tweets)
+# Print out the first 5 tweets from this dataset
+print(ds_tweets['text'].values[0:5])
+=> Output: <script.py> output:
+    ["RT @Dennboss: Hahahah Efteling maakt Maxi-Cosi's voor in de Python, duidelijk een perfect uitgewerkte 1 april grap en toch zijn er van die…"
+     'RT @PythonWeekly: Python Weekly - Issue 338 https://t.co/7gJSoLJj3V  #python #django #flask #slack #blockchain #bitcoin #twilio #opencv #ma…'
+     'RT @dataandme: ICYMI, still 💜ing this: "Where do things live in R? R for Excel Users" by @StephdeSilva https://t.co/WiIIxFZzRX #rstats http…'
+     'RT @dataandme: 🕴@jaredlander knows how to put on a show…\n"New York R Conference" is gonna be 🔥\nhttps://t.co/BpFTYm1Peh via @rstatsnyc (duh)…'
+     'RT @llanga: I heard it\'s Py Day today so I made a thing! Meet "Black", the uncompromising #python code formatter!\n\nhttps://t.co/COA0YMfUNr…']
+
+9) Finding keywords
+
+Counting known keywords is one of the first ways you can analyze text data in a Twitter dataset. In this dataset, you're going to count the number of times specific hashtags occur in a collection of tweets about data science. To this end, you're going to use the string methods in the pandas Series object to do this.
+pandas and numpy have been imported as pd and np, respectively. A more fully-featured flatten_tweets and data_science_json have also been loaded for you.
+
+# Flatten the tweets and store them
+flat_tweets = flatten_tweets(data_science_json)
+# Convert to DataFrame
+ds_tweets = pd.DataFrame(flat_tweets)
+# Find mentions of #python in 'text'
+python = ds_tweets['text'].str.contains('#python', case = False)
+# Print proportion of tweets mentioning #python
+print("Proportion of #python tweets:", np.sum(python) / ds_tweets.shape[0])
+=> Output: <script.py> output:
+    Proportion of #python tweets: 0.44533333333333336
+
+10) Looking for text in all the wrong places
+
+Recall that relevant text may not only be in the main text field of the tweet. It may also be in the extended_tweet, the retweeted_status, or the quoted_status. We need to check all of these fields to make sure we've accounted for all the of the relevant text. We'll do this often so we're going to create a function which does this.
+The first two lines check if the main text field or the extended_tweet contain the text. You will need to check the rest.
+
+def check_word_in_tweet(word, data):
+    """Checks if a word is in a Twitter dataset's text. 
+    Checks text and extended tweet (140+ character tweets) for tweets,
+    retweets and quoted tweets.
+    Returns a logical pandas Series.
+    """
+    contains_column = data['text'].str.contains(word, case = False)
+    contains_column |= data['extended_tweet-full_text'].str.contains(word, case = False)
+    contains_column |= data['quoted_status-text'].str.contains(word, case = False) 
+    contains_column |= data['quoted_status-extended_tweet-full_text'].str.contains(word, case = False) 
+    contains_column |= data['retweeted_status-text'].str.contains(word, case = False) 
+    contains_column |= data['retweeted_status-extended_tweet-full_text'].str.contains(word, case = False)
+    return contains_column
+
+11) Comparing #python to #rstats
+
+Now that we have a function to check whether or not the word is in the tweet in multiple places, we can deploy this across multiple words and compare them. Let's return to our example with the data science hashtag dataset. We want to see how many times that #rstats occurs compared to #python.
+The data science hashtag dataset ds_tweets has been loaded for you.
+
+# Find mentions of #python in all text fields
+python = check_word_in_tweet('#python', ds_tweets)
+# Find mentions of #rstats in all text fields
+rstats = check_word_in_tweet('#rstats', ds_tweets)
+# Print proportion of tweets mentioning #python
+print("Proportion of #python tweets:", np.sum(python) / ds_tweets.shape[0])
+# Print proportion of tweets mentioning #rstats
+print("Proportion of #rstats tweets:", np.sum(rstats) / ds_tweets.shape[0])
+=> Output: <script.py> output:
+    Proportion of #python tweets: 0.5733333333333334
+    Proportion of #rstats tweets: 0.4693333333333333
+
+12) Creating time series data frame
+
+Time series data is used when we want to analyze or explore variation over time. This is useful when exploring Twitter text data if we want to track the prevalence of a word or set of words.
+The first step in doing this is converting the DataFrame into a format which can be handled using pandas time series methods. That can be done by converting the index to a datetime type.
+
+# Print created_at to see the original format of datetime in Twitter data
+print(ds_tweets['created_at'].head())
+# Convert the created_at column to np.datetime object
+ds_tweets['created_at'] = pd.to_datetime(ds_tweets['created_at'])
+# Print created_at to see new format
+print(ds_tweets['created_at'].head())
+# Set the index of ds_tweets to created_at
+ds_tweets = ds_tweets.set_index('created_at')
+=> Output: <script.py> output:
+    0    Fri Mar 30 13:04:22 +0000 2018
+    1    Fri Mar 16 11:59:09 +0000 2018
+    2    Tue Mar 27 08:34:33 +0000 2018
+    3    Fri Mar 16 21:26:58 +0000 2018
+    4    Thu Mar 15 23:35:05 +0000 2018
+    Name: created_at, dtype: object
+    0   2018-03-30 13:04:22+00:00
+    1   2018-03-16 11:59:09+00:00
+    2   2018-03-27 08:34:33+00:00
+    3   2018-03-16 21:26:58+00:00
+    4   2018-03-15 23:35:05+00:00
+    Name: created_at, dtype: datetime64[ns, UTC]
+
+13) Generating mean frequency
+
+We need to produce a metric which can be graphed over time. Our function check_word_in_tweet() returns a boolean Series. Remember that the boolean value True == 1, so we can produce a column for each keyword we're interested in and use it to understand its over time prevalence.
+
+# Create a python column
+ds_tweets['python'] = check_word_in_tweet('#python', ds_tweets)
+# Create an rstats column
+ds_tweets['rstats'] = check_word_in_tweet('#rstats', ds_tweets)
+
+14) Plotting mean frequency
+
+Lastly, we'll create a per-day average of the mentions of both hashtags and plot them across time. We'll first create proportions from the two boolean Series by the day, then we'll plot them; matplotlib.pyplot has been imported as plt and ds_tweets has been loaded for you.
+
+# Average of python column by day
+mean_python = ds_tweets['python'].resample('1 d').mean()
+# Average of rstats column by day
+mean_rstats = ds_tweets['rstats'].resample('1 d').mean()
+# Plot mean python/rstats by day
+plt.plot(mean_python.index.day, mean_python, color = 'green')
+plt.plot(mean_rstats.index.day, mean_rstats, color = 'blue')
+# Add labels and show
+plt.xlabel('Day'); plt.ylabel('Frequency')
+plt.title('Language mentions over time')
+plt.legend(('#python', '#rstats'))
+plt.show()
+
+15) Loading VADER
+
+Sentiment analysis provides us a small glimpse of the meaning of texts with a rather directly interpretable method. While it has its limitations, it's a good place to begin working with textual data. There's a number of out-of-the-box tools in Python we can use for sentiment analysis.
+ds_tweets with the datetime index has been loaded for you.
+
+# Load SentimentIntensityAnalyzer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+# Instantiate new SentimentIntensityAnalyzer
+sid = SentimentIntensityAnalyzer()
+# Generate sentiment scores
+sentiment_scores = ds_tweets['text'].apply(sid.polarity_scores)
+
+16) Calculating sentiment scores
+
+A rough measure of sentiment towards a particular hashtag is to measure average sentiment for tweets mentioning a particular hashtag. It's also possible that other things are happening in that tweet, so it's important to inspect both text as well as metrics generated by automated text methods.
+
+# Print out the text of a positive tweet
+print(ds_tweets[sentiment > 0.6]['text'].values[0])
+# Print out the text of a negative tweet
+print(ds_tweets[sentiment < -0.6]['text'].values[0])
+# Generate average sentiment scores for #python
+sentiment_py = sentiment[ check_word_in_tweet('#python', ds_tweets) ].resample('1 d').mean()
+# Generate average sentiment scores for #rstats
+sentiment_r = sentiment[ check_word_in_tweet('#rstats', ds_tweets) ].resample('1 d').mean()
+=> Output: <script.py> output:
+    RT @CMastication: using #Python and #rstats in the same RMarkdown document is pretty awesome with the Reticulate Package. Objects from Pyth…
+    RT @DiffusePrioR: Here's the evolution of Irish Population density 1841-&gt;2002 on a DED level. You can see the devastating impact of the Fam…
+
+17) Plotting sentiment scores
+
+Lastly, let's plot the sentiment of each hashtag over time. This is largely similar to plotting the prevalence of tweets.
+
+# Import matplotlib
+import matplotlib.pyplot as plt
+# Plot average #python sentiment per day
+plt.plot(sentiment_py.index.day, sentiment_py, color = 'green')
+# Plot average #rstats sentiment per day
+plt.plot(sentiment_r.index.day, sentiment_r, color = 'blue')
+plt.xlabel('Day')
+plt.ylabel('Sentiment')
+plt.title('Sentiment of data science languages')
+plt.legend(('#python', '#rstats'))
+plt.show()
+
+18) Creating retweet network
+
+Social media is, by nature, networked data. Twitter networks manifest in multiple ways. One of the most important types of networks that appear in Twitter are retweet networks. We can represent these as directed graphs, with the retweeting user as the source and the retweeted person as the target. With Twitter data in our flattened DataFrame, we can import these into networkx and create a retweet network.
+For this exercise and the rest of this course we'll be using a dataset based on the 2018 State of the Union speech given by Donald Trump. Those tweets have been loaded for you in sotu_retweets.
+
+# Import networkx
+import networkx as nx
+# Create retweet network from edgelist
+G_rt = nx.from_pandas_edgelist(
+    sotu_retweets,
+    source = 'user-screen_name', 
+    target = 'retweeted_status-user-screen_name',
+    create_using = nx.DiGraph())
+# Print the number of nodes
+print('Nodes in RT network:', len(G_rt.nodes()))
+# Print the number of edges
+print('Edges in RT network:', len(G_rt.edges()))
+=> Output: <script.py> output:
+    Nodes in RT network: 2287
+    Edges in RT network: 2340
+
+19) Creating reply network
+
+Reply networks have a markedly different structure to retweet networks. While retweet networks often signal agreement, replies can signal discussion, deliberation, and disagreement. The network properties are the same, however: the network is directed, the source is the replier and the target is the user who is being replied to.
+For this exercise we are going to create a reply network from a slightly different sample of State of the Union tweets. Those tweets have been loaded for you in sotu_replies.
+
+# Import networkx
+import networkx as nx
+# Create reply network from edgelist
+G_reply = nx.from_pandas_edgelist(
+    sotu_replies,
+    source = 'user-screen_name', 
+    target = 'in_reply_to_screen_name',
+    create_using = nx.DiGraph())   
+# Print the number of nodes
+print('Nodes in reply network:', len(G_reply.nodes()))
+# Print the number of edges
+print('Edges in reply network:', len(G_reply.edges()))
+=> Output: <script.py> output:
+    Nodes in reply network: 2622
+    Edges in reply network: 1904
+
+20) Visualizing retweet network
+
+Visualizing retweets networks is an important exploratory data analysis step because it allows us to visually inspect the structure of the network, understand if there is any user that has disproportionate influence, and if there are different spheres of conversation.
+We are going to use a layout which runs quicker to see the plot, but the syntax is nearly the same.
+networkx has been imported as nx, and the network has been loaded in G_rt for you.
+
+# Create random layout positions
+pos = nx.random_layout(G_rt)
+# Create size list
+sizes = [x[1] for x in G_rt.degree()]
+# Draw the network
+nx.draw_networkx(G_rt, pos, 
+    with_labels = False, 
+    node_size = sizes,
+    width = 0.1, alpha = 0.7,
+    arrowsize = 2, linewidths = 0)
+# Turn axis off and show
+plt.axis('off'); plt.show()
+
+21) In-degree centrality
+
+Centrality is a measure of importance of a node to a network. There are many different types of centrality and each of them has slightly different meaning in Twitter networks. We are first focusing on degree centrality, since its calculation is straightforward and has an intuitive explanation.
+For directed networks like Twitter, we need to be careful to distinguish between in-degree and out-degree centrality, especially in retweet networks. In-degree centrality for retweet networks signals users who are getting many retweets.
+networkx has been imported as nx. Also, the networks G_rt and G_reply and column_names = ['screen_name', 'degree_centrality'] have been loaded for you.
+
+# Generate in-degree centrality for retweets 
+rt_centrality = nx.in_degree_centrality(G_rt)
+# Generate in-degree centrality for replies 
+reply_centrality = nx.in_degree_centrality(G_reply)
+# Store centralities in DataFrame
+rt = pd.DataFrame(list(rt_centrality.items()), columns = column_names)
+reply = pd.DataFrame(list(reply_centrality.items()), columns = column_names)
+# Print first five results in descending order of centrality
+print(rt.sort_values('degree_centrality', ascending = False).head())
+# Print first five results in descending order of centrality
+print(reply.sort_values('degree_centrality', ascending = False).head())
+=> Output: <script.py> output:
+          screen_name  degree_centrality
+    84        FoxNews              0.056
+    38     WhiteHouse              0.031
+    1    ScottPresler              0.030
+    7      TomiLahren              0.020
+    175      HouseGOP              0.017
+             screen_name  degree_centrality
+    51   realDonaldTrump              0.057
+    53             POTUS              0.019
+    22           FoxNews              0.014
+    6         WhiteHouse              0.011
+    416           FLOTUS              0.010
+
+22) Betweenness centrality
+
+Betweenness centrality for retweet and reply networks signals users who bridge between different Twitter communities. These communities may be tied together by topic or ideology.
+networkx has been imported as nx. The networks G_rt and G_reply, and column_names = ['screen_name', 'betweenness_centrality'] have been loaded for you.
+
+# Generate betweenness centrality for retweets 
+rt_centrality = nx.betweenness_centrality(G_rt)
+# Generate betweenness centrality for replies 
+reply_centrality = nx.betweenness_centrality(G_reply)
+# Store centralities in data frames
+rt = pd.DataFrame(list(rt_centrality.items()), columns = column_names)
+reply = pd.DataFrame(list(reply_centrality.items()), columns = column_names)
+# Print first five results in descending order of centrality
+print(rt.sort_values('betweenness_centrality', ascending = False).head())
+# Print first five results in descending order of centrality
+print(reply.sort_values('betweenness_centrality', ascending = False).head())
+=> Output: <script.py> output:
+            screen_name  betweenness_centrality
+    84          FoxNews               2.565e-05
+    29   Public_Citizen               9.189e-06
+    206     ChristiChat               5.169e-06
+    119      guypbenson               4.595e-06
+    362    johncardillo               4.020e-06
+              screen_name  betweenness_centrality
+    288      ScottPresler               1.019e-06
+    319   HRCNJVolunteers               2.912e-07
+    1109             RRN3               2.912e-07
+    1697    thebestcloser               2.912e-07
+    1844   BrandonTXNeely               1.456e-07
+
+23) Ratios
+
+While not strictly a measure of importance to a network, the idea of being "ratio'd" is a network measure which is particular to Twitter and is typically used to judge the unpopularity of a tweet. "The Ratio," as it is called, is calculated by taking the number of replies and dividing it by the number of retweets. For our purposes, it makes conceptual sense to take only the in-degrees of both the retweet and reply networks.
+The networks G_rt and G_reply, and column_names = ['screen_name', 'degree'] have been loaded for you.
+
+# Calculate in-degrees and store in DataFrame
+degree_rt = pd.DataFrame(list(G_rt.in_degree()), columns = column_names)
+degree_reply = pd.DataFrame(list(G_reply.in_degree()), columns = column_names)
+# Merge the two DataFrames on screen name
+ratio = degree_rt.merge(degree_reply, on = 'screen_name', suffixes = ('_rt', '_reply'))
+# Calculate the ratio
+ratio['ratio'] = ratio['degree_reply'] / ratio['degree_rt']
+# Exclude any tweets with less than 5 retweets
+ratio = ratio[ratio['degree_rt'] >= 5]
+# Print out first five with highest ratio
+print(ratio.sort_values('ratio', ascending = False).head())
+=> Output: <script.py> output:
+           screen_name  degree_rt  degree_reply  ratio
+    46     SpeakerRyan          8            15  1.875
+    53         NBCNews         20            18  0.900
+    43      benshapiro          5             4  0.800
+    42       SenateGOP          5             3  0.600
+    85  CBSThisMorning          6             3  0.500
+
+24) Accessing user-defined location
+
+In the slides, we saw that we could obtain user location via user-generated text, including the tweet itself and the location field in the user's description. These are the two most imprecise methods of obtaining user location, but also possibly more readily available.
+In this exercise, you're going extract the user-defined location from a single example tweet as well as a large set of tweets. We've added another line to our flatten_tweets() function which will allow you to access user-defined location within the data frame.
+tweet_obj['user-location'] = tweet_obj['user']['location']
+In addition, the single tweet in JSON format tweet_json and the State of the Union tweets in JSON format tweets_sotu_json have been loaded for you.
+
+# Print out the location of a single tweet
+print(tweet_json['user']['location'])
+# Flatten and load the SOTU tweets into a dataframe
+tweets_sotu = pd.DataFrame(flatten_tweets(tweets_sotu_json))
+# Print out top five user-defined locations
+print(tweets_sotu['user-location'].value_counts().head())
+=> Output: <script.py> output:
+    Toronto, ON
+    Washington, DC       20
+    Los Angeles, CA      13
+    New York, NY         11
+    Brooklyn, NY          8
+    San Francisco, CA     7
+    Name: user-location, dtype: int64
+
+25) Accessing bounding box
+
+Most tweets which have coordinate-level geographical information attached to them typically come in the form of a bounding box. Bounding boxes are a set of four longitudinal/latitudinal coordinates which denote a particular area in which the user can be located. The bounding box is located in the place value of the Twitter JSON.
+The dataset has been loaded for you as a DataFrame in tweets_sotu.
+
+def getBoundingBox(place):
+    """ Returns the bounding box coordinates."""
+    return place['bounding_box']['coordinates']
+# Apply the function which gets bounding box coordinates
+bounding_boxes = tweets_sotu['place'].apply(getBoundingBox)
+# Print out the first bounding box coordinates
+print(bounding_boxes.values[0])
+=> Output: <script.py> output:
+    [[[-94.043628, 28.855128], [-94.043628, 33.019544], [-88.758389, 33.019544], [-88.758389, 28.855128]]]
+
+25) Calculating the centroid
+
+The bounding box can range from a city block to a whole state or even country. For simplicity's sake, one way we can deal with handling these data is by translating the bounding box into what's called a centroid, or the center of the bounding box. The calculation of the centroid is straight forward -- we calculate the midpoints of the lines created by the latitude and longitudes; numpy has been imported as np.
+
+def calculateCentroid(place):
+    """ Calculates the centroid from a bounding box."""
+    # Obtain the coordinates from the bounding box.
+    coordinates = place['bounding_box']['coordinates'][0]
+    longs = np.unique( [x[0] for x in coordinates] )
+    lats  = np.unique( [x[1] for x in coordinates] )
+    if len(longs) == 1 and len(lats) == 1:
+        # return a single coordinate
+        return (longs[0], lats[0])
+    elif len(longs) == 2 and len(lats) == 2:
+        # If we have two longs and lats, we have a box.
+        central_long = np.sum(longs) / 2
+        central_lat  = np.sum(lats) / 2
+    else:
+        raise ValueError("Non-rectangular polygon not supported.")
+    return (central_long, central_lat)
+# Calculate the centroids of place     
+centroids = tweets_sotu['place'].apply(calculateCentroid)
+
+26) Creating Basemap map
+
+Basemap allows you to create maps in Python. The library builds projections for latitude and longitude coordinates and then passes the plotting work on to matplotlib. This means you can build extra features based on the power of matplotlib.
+In this exercise, we're going to set up a map of the continental United States on a Mercator projection. The corner coordinates of this map are provided for you below.
+
+# Import Basemap
+from mpl_toolkits.basemap import Basemap
+import matplotlib.pyplot as plt
+
+# Set up the US bounding box
+us_boundingbox = [-125, 22, -64, 50] 
+
+# Set up the Basemap object
+m = Basemap(llcrnrlon = us_boundingbox[0],
+            llcrnrlat = us_boundingbox[1],
+            urcrnrlon = us_boundingbox[2],
+            urcrnrlat = us_boundingbox[3],
+            projection='merc')
+
+# Draw continents in white, 
+# coastlines and countries in gray
+m.fillcontinents(color='white')
+m.drawcoastlines(color='gray')
+m.drawcountries(color='gray')
+
+# Draw the states and show the plot
+m.drawstates(color='gray')
+plt.show()
+
+27) Plotting centroid coordinates
+
+Because we can't plot whole bounding boxes, we summarize the bounding box location into a single point called a centroid. Plotting these on a Basemap map is straightforward. Once we calculate the centroids, we separate the longitudes and latitudes, then pass to the .scatter() method.
+The Basemap object m has been created for you. The dataset tweets_sotu and function calculateCentroid() have also been loaded.
+
+# Calculate the centroids for the dataset 
+# and isolate longitudue and latitudes
+centroids = tweets_sotu['place'].apply(calculateCentroid)
+lon = [x[0] for x in centroids]
+lat = [x[1] for x in centroids]
+# Draw continents, coastlines, countries, and states
+m.fillcontinents(color='white', zorder = 0)
+m.drawcoastlines(color='gray')
+m.drawcountries(color='gray')
+m.drawstates(color='gray')
+# Draw the points and show the plot
+m.scatter(lon, lat, latlon = True, alpha = 0.7)
+plt.show()
+
+28) Coloring by sentiment
+
+We want to be able to differentiate by place with our Twitter analysis. One distinguishing factor between places is how the State of the Union speech was received. For this purpose, we'll use the sentiment analysis we covered in Chapter 2 to evaluate how the speech was received in different parts of the country.
+The tweets_sotu dataset has been loaded for you, as well as lon, lat, and the Basemap map m. SentimentIntensityAnalyzer is instantiated as sid in your workspace.
+
+# Generate sentiment scores
+sentiment_scores = tweets_sotu['text'].apply(sid.polarity_scores)
+# Isolate the compound element
+sentiment_scores = [x['compound'] for x in sentiment_scores]
+# Draw the points
+m.scatter(lon, lat, latlon = True, 
+           c = sentiment_scores,
+           cmap = 'coolwarm', alpha = 0.7)
+# Show the plot
+plt.show()
+
+
+CHAPTER 3: MARKET BASKET ANALYSIS IN PYTHON
+
+1) Cross-selling products
+
+The small grocery store has decided to cross-sell chewing gum with either coffee, cereal, or bread. To determine which of the three items is best to use, the store owner has performed an experiment. For one week, she sold chewing gum next to the register and recorded all transactions where it was purchased with either coffee, cereal, or bread. The transactions from that day are available as a list of lists named transactions. Each transaction is either ['coffee','gum'], ['cereal','gum'], or ['bread','gum'].
+
+# Count the number of transactions with coffee and gum
+coffee = transactions.count(['coffee', 'gum'])
+# Count the number of transactions with cereal and gum
+cereal = transactions.count(['cereal', 'gum'])
+# Count the number of transactions with bread and gum
+bread = transactions.count(['bread', 'gum'])
+# Print the counts for each transaction.
+print('coffee:', coffee)
+print('cereal:', cereal)
+print('bread:', bread)
+=> Output: <script.py> output:
+    coffee: 40
+    cereal: 25
+    bread: 20
+Based on our results, which were printed to the console, we can recommend that the store owner cross-sell chewing gum next to the coffee.
+
+2)
 
