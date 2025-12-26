@@ -1307,5 +1307,369 @@ print('bread:', bread)
     bread: 20
 Based on our results, which were printed to the console, we can recommend that the store owner cross-sell chewing gum next to the coffee.
 
-2)
+2) Preparing data for market basket analysis
+
+Throughout this course, you will typically encounter data in one of two formats: a pandas DataFrame or a list of lists. DataFrame objects will be constructed by importing a csv file using pandas. They will consist of a single column of data, where each element contains a string of items in a transaction, separated by a comma, as in the table below. In this exercise, you will practice loading the data from a csv file and will prepare it for use as a list of lists. Note that the path to the grocery store dataset has been defined and is available to you as groceries_path.
+
+Transaction
+'milk,bread,biscuit'
+'bread,milk,biscuit,cereal'
+…
+'tea,milk,coffee,cereal'
+
+# Import pandas under the alias pd
+import pandas as pd
+# Load transactions from pandas
+groceries = pd.read_csv(groceries_path)
+# Split transaction strings into lists
+transactions = groceries['Transaction'].apply(lambda t: t.split(','))
+# Convert DataFrame column into list of strings
+transactions = list(transactions)
+# Print the list of transactions
+print(transactions)
+=> Output: <script.py> output:
+    [['milk', 'bread', 'biscuit'], ['bread', 'milk', 'biscuit', 'cereal'], ['bread', 'tea'], ['jam', 'bread', 'milk'], ['tea', 'biscuit'], ['bread', 'tea'], ['tea', 'cereal'], ['bread', 'tea', 'biscuit'], ['jam', 'bread', 'tea'], ['bread', 'milk'], ['coffee', 'orange', 'biscuit', 'cereal'], ['coffee', 'orange', 'biscuit', 'cereal'], ['coffee', 'sugar'], ['bread', 'coffee', 'orange'], ['bread', 'sugar', 'biscuit'], ['coffee', 'sugar', 'cereal'], ['bread', 'sugar', 'biscuit'], ['bread', 'coffee', 'sugar'], ['bread', 'coffee', 'sugar'], ['tea', 'milk', 'coffee', 'cereal']]
+
+3) Generating association rules
+
+As you saw, the function permutations from the module itertools can be used to quickly generate the set of all one-antecedent, one-consequent rules. You do not, of course, know which of these rules are useful. You simply know that each is a valid way to combine two items.
+Let's practice generating and counting the set of all rules for a subset of the grocery dataset: coffee, tea, milk, and sugar.
+
+# Import permutations from the itertools module
+from itertools import permutations
+# Define the set of groceries
+flattened = [i for t in transactions for i in t]
+groceries = list(set(flattened))
+# Generate all possible rules from the grocery list
+rules = list(permutations(groceries, 2))
+# Print the set of rules
+print(rules)
+# Print the number of rules
+print(len(rules))
+=> Output: <script.py> output:
+    [('orange', 'sugar'), ('orange', 'tea'), ('orange', 'coffee'), ('orange', 'biscuit'), ('orange', 'milk'), ('orange', 'cereal'), ('orange', 'jam'), ('orange', 'bread'), ('sugar', 'orange'), ('sugar', 'tea'), ('sugar', 'coffee'), ('sugar', 'biscuit'), ('sugar', 'milk'), ('sugar', 'cereal'), ('sugar', 'jam'), ('sugar', 'bread'), ('tea', 'orange'), ('tea', 'sugar'), ('tea', 'coffee'), ('tea', 'biscuit'), ('tea', 'milk'), ('tea', 'cereal'), ('tea', 'jam'), ('tea', 'bread'), ('coffee', 'orange'), ('coffee', 'sugar'), ('coffee', 'tea'), ('coffee', 'biscuit'), ('coffee', 'milk'), ('coffee', 'cereal'), ('coffee', 'jam'), ('coffee', 'bread'), ('biscuit', 'orange'), ('biscuit', 'sugar'), ('biscuit', 'tea'), ('biscuit', 'coffee'), ('biscuit', 'milk'), ('biscuit', 'cereal'), ('biscuit', 'jam'), ('biscuit', 'bread'), ('milk', 'orange'), ('milk', 'sugar'), ('milk', 'tea'), ('milk', 'coffee'), ('milk', 'biscuit'), ('milk', 'cereal'), ('milk', 'jam'), ('milk', 'bread'), ('cereal', 'orange'), ('cereal', 'sugar'), ('cereal', 'tea'), ('cereal', 'coffee'), ('cereal', 'biscuit'), ('cereal', 'milk'), ('cereal', 'jam'), ('cereal', 'bread'), ('jam', 'orange'), ('jam', 'sugar'), ('jam', 'tea'), ('jam', 'coffee'), ('jam', 'biscuit'), ('jam', 'milk'), ('jam', 'cereal'), ('jam', 'bread'), ('bread', 'orange'), ('bread', 'sugar'), ('bread', 'tea'), ('bread', 'coffee'), ('bread', 'biscuit'), ('bread', 'milk'), ('bread', 'cereal'), ('bread', 'jam')]
+    72
+
+4) One-hot encoding transaction data
+
+Throughout the course, we will use a common pipeline for preprocessing data for use in market basket analysis. The first step is to import a pandas DataFrame and select the column that contains transactions. Each transaction in the column will be a string that consists of several items, each separated by a comma. The next step is to use a lambda function to split each transaction string into a list, thereby transforming the column into a list of lists.
+In this exercise, you'll start with the list of lists from the grocery dataset, which is available to you as transactions. You will then transform transactions into a one-hot encoded DataFrame, where each column consists of TRUE and FALSE values that indicate whether an item was included in a transaction.
+
+# Import the transaction encoder function from mlxtend
+from mlxtend.preprocessing import TransactionEncoder
+import pandas as pd
+# Instantiate transaction encoder and identify unique items in transactions
+encoder = TransactionEncoder().fit(transactions)
+# One-hot encode transactions
+onehot = encoder.transform(transactions)
+# Convert one-hot encoded data to DataFrame
+onehot = pd.DataFrame(onehot, columns = encoder.columns_)
+# Print the one-hot encoded transaction dataset
+print(onehot)
+=> Output: <script.py> output:
+        biscuit  bread  cereal  coffee    jam   milk  orange  sugar    tea
+    0      True   True   False   False  False   True   False  False  False
+    1      True   True    True   False  False   True   False  False  False
+    2     False   True   False   False  False  False   False  False   True
+    3     False   True   False   False   True   True   False  False  False
+    4      True  False   False   False  False  False   False  False   True
+    5     False   True   False   False  False  False   False  False   True
+    6     False  False    True   False  False  False   False  False   True
+    7      True   True   False   False  False  False   False  False   True
+    8     False   True   False   False   True  False   False  False   True
+    9     False   True   False   False  False   True   False  False  False
+    10     True  False    True    True  False  False    True  False  False
+    11     True  False    True    True  False  False    True  False  False
+    12    False  False   False    True  False  False   False   True  False
+    13    False   True   False    True  False  False    True  False  False
+    14     True   True   False   False  False  False   False   True  False
+    15    False  False    True    True  False  False   False   True  False
+    16     True   True   False   False  False  False   False   True  False
+    17    False   True   False    True  False  False   False   True  False
+    18    False   True   False    True  False  False   False   True  False
+    19    False  False    True    True  False   True   False  False   True
+
+5) Computing the support metric
+
+In the previous exercise, you one-hot encoded a small grocery store's transactions as the DataFrame onehot. In this exercise, you'll make use of that DataFrame and the support metric to help the store's owner. First, she has asked you to identify frequently purchased items, which you'll do by computing support at the item-level. And second, she asked you to check whether the rule {jam}  {bread} has a support of over 0.05. Note that onehot has been defined and is available. Additionally, pandas has been imported under the alias pd and numpy has been imported under the alias np.
+
+# Compute the support
+support = onehot.mean()
+# Print the support
+print(support)
+=> Output: <script.py> output:
+    biscuit    0.40
+    bread      0.65
+    cereal     0.30
+    coffee     0.40
+    jam        0.10
+    milk       0.25
+    orange     0.15
+    sugar      0.30
+    tea        0.35
+    dtype: float64
+
+# Add a jam+bread column to the DataFrame onehot
+onehot['jam+bread'] = np.logical_and(onehot['jam'], onehot['bread'])
+# Compute the support
+support = onehot.mean()
+# Print the support values
+print(support)
+=> Output: <script.py> output:
+    biscuit      0.40
+    bread        0.65
+    cereal       0.30
+    coffee       0.40
+    jam          0.10
+    milk         0.25
+    orange       0.15
+    sugar        0.30
+    tea          0.35
+    jam+bread    0.10
+    dtype: float64
+
+6) Recommending books with support
+
+A library wants to get members to read more and has decided to use market basket analysis to figure out how. They approach you to do the analysis and ask that you use the five most highly-rated books from the goodbooks-10k dataset, which was introduced in the video. You are given the data in one-hot encoded format in a pandas DataFrame called books.
+Each column in the DataFrame corresponds to a book and has the value TRUE if the book is contained in a reader's library and is rated highly. To make things simpler, we'll work with shortened book names: Hunger, Potter, and Twilight.
+
+# Compute support for Hunger and Potter
+supportHP = np.logical_and(books['Hunger'], books['Potter']).mean()
+# Compute support for Hunger and Twilight
+supportHT = np.logical_and(books['Hunger'], books['Twilight']).mean()
+# Compute support for Potter and Twilight
+supportPT = np.logical_and(books['Potter'], books['Twilight']).mean()
+# Print support values
+print("Hunger Games and Harry Potter: %.2f" % supportHP)
+print("Hunger Games and Twilight: %.2f" % supportHT)
+print("Harry Potter and Twilight: %.2f" % supportPT)
+=> Output: <script.py> output:
+    Hunger Games and Harry Potter: 0.12
+    Hunger Games and Twilight: 0.09
+    Harry Potter and Twilight: 0.14
+Based on the support metric, Harry Potter and Twilight appear to be the best options for cross-promotion. In the next problem, we'll consider whether we should use Harry Potter to promote Twilight or Twilight to promote Harry Potter.
+
+7) Refining support with confidence
+
+After reporting your findings from the previous exercise, the library asks you about the direction of the relationship. Should they use Harry Potter to promote Twilight or Twilight to promote Harry Potter?
+After thinking about this, you decide to compute the confidence metric, which has a direction, unlike support. You'll compute it for both {Potter}  {Twilight} and {Twilight}  {Potter}. The DataFrame books has been imported for you, which has one column for each book: Potter and Twilight.
+
+# Compute support for Potter and Twilight
+supportPT = np.logical_and(books['Potter'], books['Twilight']).mean()
+# Compute support for Potter
+supportP = books['Potter'].mean()
+# Compute support for Twilight
+supportT = books['Twilight'].mean()
+# Compute confidence for both rules
+confidencePT = supportPT / supportP
+confidenceTP = supportPT / supportT
+# Print results
+print('{0:.2f}, {1:.2f}'.format(confidencePT, confidenceTP))
+=> Output: <script.py> output:
+    0.29, 0.55
+Even though the support is identical for the two association rules, the confidence is much higher for Twilight -> Harry Potter, since Harry Potter has a higher support than Twilight.
+
+8) Further refinement with lift
+
+Once again, you report your results to the library: Use Twilight to promote Harry Potter, since the rule has a higher confidence metric. The library thanks you for the suggestion, but asks you to confirm that this is a meaningful relationship using another metric.
+You recall that lift may be useful here. If lift is less than 1, this means that Harry Potter and Twilight are paired together less frequently than we would expect if the pairings occurred by random chance. As with the previous two exercises, the DataFrame books has been imported for you, along with numpy under the alias np.
+
+# Compute support for Potter and Twilight
+supportPT = np.logical_and(books['Potter'], books['Twilight']).mean()
+# Compute support for Potter
+supportP = books['Potter'].mean()
+# Compute support for Twilight
+supportT = books['Twilight'].mean()
+# Compute lift
+lift = supportPT / (supportP * supportT)
+# Print lift
+print("Lift: %.2f" % lift)
+=> Output: <script.py> output:
+    Lift: 1.15
+As it turns out, lift is greater than 1.0. This could give us some confidence that the association rule we recommended did not arise by random chance.
+
+Note: LIFT is calculated as a ratio and equals to Support(X&Y)/(Support(X)*Support(Y)) and has the threshold of determining good rules at 1.0; LEVERAGE is calculated as a difference and equals to Support(X&Y) - (Support(X)*Support(Y)) and has the threshold of determining good rules at 0.0
+
+9) Computing conviction
+
+After hearing about the useful advice you provided to the library, the founder of a small ebook selling start-up approaches you for consulting services. As a test of your abilities, she asks you if you are able to compute conviction for the rule {Potter} {Hunger}, so she can decide whether to place the books next to each other on the company's website. Fortunately, you still have access to the goodreads-10k data, which is available as books. Additionally, pandas has been imported as pd and numpy as np.
+
+# Compute support for Potter AND Hunger
+supportPH = np.logical_and(books['Potter'], books['Hunger']).mean()
+# Compute support for Potter
+supportP = books['Potter'].mean()
+# Compute support for NOT Hunger
+supportnH = 1.0 - books['Hunger'].mean()
+# Compute support for Potter and NOT Hunger
+supportPnH = supportP - supportPH
+# Compute and print conviction for Potter -> Hunger
+conviction = supportP * supportnH / supportPnH
+print("Conviction: %.2f" % conviction)
+=> Output: <script.py> output:
+    Conviction: 0.92
+Notice that the value of conviction was less than 1, suggesting that the rule ``if Potter then Hunger'' is not supported.
+
+10) Computing conviction with a function
+
+After successful completion of her trial project, the ebook start-up's founder decides to hire you for a much bigger project. She asks you if you are able to compute conviction for every pair of books in the goodreads-10k dataset, so she can use that information to decide which books to locate closer together on the website. You agree to take the job, but realize that you need more a efficient way to compute conviction, since you will need to compute it many times. You decide to write a function that computes it. It will take two columns of a pandas DataFrame as an input, one antecedent and one consequent, and output the conviction metric. Note that pandas is available as pd and numpy is available as np.
+
+def conviction(antecedent, consequent):
+	# Compute support for antecedent AND consequent
+	supportAC = np.logical_and(antecedent, consequent).mean()
+	# Compute support for antecedent
+	supportA = antecedent.mean()
+	# Compute support for NOT consequent
+	supportnC = 1.0 - consequent.mean()
+	# Compute support for antecedent and NOT consequent
+	supportAnC = supportA - supportAC
+    # Return conviction
+	return supportA * supportnC / supportAnC
+
+11) Promoting ebooks with conviction
+
+In the previous exercise, we defined a function to compute conviction. We were asked to apply that function to all two-book permutations of the goodreads-10k dataset. In this exercise, we'll test the function by applying it to the three most popular books, which we used in earlier exercises: The Hunger Games, Harry Potter, and Twilight.
+The function has been defined for you and is available as conviction. Recall that it takes an antecedent and a consequent as its two arguments. Additionally, the columns of the books DataFrame from earlier exercises are available as three separate DataFrames: potter, twilight, and hunger.
+
+# Compute conviction for twilight -> potter and potter -> twilight
+convictionTP = conviction(twilight, potter)
+convictionPT = conviction(potter, twilight)
+# Compute conviction for twilight -> hunger and hunger -> twilight
+convictionTH = conviction(twilight, hunger)
+convictionHT = conviction(hunger, twilight)
+# Compute conviction for potter -> hunger and hunger -> potter
+convictionPH = conviction(potter, hunger)
+convictionHP = conviction(hunger, potter)
+# Print results
+print('Harry Potter -> Twilight: ', convictionPT)
+print('Twilight -> Potter: ', convictionTP)
+=> Output: <script.py> output:
+    Harry Potter -> Twilight:  1.0534570072738598
+    Twilight -> Potter:  1.1550539077290998
+
+12) Computing association and dissociation
+
+The library has returned to you once again about your recommendation to promote Harry Potter using Twilight. They're worried that the two might be dissociated, which could have a negative impact on their promotional effort. They ask you to verify that this is not the case.
+You immediately think of Zhang's metric, which measures association and dissociation continuously. Association is positive and dissociation is negative.
+
+# Compute the support of Twilight and Harry Potter
+supportT = books['Twilight'].mean()
+supportP = books['Potter'].mean()
+# Compute the support of both books
+supportTP = np.logical_and(books['Twilight'], books['Potter']).mean()
+# Complete the expressions for the numerator and denominator
+numerator = supportTP - supportT*supportP
+denominator = max(supportTP*(1-supportT), supportT*(supportP-supportTP))
+# Compute and print Zhang's metric
+zhang = numerator / denominator
+print(zhang)
+=> Output: <script.py> output:
+    0.17231567178855997
+Once again, the association rule ``if Twilight then Harry Potter'' proved robust. It had a positive value for Zhang's metric, indicating that the two books are not dissociated.
+
+13) Defining Zhang's metric
+
+In general, when we want to perform a task many times, we'll write a function, rather than coding up each individual instance. In this exercise, we'll define a function for Zhang's metric that takes an antecedent and consequent and outputs the metric itself. When the problems we solve become increasingly complicated in the following chapter, having a convenient means of computing a metric will greatly simplify things.
+
+# Define a function to compute Zhang's metric
+def zhang(antecedent, consequent):
+	# Compute the support of each book
+	supportA = antecedent.mean()
+	supportC = consequent.mean()
+	# Compute the support of both books
+	supportAC = np.logical_and(antecedent, consequent).mean()
+	# Complete the expressions for the numerator and denominator
+	numerator = supportAC - supportA*supportC
+	denominator = max(supportAC*(1-supportA), supportA*(supportC-supportAC))
+	# Return Zhang's metric
+	return numerator / denominator
+
+14) Applying Zhang's metric
+
+The founder of the ebook start-up has returned for additional consulting services. She has sent you a list of itemsets she's investigating and has asked you to determine whether any of them contain items that are dissociated. When you're finished, she has asked that you add the metric you use to a column in the rules DataFrame, which is available to you, and currently contains columns for antecedents and consequents.
+The itemsets are available as a list of lists called itemsets. Each list contains the antecedent first and the consequent second. You also have access to the books DataFrame from previous exercises. Note that Zhang's metric has been defined for you and is available as zhang(). Additionally, pandas is available as pd and numpy as np.
+
+# Define an empty list for Zhang's metric
+zhangs_metric = []
+# Loop over lists in itemsets
+for itemset in itemsets:
+    # Extract the antecedent and consequent columns
+	antecedent = books[itemset[0]]
+	consequent = books[itemset[1]]
+    # Complete Zhang's metric and append it to the list
+	zhangs_metric.append(zhang(antecedent, consequent))
+# Print results
+rules['zhang'] = zhangs_metric
+print(rules)
+=> Output: <script.py> output:
+       antecedents  consequents  zhang
+    0       Potter       Hunger -0.306
+    1     Twilight       Hunger  0.109
+    2  Mockingbird       Hunger -0.525
+    3       Gatsby       Hunger -0.550
+    4       Potter     Twilight  0.245
+    5       Potter  Mockingbird -0.066
+    6       Potter       Gatsby -0.166
+    7  Mockingbird     Twilight -0.319
+    8       Gatsby     Twilight -0.371
+    9  Mockingbird       Gatsby  0.466
+Notice that most of the items were dissociated, which suggests that they would have been a poor choice to pair together for promotional purposes.
+
+15) Filtering with support and conviction
+
+In the video, we discussed the continued consulting work you are doing for the founder of an ebook selling start-up. The founder has approached you with the DataFrame rules, which contains the work of a data scientist who was previously on staff. It includes columns for antecedents and consequents, along with the performance for each of those rules with respect to a number of metrics. Your objective will be to perform multi-metric filtering on the dataset to identify potentially useful rules. Note that pandas is available as pd and numpy as np. Additionally, rules has been defined and is available.
+
+# Preview the rules DataFrame using the .head() method
+print(rules.head())
+# Select the subset of rules with antecedent support greater than 0.05
+rules = rules[rules['antecedent support'] > 0.05]
+# Select the subset of rules with a consequent support greater than 0.02
+rules = rules[rules['consequent support'] > 0.02]
+# Select the subset of rules with a conviction greater than 1.01
+rules = rules[rules['conviction'] > 1.01]
+# Print remaining rules
+print(rules)
+=> Output: <script.py> output:
+         antecedents consequents  antecedent support  consequent support  support  confidence   lift  leverage  conviction
+    0       (Potter)    (Hunger)               0.478               0.319    0.124       0.259  0.813    -0.029       0.919
+    1       (Hunger)    (Potter)               0.319               0.478    0.124       0.388  0.813    -0.029       0.854
+    2       (Hunger)  (Twilight)               0.319               0.257    0.089       0.279  1.088     0.007       1.032
+    3     (Twilight)    (Hunger)               0.257               0.319    0.089       0.347  1.088     0.007       1.043
+    4  (Mockingbird)    (Hunger)               0.477               0.319    0.096       0.202  0.633    -0.056       0.853
+                     antecedents                      consequents  antecedent support  consequent support  support  confidence   lift  leverage  conviction
+    2                   (Hunger)                       (Twilight)               0.319               0.257    0.089       0.279  1.088     0.007       1.032
+    3                 (Twilight)                         (Hunger)               0.257               0.319    0.089       0.347  1.088     0.007       1.043
+    8                   (Potter)                       (Twilight)               0.478               0.257    0.141       0.294  1.147     0.018       1.053
+    9                 (Twilight)                         (Potter)               0.257               0.478    0.141       0.548  1.147     0.018       1.155
+    18             (Mockingbird)                         (Gatsby)               0.477               0.295    0.186       0.391  1.323     0.045       1.156
+    ..                       ...                              ...                 ...                 ...      ...         ...    ...       ...         ...
+    143       (Twilight, Gatsby)            (Potter, Mockingbird)               0.054               0.220    0.024       0.455  2.072     0.013       1.431
+    144  (Mockingbird, Twilight)                 (Potter, Gatsby)               0.098               0.128    0.024       0.248  1.940     0.012       1.160
+    146                 (Potter)  (Mockingbird, Twilight, Gatsby)               0.478               0.036    0.024       0.051  1.406     0.007       1.016
+    148                 (Gatsby)  (Potter, Twilight, Mockingbird)               0.295               0.063    0.024       0.082  1.310     0.006       1.021
+    149            (Mockingbird)       (Potter, Twilight, Gatsby)               0.477               0.034    0.024       0.051  1.496     0.008       1.018
+    
+    [82 rows x 9 columns]
+
+16) Using multi-metric filtering to cross-promote books
+
+As a final request, the founder of the ebook selling start-up asks you to perform additional filtering. Your previous attempt returned 82 rules, but she wanted only one. The rules dataset has again been made available in the console. Finally, Zhang's metric has been computed for you and included in the rules DataFrame under the column header zhang.
+
+# Set the lift threshold to 1.5
+rules = rules[rules['lift'] > 1.5]
+# Set the conviction threshold to 1.0
+rules = rules[rules['conviction'] > 1.0]
+# Set the threshold for Zhang's rule to 0.65
+rules = rules[rules['zhang'] > 0.65]
+# Print rule
+print(rules[['antecedents','consequents']])
+=> Output: <script.py> output:
+                     antecedents               consequents
+    114    (Potter, Mockingbird)          (Hunger, Gatsby)
+    121            (Mockingbird)  (Potter, Hunger, Gatsby)
+    126    (Mockingbird, Hunger)        (Twilight, Gatsby)
+    127  (Mockingbird, Twilight)          (Hunger, Gatsby)
+    142    (Potter, Mockingbird)        (Twilight, Gatsby)
+Notice that we started with an enormous set of user libraries, narrowed it down to a subset of interest, and then applied filtering to identify five association rules. We then printed the antecedent and consequent in the iPython Shell.
+
+17)
 
