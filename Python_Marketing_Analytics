@@ -1671,5 +1671,325 @@ print(rules[['antecedents','consequents']])
     142    (Potter, Mockingbird)        (Twilight, Gatsby)
 Notice that we started with an enormous set of user libraries, narrowed it down to a subset of interest, and then applied filtering to identify five association rules. We then printed the antecedent and consequent in the iPython Shell.
 
-17)
+17) Performing aggregation
+
+After completing minor consulting jobs for a library and an ebook seller, you've finally received your first big market basket analysis project: advising an online novelty gifts retailer on cross-promotions. Since the retailer has never previously hired a data scientist, it would like you to start the project by exploring its transaction data. It has asked you to perform aggregation for all signs in the dataset and also compute the support for this category. Note that pandas has been imported for you as pd. Additionally, the data has been imported in one-hot encoded format as onehot.
+
+# Select the column headers for sign items
+sign_headers = [i for i in onehot.columns if i.lower().find('sign')>=0]
+# Select columns of sign items using sign_headers
+sign_columns = onehot[sign_headers]
+# Perform aggregation of sign items into sign category
+signs = sign_columns.sum(axis = 1) >= 1.0
+# Print support for signs
+print('Share of Signs: %.2f' % signs.mean())
+=> Output: <script.py> output:
+    Share of Signs: 0.10
+If you look at the printed statement, you'll notice that support for signs is 0.10, which suggests that signs are an important category of items for the retailer.
+
+18) Defining an aggregation function
+
+Surprised by the high share of sign items in its inventory, the retailer decides that it makes sense to do further aggregation for different categories to explore the data better. This seems trivial to you, but the retailer has not previously been able to perform even a basic descriptive analysis of its transaction and items.
+The retailer asks you to perform aggregation for the candles, bags, and boxes categories. To simplify the task, you decide to write a function. It will take a string that contains an item's category. It will then output a DataFrame that indicates whether each transaction includes items from that category. Note that pandas has been imported for you as pd. Additionally, the data has been imported in one-hot encoded format as onehot.
+
+def aggregate(item):
+	# Select the column headers for sign items in onehot
+	item_headers = [i for i in onehot.columns if i.lower().find(item)>=0]
+	# Select columns of sign items
+	item_columns = onehot[item_headers]
+	# Return category of aggregated items
+	return item_columns.sum(axis = 1) >= 1.0
+# Aggregate items for the bags, boxes, and candles categories  
+bags = aggregate('bag')
+boxes = aggregate('box')
+candles = aggregate('candle')
+
+19) Identifying frequent itemsets with Apriori
+
+The aggregation exercise you performed for the online retailer proved helpful. It offered a starting point for understanding which categories of items appear frequently in transactions. The retailer now wants to explore the individual items themselves to find out which are frequent.
+In this exercise, you'll apply the Apriori algorithm to the online retail dataset without aggregating first. Your objective will be to prune the itemsets using a minimum value of support and a maximum item number threshold. Note that pandas has been imported as pd and the one-hot encoded data is available as onehot.
+
+# Import apriori from mlxtend
+from mlxtend.frequent_patterns import apriori
+# Compute frequent itemsets using the Apriori algorithm
+frequent_itemsets = apriori(onehot, 
+                            min_support = 0.006, 
+                            max_len = 3, 
+                            use_colnames = True)
+# Print a preview of the frequent itemsets
+print(frequent_itemsets.head())
+=> Output: <script.py> output:
+       support                              itemsets
+    0    0.007          (HOT WATER BOTTLE KEEP CALM)
+    1    0.008             (JUMBO BAG RED RETROSPOT)
+    2    0.006     (PAPER CHAIN KIT 50'S CHRISTMAS )
+    3    0.006                      (POPCORN HOLDER)
+    4    0.007  (WHITE HANGING HEART T-LIGHT HOLDER)
+Notice that all of the printed itemsets contained only one item. We'll return to this in the next exercise.
+
+20) Selecting a support threshold
+
+The manager of the online gift store looks at the results you provided from the previous exercise and commends you for the good work. She does, however, raise an issue: all of the itemsets you identified contain only one item. She asks whether it would be possible to use a less restrictive rule and to generate more itemsets, possibly including those with multiple items. After agreeing to do this, you think about what might explain the lack of itemsets with more than 1 item. It can't be the max_len parameter, since that was set to three. You decide it must be support and decide to test two different values, each time checking how many additional itemsets are generated. Note that pandas is available as pd and the one-hot encoded data is available as onehot.
+
+# Import apriori from mlxtend
+from mlxtend.frequent_patterns import apriori
+# Compute frequent itemsets using a support of 0.003 and length of 3
+frequent_itemsets_1 = apriori(onehot, min_support = 0.003, 
+                            max_len = 3, use_colnames = True)
+# Compute frequent itemsets using a support of 0.001 and length of 3
+frequent_itemsets_2 = apriori(onehot, min_support = 0.001, 
+                            max_len = 3, use_colnames = True)
+# Print the number of freqeuent itemsets
+print(len(frequent_itemsets_1), len(frequent_itemsets_2))
+=> Output: <script.py> output:
+    91 429
+The DataFrame frequent_itemsets_3 is available in the console. It was generated using the Apriori algorithm with a max_length of 3. Recall that frequent_itemsets_1 and frequent_itemsets_2 generated 91 and 429 rules. Based on this information and the DataFrame itself, what can you say about the support threshold used to generate frequent_itemsets_3?
+Answer: The support value is higher than the support value used for frequent_itemsets_1 (The DataFrame was, in fact, generated by the Apriori algorithm using a support value of 0.002)
+
+21) Generating association rules
+
+In the final exercise of the previous section, you computed itemsets for the novelty gift store owner using the Apriori algorithm. You told the store owner that relaxing support from 0.005 to 0.003 increased the number of itemsets from 9 to 91. Relaxing it again to 0.001 increased the number to 429. Satisfied with the descriptive work you've done, the store manager asks you to identify some association rules from those two sets of frequent itemsets you computed.
+Note that pandas has been imported for you as pd and the two frequent itemsets are available as frequent_itemset_1 and frequent_itemset_2. Your objective is to determine what association rules can be mined from these itemsets.
+
+# Import the association rule function from mlxtend
+from mlxtend.frequent_patterns import association_rules
+# Compute all association rules for frequent_itemsets_1
+rules_1 = association_rules(frequent_itemsets_1, 
+                            metric = "support", 
+                         	min_threshold = 0.0015)
+# Compute all association rules for frequent_itemsets_2
+rules_2 = association_rules(frequent_itemsets_2, 
+                            metric = "support", 
+                        	min_threshold = 0.0015)
+# Print the number of association rules generated
+print(len(rules_1), len(rules_2))
+=> Output: <script.py> output:
+    0 2
+Notice that rules_1 generated no association rules; whereas rules_2, which used a lower support threshold for the Apriori algorithm, generated two.
+
+22) Pruning with lift
+
+Once again, you report back to the novelty gift store manager. This time, you tell her that you identified no rules when you used a higher support threshold for the Apriori algorithm and only two rules when you used a lower threshold. She commends you for the good work, but asks you to consider using another metric to reduce the two rules to one.
+You remember that lift had a simple interpretation: values greater than 1 indicate that items co-occur more than we would expect if they were independently distributed across transactions. You decide to use lift, since that message will be simple to convey. Note that pandas is available as pd and the one-hot encoded transaction data is available as onehot. Additionally, apriori has been imported from mlxtend.
+
+# Import the association rules function
+from mlxtend.frequent_patterns import association_rules
+# Compute frequent itemsets using the Apriori algorithm
+frequent_itemsets = apriori(onehot, min_support = 0.001, 
+                            max_len = 2, use_colnames = True)
+# Compute all association rules for frequent_itemsets
+rules = association_rules(frequent_itemsets, 
+                            metric = "lift", 
+                         	min_threshold = 1.0)
+# Print association rules
+print(rules)
+=> Output: <script.py> output:
+                       antecedents                  consequents  antecedent support  consequent support  support  confidence    lift  leverage  conviction
+    0    (JUMBO BAG RED RETROSPOT)  (BIRTHDAY CARD, RETRO SPOT)               0.008               0.002    0.002       0.200  88.667     0.001       1.247
+    1  (BIRTHDAY CARD, RETRO SPOT)    (JUMBO BAG RED RETROSPOT)               0.002               0.008    0.002       0.667  88.667     0.001       2.977
+It looks like you've ended up with two association rules once again, both with lift values greater than 1.0.
+
+23) Pruning with confidence
+
+Once again, you've come up short: you found multiple useful rules, but can't narrow it down to one. Even worse, the two rules you found used the same itemset, but just swapped the antecedents and consequents. You decide to see whether pruning by another metric might allow you to narrow things down to a single association rule.
+What would be the right metric? Both lift and support are identical for all rules that can be generated from an itemset, so you decide to use confidence instead, which differs for rules produced from the same itemset. Note that pandas is available as pd and the one-hot encoded transaction data is available as onehot. Additionally, apriori has been imported from mlxtend.
+
+# Import the association rules function
+from mlxtend.frequent_patterns import apriori, association_rules
+# Compute frequent itemsets using the Apriori algorithm
+frequent_itemsets = apriori(onehot, min_support = 0.0015, 
+                            max_len = 2, use_colnames = True)
+# Compute all association rules using confidence
+rules = association_rules(frequent_itemsets, 
+                            metric = "confidence", 
+                         	min_threshold = 0.5)
+# Print association rules
+print(rules)
+=> Output: <script.py> output:
+                       antecedents                consequents  antecedent support  consequent support  support  confidence    lift  leverage  conviction
+    0  (BIRTHDAY CARD, RETRO SPOT)  (JUMBO BAG RED RETROSPOT)               0.002               0.008    0.002       0.667  88.667     0.001       2.977
+
+24) Aggregation and filtering
+
+In the video, we helped a gift store manager arrange the sections in her physical retail location according to association rules. The layout of the store forced us to group sections into two pairs of product types. After applying advanced filtering techniques, we proposed the floor layout below.
+The store manager is now asking you to generate another floorplan proposal, but with a different criterion: each pair of sections should contain one high support product and one low support product. The data, aggregated, has been aggregated and one-hot encoded for you. Additionally, apriori() and association_rules() have been imported from mlxtend.
+
+# Apply the apriori algorithm with a minimum support of 0.0001
+frequent_itemsets = apriori(aggregated, min_support = 0.0001, use_colnames = True)
+# Generate the initial set of rules using a minimum support of 0.0001
+rules = association_rules(frequent_itemsets, 
+                          metric = "support", min_threshold = 0.0001)
+# Set minimum antecedent support to 0.35
+rules = rules[rules['antecedent support'] > 0.35]
+# Set maximum consequent support to 0.35
+rules = rules[rules['consequent support'] < 0.35]
+# Print the remaining rules
+print(rules)
+=> Output: <script.py> output:
+       antecedents     consequents  antecedent support  consequent support  support  confidence   lift  leverage  conviction
+    0        (bag)           (box)               0.466               0.256    0.022       0.046  0.181    -0.098       0.780
+    2        (bag)        (candle)               0.466               0.089    0.011       0.023  0.260    -0.031       0.933
+    9       (sign)           (box)               0.356               0.256    0.019       0.053  0.207    -0.072       0.786
+    10      (sign)        (candle)               0.356               0.089    0.008       0.023  0.256    -0.024       0.932
+    15       (bag)  (sign, candle)               0.466               0.008    0.005       0.012  1.430     0.002       1.004
+    16      (sign)   (bag, candle)               0.356               0.011    0.005       0.015  1.405     0.002       1.004
+If you look at the list of remaining association rules, you'll find both bag -> box and sign -> candles. We can tell the store manager that the original proposal is also acceptable under this new criterion.
+
+25) Applying Zhang's rule
+
+We learned that Zhang's rule is a continuous measure of association between two items that takes values in the [-1,+1] interval. A -1 value indicates a perfectly negative association and a +1 value indicates a perfectly positive association. In this exercise, you'll determine whether Zhang's rule can be used to refine a set of rules a gift store is currently using to promote products. Note that the frequent itemsets have been computed for you and are available as frequent_itemsets. Additionally, zhangs_rule() has been defined and association_rules() have been imported from mlxtend. You will start by re-computing the original set of rules. After that, you will apply Zhang's metric to select only those rules with a high and positive association.
+
+# Generate the initial set of rules using a minimum lift of 1.00
+rules = association_rules(frequent_itemsets, metric = "lift", min_threshold = 1.00)
+# Set antecedent support to 0.005
+rules = rules[rules['antecedent support'] > 0.005]
+# Set consequent support to 0.005
+rules = rules[rules['consequent support'] > 0.005]
+# Compute Zhang's rule
+rules['zhang'] = zhangs_rule(rules)
+# Set the lower bound for Zhang's rule to 0.98
+rules = rules[rules['zhang'] > 0.98]
+print(rules[['antecedents', 'consequents']])
+=> Output: <script.py> output:
+                                  antecedents                           consequents
+    26                  (BROCADE RING PURSE )      (PANTRY MAGNETIC  SHOPPING LIST)
+    27       (PANTRY MAGNETIC  SHOPPING LIST)                 (BROCADE RING PURSE )
+    84              (JUMBO BAG PINK POLKADOT)          (HAND WARMER RED LOVE HEART)
+    85           (HAND WARMER RED LOVE HEART)             (JUMBO BAG PINK POLKADOT)
+    88   (WOOD 2 DRAWER CABINET WHITE FINISH)          (HAND WARMER RED LOVE HEART)
+    89           (HAND WARMER RED LOVE HEART)  (WOOD 2 DRAWER CABINET WHITE FINISH)
+    148                (RED STAR CARD HOLDER)                        (WICKER STAR )
+    149                        (WICKER STAR )                (RED STAR CARD HOLDER)
+    152      (RIBBON REEL CHRISTMAS PRESENT )  (WOODEN TREE CHRISTMAS SCANDINAVIAN)
+    153  (WOODEN TREE CHRISTMAS SCANDINAVIAN)      (RIBBON REEL CHRISTMAS PRESENT )
+Notice that 10 items had a Zhang's metric value of over 0.98, which suggests that the items are nearly perfectly associated in the data. When we see such strong associations, we'll want to think carefully about what explains them. We might, for instance, investigate whether the items be purchased separately or whether they are bundled in a way that prevents this.
+
+26) Advanced filtering with multiple metrics
+
+We used data from an online novelty gift store to find antecedents that could be used to promote a targeted consequent. Since the set of potential rules was large, we had to rely on the Apriori algorithm and multi-metric filtering to narrow it down. In this exercise, we'll examine the full set of rules and find a useful one, rather than targeting a particular antecedent. Note that the data has been loaded, preprocessed, and one-hot encoded, and is available as onehot. Additionally, apriori() and association_rules() have been imported from mlxtend. In this exercise, you'll apply the Apriori algorithm to identify frequent itemsets. You'll then recover the set of association rules from the itemsets and apply multi-metric filtering.
+
+# Apply the Apriori algorithm with a minimum support threshold of 0.001
+frequent_itemsets = apriori(onehot, min_support = 0.001, use_colnames = True)
+# Recover association rules using a minium support threshold of 0.001
+rules = association_rules(frequent_itemsets, metric = 'support', min_threshold = 0.001)
+# Apply a 0.002 antecedent support threshold, 0.60 confidence threshold, and 2.50 lift threshold
+filtered_rules = rules[(rules['antecedent support'] > 0.002) &
+						(rules['consequent support'] > 0.01) &
+						(rules['confidence'] > 0.60) &
+						(rules['lift'] > 2.50)]
+# Print remaining rule
+print(filtered_rules[['antecedents','consequents']])
+=> Output: <script.py> output:
+                        antecedents                consequents
+    23  (BIRTHDAY CARD, RETRO SPOT)  (JUMBO BAG RED RETROSPOT)
+A priori algorithm and advanced filtering revealed a potentially useful rule: when people purchase a birthday card, they often pair it with a red jumbo bag, presumably as a gift.
+
+
+27) Visualizing itemset support
+
+A content-streaming start-up has approached you for consulting services. To keep licensing fees low, they want to assemble a narrow library of movies that all appeal to the same audience. While they'll provide a smaller selection of content than the big players in the industry, they'll also be able to offer a low subscription fee. You decide to use the MovieLens data and a heatmap for this project. Using a simple support-based heatmap will allow you to identify individual titles that have high support with other titles. The one-hot encoded data is available as the DataFrame onehot. Additionally, pandas is available as pd, seaborn is available as sns, and apriori() and association_rules() have both been imported.
+
+# Compute frequent itemsets using a minimum support of 0.07
+frequent_itemsets = apriori(onehot, min_support = 0.07, 
+                            use_colnames = True, max_len = 2)
+# Compute the association rules
+rules = association_rules(frequent_itemsets, 
+                          metric = 'support', 
+                          min_threshold = 0.0)
+
+# Replace frozen sets with strings
+rules['antecedents'] = rules['antecedents'].apply(lambda a: ','.join(list(a)))
+rules['consequents'] = rules['consequents'].apply(lambda a: ','.join(list(a)))
+# Transform data to matrix format and generate heatmap
+pivot = rules.pivot(index='consequents', columns='antecedents', values='support')
+sns.heatmap(pivot)
+# Format and display plot
+plt.yticks(rotation=0)
+plt.show()
+
+28) Heatmaps with lift
+
+The founder likes the heatmap you've produced for her streaming service. After discussing the project further, however, you decide that that it is important to examine other metrics before making a final decision on which movies to license. In particular, the founder suggests that you select a metric that tells you whether the support values are higher than we would expect given the films' individual support values. You recall that lift does this well and decide to use it as a metric. You also remember that lift has an important threshold at 1.0 and decide that it is important to replace the colorbar with annotations, so you can determine whether a value is greater than 1.0. Note that the rules from the previous exercise are available to you as rules.
+
+# Import seaborn under its standard alias
+import seaborn as sns
+# Transform the DataFrame of rules into a matrix using the lift metric
+pivot = rules.pivot(index = 'consequents', 
+                    columns = 'antecedents', values= 'lift')
+# Generate a heatmap with annotations on and the colorbar off
+sns.heatmap(pivot, annot = True, cbar = False)
+plt.yticks(rotation=0)
+plt.xticks(rotation=90)
+plt.show()
+
+29) Pruning with scatterplots
+
+After viewing your Batman-based streaming service proposal from the previous exercise, the founder realizes that her initial plan may have been too narrow. Rather than focusing on initial titles, she asks you to focus on general patterns in the association rules and then perform pruning accordingly. Your goal should be to identify a large set of strong associations. Fortunately, you've just learned how to generate scatterplots. You decide to start by plotting support and confidence, since all optimal rules according to many common metrics are located on the confidence-support border. The one-hot encoded data has been imported for you and is available as onehot. Additionally, apriori() and association_rules() have been imported and pandas is available as pd.
+
+# Import seaborn under its standard alias
+import seaborn as sns
+# Apply the Apriori algorithm with a support value of 0.0075
+frequent_itemsets = apriori(onehot, min_support = 0.0075, 
+                            use_colnames = True, max_len = 2)
+# Generate association rules without performing additional pruning
+rules = association_rules(frequent_itemsets, metric='support', 
+                          min_threshold = 0.0)
+# Generate scatterplot using support and confidence
+sns.scatterplot(x = "support", y = "confidence", data = rules)
+plt.show()
+=> Output: Notice that the confidence-support border roughly forms a triangle. This suggests that throwing out some low support rules would also mean that we would discard rules that are strong according to many common metrics.
+
+30) Optimality of the support-confidence border
+
+You return to the founder with the scatterplot produced in the previous exercise and ask whether she would like you to use pruning to recover the support-confidence border. You tell her about the Bayardo-Agrawal result, but she seems skeptical and asks whether you can demonstrate this in an example.
+Recalling that scatterplots can scale the size of dots according to a third metric, you decide to use that to demonstrate optimality of the support-confidence border. You will show this by scaling the dot size using the lift metric, which was one of the metrics to which Bayardo-Agrawal applies. The one-hot encoded data has been imported for you and is available as onehot. Additionally, apriori() and association_rules() have been imported and pandas is available as pd.
+
+# Import seaborn under its standard alias
+import seaborn as sns
+# Apply the Apriori algorithm with a support value of 0.0075
+frequent_itemsets = apriori(onehot, min_support = 0.0075, 
+                            use_colnames = True, max_len = 2)
+# Generate association rules without performing additional pruning
+rules = association_rules(frequent_itemsets, metric = "support", 
+                          min_threshold = 0.0)
+# Generate scatterplot using support and confidence
+sns.scatterplot(x = "support", y = "confidence", 
+                size = "lift", data = rules)
+plt.show()
+
+31) Using parallel coordinates to visualize rules
+
+Your visual demonstration in the previous exercise convinced the founder that the supply-confidence border is worthy of further exploration. She now suggests that you extract part of the border and visualize it. Since the rules that fall on the border are strong with respect to most common metrics, she argues that you should simply visualize whether a rule exists, rather than the intensity of the rule according to some metric.
+You realize that a parallel coordinates plot is ideal for such cases. The data has been imported for you as onehot. Additionally, apriori(), association_rules(), and parallel_coordinates() have been imported, and pandas is available as pd. The function rules_to_coordinates() has been defined and is available.
+
+# Compute the frequent itemsets
+frequent_itemsets = apriori(onehot, min_support = 0.05, 
+                            use_colnames = True, max_len = 2)
+# Compute rules from the frequent itemsets with the confidence metric
+rules = association_rules(frequent_itemsets, metric = 'confidence', 
+                          min_threshold = 0.50)
+# Convert rules into coordinates suitable for use in a parallel coordinates plot
+coords = rules_to_coordinates(rules)
+# Generate parallel coordinates plot
+parallel_coordinates(coords, 'rule')
+plt.legend([])
+plt.show()
+
+32) Refining a parallel coordinates plot
+
+After viewing your parallel coordinates plot, the founder concludes that her decision to step away from a Batman-centered streaming platform may have been premature. Indeed, the parallel coordinates plot seems to suggest that many popular movies are strongly associated with The Dark Knight. She decides instead to pitch the idea to her staff in a meeting, but has asked you to make some refinements to the plot to make it more visually appealing for the presentation. Note that the rules have been generated and are available for you as rules. Additionally, pandas is available as pd and the function rules_to_coordinates() has been defined and is available.
+
+# Import the parallel coordinates plot submodule
+from pandas.plotting import parallel_coordinates
+# Convert rules into coordinates suitable for use in a parallel coordinates plot
+coords = rules_to_coordinates(rules)
+# Generate parallel coordinates plot
+parallel_coordinates(coords, 'rule', colormap = 'ocean')
+plt.legend([])
+plt.show()
+
+
+CHAPTER 4: MACHINE LEARNING FOR MARKETING IN PYTHON
+
+1)
 
