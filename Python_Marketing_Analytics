@@ -2718,5 +2718,323 @@ plt.show()
 
 CHAPTER 5: CUSTOMER SEGMENTATION IN PYTHON
 
-1)
+1) Assign daily acquisition cohort
+
+As you have seen in the video, defining a cohort is the first step to cohort analysis. You will now create daily cohorts based on the day each customer has made their first transaction.
+The data has been loaded as online DataFrame, you can now print its header with online.head() in the console.
+
+# Define a function that will parse the date
+def get_day(x): return dt.datetime(x.year, x.month, x.day) 
+# Create InvoiceDay column
+online['InvoiceDay'] = online['InvoiceDate'].apply(get_day) 
+# Group by CustomerID and select the InvoiceDay value
+grouping = online.groupby('CustomerID')['InvoiceDay'] 
+# Assign a minimum InvoiceDay value to the dataset
+online['CohortDay'] = grouping.transform('min')
+# View the top 5 rows
+print(online.head())
+=> Output: <script.py> output:
+            InvoiceNo StockCode                      Description  Quantity         InvoiceDate  UnitPrice  CustomerID         Country InvoiceDay  CohortDay
+    416792     572558     22745       POPPY'S PLAYHOUSE BEDROOM          6 2011-10-25 08:26:00       2.10       14286  United Kingdom 2011-10-25 2011-04-11
+    482904     577485     23196    VINTAGE LEAF MAGNETIC NOTEPAD         1 2011-11-20 11:56:00       1.45       16360  United Kingdom 2011-11-20 2011-09-12
+    263743     560034     23299     FOOD COVER WITH BEADS SET 2          6 2011-07-14 13:35:00       3.75       13933  United Kingdom 2011-07-14 2011-07-14
+    495549     578307    72349B  SET/6 PURPLE BUTTERFLY T-LIGHTS         1 2011-11-23 15:53:00       2.10       17290  United Kingdom 2011-11-23 2011-11-23
+    204384     554656     21756         BATH BUILDING BLOCK WORD         3 2011-05-25 13:36:00       5.95       17663  United Kingdom 2011-05-25 2011-02-25
+Now each customer belongs to a daily acquisition cohort that you can use for further analysis!
+
+2) Calculate time offset in days - part 1
+
+Calculating time offset for each transaction allows you to report the metrics for each cohort in a comparable fashion. First, we will create 6 variables that capture the integer value of years, months and days for Invoice and Cohort Date using the get_date_int() function that's been already defined for you:
+def get_date_int(df, column):
+    year = df[column].dt.year
+    month = df[column].dt.month
+    day = df[column].dt.day
+    return year, month, day
+The online data has been loaded, you can print its header to the console by calling online.head().
+        InvoiceNo StockCode                      Description  Quantity         InvoiceDate  UnitPrice  CustomerID         Country InvoiceDay  CohortDay
+416792     572558     22745       POPPY'S PLAYHOUSE BEDROOM          6 2011-10-25 08:26:00       2.10       14286  United Kingdom 2011-10-25 2011-04-11
+482904     577485     23196    VINTAGE LEAF MAGNETIC NOTEPAD         1 2011-11-20 11:56:00       1.45       16360  United Kingdom 2011-11-20 2011-09-12
+263743     560034     23299     FOOD COVER WITH BEADS SET 2          6 2011-07-14 13:35:00       3.75       13933  United Kingdom 2011-07-14 2011-07-14
+495549     578307    72349B  SET/6 PURPLE BUTTERFLY T-LIGHTS         1 2011-11-23 15:53:00       2.10       17290  United Kingdom 2011-11-23 2011-11-23
+204384     554656     21756         BATH BUILDING BLOCK WORD         3 2011-05-25 13:36:00       5.95       17663  United Kingdom 2011-05-25 2011-02-25
+
+# Get the integers for date parts from the InvoiceDaycolumn
+invoice_year, invoice_month, invoice_day = get_date_int(online, 'InvoiceDay')
+# Get the integers for date parts from the CohortDay column
+cohort_year, cohort_month, cohort_day = get_date_int(online, 'CohortDay')
+
+3) Calculate time offset in days - part 2
+
+Great work! Now, we have six different data sets with year, month and day values for Invoice and Cohort dates - invoice_year, cohort_year, invoice_month, cohort_month, invoice_day, and cohort_day. In this exercise you will calculate the difference between the Invoice and Cohort dates in years, months and days separately and then calculate the total days difference between the two. This will be your days offset which we will use in the next exercise to visualize the customer count. The online data has been loaded, you can print its header to the console by calling online.head().
+
+# Calculate difference in years
+years_diff = invoice_year - cohort_year
+# Calculate difference in months
+months_diff = invoice_month - cohort_month
+# Calculate difference in days
+days_diff = invoice_day - cohort_day
+# Extract the difference in days from all previous values
+online['CohortIndex'] = years_diff * 365 + months_diff * 30 + days_diff + 1
+print(online.head())
+=> Output: <script.py> output:
+            InvoiceNo StockCode                      Description  Quantity         InvoiceDate  UnitPrice  CustomerID         Country InvoiceDay  CohortDay  CohortIndex
+    416792     572558     22745       POPPY'S PLAYHOUSE BEDROOM          6 2011-10-25 08:26:00       2.10       14286  United Kingdom 2011-10-25 2011-04-11          195
+    482904     577485     23196    VINTAGE LEAF MAGNETIC NOTEPAD         1 2011-11-20 11:56:00       1.45       16360  United Kingdom 2011-11-20 2011-09-12           69
+    263743     560034     23299     FOOD COVER WITH BEADS SET 2          6 2011-07-14 13:35:00       3.75       13933  United Kingdom 2011-07-14 2011-07-14            1
+    495549     578307    72349B  SET/6 PURPLE BUTTERFLY T-LIGHTS         1 2011-11-23 15:53:00       2.10       17290  United Kingdom 2011-11-23 2011-11-23            1
+    204384     554656     21756         BATH BUILDING BLOCK WORD         3 2011-05-25 13:36:00       5.95       17663  United Kingdom 2011-05-25 2011-02-25           91
+You have successfully assigned the daily time offset to each transaction and can use it for running daily cohort analysis!
+
+4) Calculate retention rate from scratch
+
+You have seen how to create retention and average quantity metrics table for the monthly acquisition cohorts. Now it's you time to build the retention metrics by yourself. The online dataset has been loaded to you with monthly cohorts and cohort index assigned from this lesson. Feel free to print it in the Console.
+Also, we have created a loaded a groupby object as grouping DataFrame with this command: grouping = online.groupby(['CohortMonth', 'CohortIndex'])
+
+# Count the number of unique values per customer ID
+cohort_data = grouping['CustomerID'].apply(pd.Series.nunique).reset_index()
+# Create a pivot 
+cohort_counts = cohort_data.pivot(index='CohortMonth', columns='CohortIndex', values='CustomerID')
+# Select the first column and store it to cohort_sizes
+cohort_sizes = cohort_counts.iloc[:,0]
+# Divide the cohort count by cohort sizes along the rows
+retention = cohort_counts.divide(cohort_sizes, axis=0)
+
+5) Calculate average price
+
+You will now calculate the average price metric and analyze if there are any differences in shopping patterns across time and across cohorts.
+The online dataset has been loaded to you with monthly cohorts and cohort index assigned from this lesson. Feel free to print it to the Console.
+
+# Create a groupby object and pass the monthly cohort and cohort index as a list
+grouping = online.groupby(['CohortMonth', 'CohortIndex']) 
+# Calculate the average of the unit price 
+cohort_data = grouping['UnitPrice'].mean()
+# Reset the index of cohort_data
+cohort_data = cohort_data.reset_index()
+# Create a pivot 
+average_price = cohort_data.pivot(index='CohortMonth', columns='CohortIndex', values='UnitPrice')
+print(average_price.round(1))
+=> Output: <script.py> output:
+    CohortIndex   1    2    3    4    5    6    7    8    9    10   11   12   13
+    CohortMonth                                                                 
+    2010-12-01   3.0  3.0  3.0  2.8  2.7  6.9  2.8  3.0  2.7  2.7  3.0  2.8  2.6
+    2011-01-01   3.2  3.1  3.0  3.0  3.1  3.0  3.0  2.5  2.7  2.9  2.6  2.0  NaN
+    2011-02-01   3.1  4.0  3.3  2.9  3.3  2.9  2.8  2.7  2.9  2.7  3.1  NaN  NaN
+    2011-03-01   3.5  3.6  3.5  2.8  2.7  2.5  2.7  2.9  2.5  2.4  NaN  NaN  NaN
+    2011-04-01   3.3  4.4  3.4  2.6  2.8  2.8  2.8  2.6  2.6  NaN  NaN  NaN  NaN
+    ...          ...  ...  ...  ...  ...  ...  ...  ...  ...  ...  ...  ...  ...
+    2011-08-01   2.9  3.7  5.4  6.9  4.2  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+    2011-09-01   2.9  3.1  3.0  2.6  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+    2011-10-01   2.9  2.7  2.5  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+    2011-11-01   2.5  2.1  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+    2011-12-01   1.9  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+    
+    [13 rows x 13 columns]
+
+6) Visualize average quantity metric
+
+# Import seaborn package as sns
+import seaborn as sns
+# Initialize an 8 by 6 inches plot figure
+plt.figure(figsize=(8, 6))
+# Add a title
+plt.title('Average Spend by Monthly Cohorts')
+# Create the heatmap
+sns.heatmap(average_quantity, annot=True, cmap='Blues')
+plt.show()
+
+7) Calculate spend quartiles (q=4)
+
+We have created a dataset for you with random CustomerID and Spend values as data. You will now use this dataset to group customers into quartiles based on Spend values and assign labels to each of them. pandas library as been loaded as pd. Feel free to print the data to the console.
+
+# Create a spend quartile with 4 groups - a range between 1 and 5
+spend_quartile = pd.qcut(data['Spend'], q=4, labels=range(1,5))
+# Assign the quartile values to the Spend_Quartile column in data
+data['Spend_Quartile'] = spend_quartile
+# Print data with sorted Spend values
+print(data.sort_values('Spend'))
+=> Output: <script.py> output:
+       CustomerID  Spend Spend_Quartile
+    0           0    137              1
+    2           2    172              1
+    7           7    229              2
+    5           5    233              2
+    6           6    244              3
+    4           4    303              3
+    1           1    335              4
+    3           3    355              4
+
+8) Calculate recency deciles (q=4)
+
+We have created a dataset for you with random CustomerID and Recency_Days values as data. You will now use this dataset to group customers into quartiles based on Recency_Days values and assign labels to each of them. Be cautious about the labels for this exercise. You will see that the labels are inverse, and will required one additional step in separately creating them. If you need to refresh your memory on the process of creating the labels, check out the slides!
+The pandas library as been loaded as pd. Feel free to print the data to the console.
+
+# Store labels from 4 to 1 in a decreasing order
+r_labels = list(range(4, 0, -1))
+# Create a spend quartile with 4 groups and pass the previously created labels 
+recency_quartiles = pd.qcut(data['Recency_Days'], q=4, labels=r_labels)
+# Assign the quartile values to the Recency_Quartile column in `data`
+data['Recency_Quartile'] = recency_quartiles 
+# Print `data` with sorted Recency_Days values
+print(data.sort_values('Recency_Days'))
+=> Output: <script.py> output:
+       CustomerID  Recency_Days Recency_Quartile
+    0           0            37                4
+    3           3            72                4
+    7           7           133                3
+    6           6           203                3
+    1           1           235                2
+    4           4           255                2
+    5           5           393                1
+    2           2           396                1
+
+9) Calculate RFM values
+
+Calculate Recency, Frequency and Monetary values for the online dataset we have used before - it has been loaded for you with recent 12 months of data. There's a TotalSum column in the online dataset which has been calculated by multiplying Quantity and UnitPrice: online['Quantity'] * online['UnitPrice']. Also, we have created a snapshot_date variable that you can use to calculate recency. Feel free to print the online dataset and the snapshot_date into the Console. The pandas library is loaded as pd, and datetime as dt.
+
+# Calculate Recency, Frequency and Monetary value for each customer 
+datamart = online.groupby(['CustomerID']).agg({
+    'InvoiceDate': lambda x: (snapshot_date - x.max()).days,
+    'InvoiceNo': 'count',
+    'TotalSum': 'sum'})
+# Rename the columns 
+datamart.rename(columns={'InvoiceDate': 'Recency',
+                         'InvoiceNo': 'Frequency',
+                         'TotalSum': 'MonetaryValue'}, inplace=True)
+# Print top 5 rows
+print(datamart.head())
+=> Output: <script.py> output:
+                Recency  Frequency  MonetaryValue
+    CustomerID                                   
+    12747             3         25         948.70
+    12748             1        888        7046.16
+    12749             4         37         813.45
+    12820             4         17         268.02
+    12822            71          9         146.15
+
+10) Calculate 3 groups for recency and frequency
+
+You will now group the customers into three separate groups based on Recency, and Frequency. The dataset has been loaded as datamart, you can use console to view top rows of it. Also, pandas has been loaded as pd. We will use the result from the exercise in the next one, where you will group customers based on the MonetaryValue and finally calculate and RFM_Score. 
+Once completed, print the results to the screen to make sure you have successfully created the quartile columns.
+
+# Create labels for Recency and Frequency
+r_labels = range(3, 0, -1); f_labels = range(1, 4)
+# Assign these labels to three equal percentile groups 
+r_groups = pd.qcut(datamart['Recency'], q=3, labels=r_labels)
+# Assign these labels to three equal percentile groups 
+f_groups = pd.qcut(datamart['Frequency'], q=3, labels=f_labels)
+# Create new columns R and F
+datamart = datamart.assign(R=r_groups.values, F=f_groups.values)
+
+11) Calculate RFM Score
+
+Great work, you will now finish the job by assigning customers to three groups based on the MonetaryValue percentiles and then calculate an RFM_Score which is a sum of the R, F, and M values. The datamart has been loaded with the R and F values you have created in the previous exercise.
+
+# Create labels for MonetaryValue 
+m_labels = range(1, 4)
+# Assign these labels to three equal percentile groups
+m_groups = pd.qcut(datamart['MonetaryValue'], q=3, labels=m_labels)
+# Create new column M
+datamart = datamart.assign(M=m_groups.values)
+# Calculate RFM_Score
+datamart['RFM_Score'] = datamart[['R','F','M']].sum(axis=1)
+print(datamart['RFM_Score'].head())
+=> Output: <script.py> output:
+    CustomerID
+    12747    9
+    12748    9
+    12749    9
+    12820    9
+    12822    6
+    Name: RFM_Score, dtype: int64
+
+12) Creating custom segments
+
+It's your turn to create a custom segmentation based on RFM_Score values. You will create a function to build segmentation and then assign it to each customer.
+The dataset with the RFM values, RFM Segment and Score has been loaded as datamart, together with pandas and numpy libraries. Feel free to explore the data in the console.
+
+# Define rfm_level function
+def rfm_level(df):
+    if df['RFM_Score'] >= 10:
+        return 'Top'
+    elif ((df['RFM_Score'] >= 6) and (df['RFM_Score'] < 10)):
+        return 'Middle'
+    else:
+        return 'Low'
+# Create a new variable RFM_Level
+datamart['RFM_Level'] = datamart.apply(rfm_level, axis=1)
+# Print the header with the top 5 rows to the console.
+print(datamart.head())
+=> Output: <script.py> output:
+                Recency  Frequency  MonetaryValue  R  F  M  RFM_Segment  RFM_Score RFM_Level
+    CustomerID                                                                              
+    12747             3         25         948.70  4  4  4          444       12.0       Top
+    12748             1        888        7046.16  4  4  4          444       12.0       Top
+    12749             4         37         813.45  4  4  4          444       12.0       Top
+    12820             4         17         268.02  4  3  3          433       10.0       Top
+    12822            71          9         146.15  2  2  3          223        7.0    Middle
+
+13) Analyzing custom segments
+
+As a final step, you will analyze average values of Recency, Frequency and MonetaryValue for the custom segments you've created. We have loaded the datamart dataset with the segment values you have calculated in the previous exercise. Feel free to explore it in the console. pandas library is also loaded as pd.
+
+# Calculate average values for each RFM_Level, and return a size of each segment 
+rfm_level_agg = datamart.groupby('RFM_Level').agg({
+    'Recency': 'mean',
+    'Frequency': 'mean',
+  	# Return the size of each segment
+    'MonetaryValue': ['mean', 'count']
+}).round(1)
+# Print the aggregated dataset
+print(rfm_level_agg)
+=> Output: <script.py> output:
+              Recency Frequency MonetaryValue      
+                 mean      mean          mean count
+    RFM_Level                                      
+    Low         180.8       3.2          52.7  1075
+    Middle       73.9      10.7         202.9  1547
+    Top          20.3      47.1         959.7  1021
+
+14) Calculate statistics of variables
+
+We have created a pandas DataFrame called data for you with three variables: var1, var2 and var3. You will now calculate average and standard deviation values for the variables, and also print key statistics of the dataset.
+
+# Print the average values of the variables in the dataset
+print(data.mean())
+# Print the standard deviation of the variables in the dataset
+print(data.std())
+# Use `describe` function to get key statistics of the dataset
+print(data.describe())
+=> Output: <script.py> output:
+    var1    251.850
+    var2      1.926
+    var3     12.550
+    dtype: float64
+    var1    90.993
+    var2     2.584
+    var3    34.516
+    dtype: float64
+              var1     var2     var3
+    count  100.000  100.000  100.000
+    mean   251.850    1.926   12.550
+    std     90.993    2.584   34.516
+    min    101.000    0.048    0.002
+    25%    171.750    0.613    0.281
+    50%    250.000    1.175    1.260
+    75%    339.250    2.208    5.568
+    max    397.000   15.312  228.779
+
+15) Detect skewed variables
+
+We have created a dataset called data for you with three variables: var1, var2 and var3. You will now explore their distributions. The plt.subplot(...) call before the seaborn function call allows you to plot several subplots in one chart, you do not have to change it. Libraries seaborn and matplotlib.pyplot have been loaded as sns and plt respectively. Feel free to explore the dataset in the console.
+
+# Plot distribution of var1
+plt.subplot(3, 1, 1); sns.distplot(data['var1'])
+# Plot distribution of var2
+plt.subplot(3, 1, 2); sns.distplot(data['var2'])
+# Plot distribution of var3
+plt.subplot(3, 1, 3); sns.distplot(data['var3'])
+# Show the plot
+plt.show()
+
+16)
 
