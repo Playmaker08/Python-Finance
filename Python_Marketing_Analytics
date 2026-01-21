@@ -3036,5 +3036,938 @@ plt.subplot(3, 1, 3); sns.distplot(data['var3'])
 # Show the plot
 plt.show()
 
-16)
+16) Manage skewness
 
+We've loaded the same dataset named data. Now your goal will be to remove skewness from var2 and var3 as they had a non-symmetric distribution as you've seen in the previous exercise plot. You will visualize them to make sure the problem is solved! Libraries pandas, numpy, seaborn and matplotlib.pyplot have been loaded as pd, np, sns and plt respectively. Feel free to explore the dataset in the console.
+
+# Apply log transformation to var2
+data['var2_log'] = np.log(data['var2'])
+# Apply log transformation to var3
+data['var3_log'] = np.log(data['var3'])
+# Create a subplot of the distribution of var2_log
+plt.subplot(2, 1, 1); sns.distplot(data['var2_log'])
+# Create a subplot of the distribution of var3_log
+plt.subplot(2, 1, 2); sns.distplot(data['var3_log'])
+# Show the plot
+plt.show()
+=> Output: You can see how the skewness was improved with just applying the log transformation!
+
+17) Center and scale manually
+
+We've loaded the same dataset named data. Now your goal will be to center and scale them manually. Libraries pandas, numpy, seaborn and matplotlib.pyplot have been loaded as pd, np, sns and plt respectively. Feel free to explore the dataset in the console.
+
+# Center the data by subtracting average values from each entry
+data_centered = data - data.mean()
+# Scale the data by dividing each entry by standard deviation
+data_scaled = data / data.std()
+# Normalize the data by applying both centering and scaling
+data_normalized = (data - data.mean()) / data.std()
+# Print summary statistics to make sure average is zero and standard deviation is one
+print(data_normalized.describe().round(2))
+=> Output: <script.py> output:
+             var1    var2    var3
+    count  100.00  100.00  100.00
+    mean     0.00    0.00    0.00
+    std      1.00    1.00    1.00
+    min     -1.66   -0.73   -0.36
+    25%     -0.88   -0.51   -0.36
+    50%     -0.02   -0.29   -0.33
+    75%      0.96    0.11   -0.20
+    max      1.60    5.18    6.26
+
+18) Center and scale with StandardScaler()
+
+We've loaded the same dataset named data. Now your goal will be to center and scale them with StandardScaler from sklearn library. Libraries pandas, numpy, seaborn and matplotlib.pyplot have been loaded as pd, np, sns and plt respectively. We have also imported the StandardScaler. Feel free to explore the dataset in the console.
+
+# Initialize a scaler
+scaler = StandardScaler()
+# Fit the scaler
+scaler.fit(data)
+# Scale and center the data
+data_normalized = scaler.transform(data)
+# Create a pandas DataFrame
+data_normalized = pd.DataFrame(data_normalized, index=data.index, columns=data.columns)
+# Print summary statistics
+print(data_normalized.describe().round(2))
+=> Output: <script.py> output:
+             var1    var2    var3
+    count  100.00  100.00  100.00
+    mean     0.00    0.00    0.00
+    std      1.01    1.01    1.01
+    min     -1.67   -0.73   -0.37
+    25%     -0.88   -0.51   -0.36
+    50%     -0.02   -0.29   -0.33
+    75%      0.97    0.11   -0.20
+    max      1.60    5.21    6.30
+
+19) Visualize RFM distributions
+
+We have loaded the dataset with RFM values you calculated previously as datamart_rfm. You will now explore their distributions. The plt.subplot(...) call before the seaborn function call allows you to plot several subplots in one chart, you do not have to change it. Libraries seaborn and matplotlib.pyplot have been loaded as sns and plt respectively. Feel free to explore the dataset in the console.
+
+# Plot recency distribution
+plt.subplot(3, 1, 1); sns.distplot(datamart_rfm['Recency'])
+# Plot frequency distribution
+plt.subplot(3, 1, 2); sns.distplot(datamart_rfm['Frequency'])
+# Plot monetary value distribution
+plt.subplot(3, 1, 3); sns.distplot(datamart_rfm['MonetaryValue'])
+# Show the plot
+plt.show()
+
+20) Pre-process RFM data
+
+We have loaded the dataset with RFM values you calculated previously as datamart_rfm. Since the variables are skewed and are on different scales, you will now un-skew and normalize them.
+The pandas library is loaded as pd, and numpy as np. Take some time to explore the datamart_rfm in the console.
+
+# Unskew the data
+datamart_log = np.log(datamart_rfm)
+# Initialize a standard scaler and fit it
+scaler = StandardScaler()
+scaler.fit(datamart_log)
+# Scale and center the data
+datamart_normalized = scaler.transform(datamart_log)
+# Create a pandas DataFrame
+datamart_normalized = pd.DataFrame(data=datamart_normalized, index=datamart_rfm.index, columns=datamart_rfm.columns)
+
+21) Visualize the normalized variables
+
+Great work! Now you will plot the normalized and unskewed variables to see the difference in the distribution as well as the range of the values. The datamart_normalized dataset from the previous exercise is loaded. The plt.subplot(...) call before the seaborn function call allows you to plot several subplots in one chart, you do not have to change it.
+Libraries seaborn and matplotlib.pyplot have been loaded as sns and plt respectively. Feel free to explore the datamart_normalized in the console.
+
+# Plot recency distribution
+plt.subplot(3, 1, 1); sns.distplot(datamart_normalized['Recency'])
+# Plot frequency distribution
+plt.subplot(3, 1, 2); sns.distplot(datamart_normalized['Frequency'])
+# Plot monetary value distribution
+plt.subplot(3, 1, 3); sns.distplot(datamart_normalized['MonetaryValue'])
+# Show the plot
+plt.show()
+
+22) Run k-means
+
+You will now build 3 clusters with k-means clustering. We have loaded the pre-processed RFM dataset as datamart_normalized. We have also loaded the pandas library as pd.
+You can explore the dataset in the console to get familiar with it.
+
+# Import KMeans 
+from sklearn.cluster import KMeans
+# Initialize KMeans
+kmeans = KMeans(n_clusters=3, random_state=1) 
+# Fit k-means clustering on the normalized data set
+kmeans.fit(datamart_normalized)
+# Extract cluster labels
+cluster_labels = kmeans.labels_
+
+23) Assign labels to raw data
+
+You will now analyze the average RFM values of the three clusters you've created in the previous exercise. We have loaded the raw RFM dataset as datamart_rfm, and the cluster labels as cluster_labels. pandas is available as pd. Feel free to explore the date in the console.
+
+# Create a DataFrame by adding a new cluster label column
+datamart_rfm_k3 = datamart_rfm.assign(Cluster=cluster_labels)
+# Group the data by cluster
+grouped = datamart_rfm_k3.groupby(['Cluster'])
+# Calculate average RFM values and segment sizes per cluster value
+grouped.agg({
+    'Recency': 'mean',
+    'Frequency': 'mean',
+    'MonetaryValue': ['mean', 'count']
+  }).round(1)
+
+24) Calculate sum of squared errors
+
+In this exercise, you will calculate the sum of squared errors for different number of clusters ranging from 1 to 15. In this example we are using a custom created dataset to get a cleaner elbow read. We have loaded the normalized version of data as data_normalized. The KMeans module from scikit-learn is already imported. Also, we have initialized an empty dictionary to store sum of squared errors as sse = {}.
+
+# Fit KMeans and calculate SSE for each k
+for k in range(1, 15):
+    # Initialize KMeans with k clusters
+    kmeans = KMeans(n_clusters=k, random_state=1)
+    # Fit KMeans on the normalized dataset
+    kmeans.fit(data_normalized)
+    # Assign sum of squared distances to k element of dictionary
+    sse[k] = kmeans.inertia_ 
+
+25) Plot sum of squared errors
+
+Now you will plot the sum of squared errors for each value of k and identify if there is an elbow. This will guide you towards the recommended number of clusters to use.
+The sum of squared errors is loaded as a dictionary called sse from the previous exercise. matplotlib.pyplot was loaded as plt, and seaborn as sns.
+
+# Add the plot title "The Elbow Method"
+plt.title('The Elbow Method')
+# Add X-axis label "k"
+plt.xlabel('k')
+# Add Y-axis label "SSE"
+plt.ylabel('SSE')
+# Plot SSE values for each key in the dictionary
+sns.pointplot(x=list(sse.keys()), y=list(sse.values()))
+plt.show()
+=> You can see the elbow is clearly around 3-4 clusters!
+
+26) Prepare data for the snake plot
+
+Now you will prepare data for the snake plot. You will use the 3-cluster RFM segmentation solution you have built previously. You will transform the normalized RFM data into a long format by "melting" the metric columns into two columns - one for the name of the metric, and another for the actual numeric value. We have loaded the normalized RFM data with the cluster labels already assigned. It is loaded as apandas DataFrame named datamart_normalized. Also, pandas is imported as pd. Explore the datamart_normalized in the console before you begin the exercise to get a good sense of its structure!
+
+# Melt the normalized dataset and reset the index
+datamart_melt = pd.melt(
+  					datamart_normalized.reset_index(),             
+# Assign CustomerID and Cluster as ID variables                  
+                    id_vars=['CustomerID', 'Cluster'],
+# Assign RFM values as value variables
+                    value_vars=['Recency', 'Frequency', 'MonetaryValue'], 
+# Name the variable and value
+                    var_name='Metric', value_name='Value'
+					)
+
+27) Visualize snake plot
+
+You will now use the melted dataset to build the snake plot. The melted data is loaded as datamart_melt. The seaborn library is loaded as sns and matplotlib.pyplot is available as plt.
+
+# Add the plot title
+plt.title('Snake plot of normalized variables')
+# Add the x axis label
+plt.xlabel('Metric')
+# Add the y axis label
+plt.ylabel('Value')
+# Plot a line for each value of the cluster variable
+sns.lineplot(data=datamart_melt, x='Metric', y='Value', hue='Cluster')
+plt.show()
+=> This is a great-looking visualization that you can use to name customer personas!
+
+28) Calculate relative importance of each attribute
+
+Now you will calculate the relative importance of the RFM values within each cluster. We have loaded datamart_rfm with raw RFM values, and datamart_rfm_k3 which has raw RFM values and the cluster labels stored as Cluster. The pandas library is also loaded as pd.
+
+# Calculate average RFM values for each cluster
+cluster_avg = datamart_rfm_k3.groupby(['Cluster']).mean() 
+# Calculate average RFM values for the total customer population
+population_avg = datamart_rfm.mean()
+# Calculate relative importance of cluster's attribute value compared to population
+relative_imp = cluster_avg / population_avg - 1
+# Print relative importance score rounded to 2 decimals
+print(relative_imp.round(2))
+=> Output: <script.py> output:
+             Recency  Frequency  MonetaryValue
+    Cluster                                   
+    0           0.84      -0.84          -0.86
+    1          -0.15      -0.35          -0.42
+    2          -0.82       1.67           1.82
+
+29) Plot relative importance heatmap
+
+Now you will build a heatmap visualizing the relative scores for each cluster. We have loaded the relative importance scores as relative_imp. The seaborn library is loaded as sns and the pyplot module from matplotlib is available as plt.
+
+# Initialize a plot with a figure size of 8 by 2 inches 
+plt.figure(figsize=(8, 2))
+# Add the plot title
+plt.title('Relative importance of attributes')
+# Plot the heatmap
+sns.heatmap(data=relative_imp, annot=True, fmt='.2f', cmap='RdYlGn')
+plt.show()
+
+30) Pre-process data
+
+First step in the segmentation process is to pre-process the data. You will apply log transformation, and then normalize the data to prepare it for clustering. We have loaded the dataset with RFMT values as datamart_rfmt. Also, the pandas library is loaded as pd, and numpy as np.
+
+# Import StandardScaler 
+from sklearn.preprocessing import StandardScaler
+# Apply log transformation
+datamart_rfmt_log = np.log(datamart_rfmt)
+# Initialize StandardScaler
+scaler = StandardScaler(); scaler.fit(datamart_rfmt_log)
+# Transform and store the scaled data as datamart_rfmt_normalized
+datamart_rfmt_normalized = scaler.transform(datamart_rfmt_log)
+
+31) Calculate and plot sum of squared errors
+
+Now, you will calculate the sum of squared errors for different number of clusters ranging from 1 to 10. You will use the normalized RFMT data that you created in the previous exercise, it is stored as datamart_rfmt_normalized. The KMeans module from scikit-learn is also imported. Also, we have initialized an empty dictionary to store sum of squared errors as sse = {}.
+
+# Fit KMeans and calculate SSE for each k between 1 and 10
+for k in range(1, 11):
+    # Initialize KMeans with k clusters and fit it 
+    kmeans = KMeans(n_clusters=k, random_state=1).fit(datamart_rfmt_normalized)
+    # Assign sum of squared distances to k element of the sse dictionary
+    sse[k] = kmeans.inertia_ 
+# Add the plot title, x and y axis labels
+plt.title('The Elbow Method')
+plt.xlabel('k')
+plt.ylabel('SSE')
+# Plot SSE values for each k stored as keys in the dictionary
+sns.pointplot(x=list(sse.keys()), y=list(sse.values()))
+plt.show()
+=> Output: The elbow is visible around 3-4 clusters!
+
+32) Build 4-cluster solution
+
+Perfect, you can see the the recommended number of clusters is somewhere between 3 and 4. Now, you will build the latter number of clusters in this exercise.
+The normalized RFMT dataset is available as datamart_rfmt_normalized, feel free to use the console to explore it.
+
+# Import KMeans 
+from sklearn.cluster import KMeans
+# Initialize KMeans
+kmeans = KMeans(n_clusters=4, random_state=1) 
+# Fit k-means clustering on the normalized data set
+kmeans.fit(datamart_rfmt_normalized)
+# Extract cluster labels
+cluster_labels = kmeans.labels_
+
+33) Analyze the segments
+
+Fantastic! Final step - analyzing your segmentation solution - you will analyze the average Recency, Frequency, MonetaryValue and Tenure values for each of the four segments you have built previously. Take some time to analyze them and understand what kind of customer groups and behaviors they represent.
+The RFMT raw data is available as datamart_rfmt, and the cluster labels from the previous exercise is loaded as cluster_labels. We have also loaded the pandas library as pd.
+
+# Create a new DataFrame by adding a cluster label column to datamart_rfmt
+datamart_rfmt_k4 = datamart_rfmt.assign(Cluster=cluster_labels)
+# Group by cluster
+grouped = datamart_rfmt_k4.groupby(['Cluster'])
+# Calculate average RFMT values and segment sizes for each cluster
+grouped.agg({
+    'Recency': 'mean',
+    'Frequency': 'mean',
+    'MonetaryValue': 'mean',
+    'Tenure': ['mean', 'count']
+  }).round(1)
+
+
+CHAPTER 6: PREDICTING CUSTOMER CHURN IN PYTHON
+
+1) Summary statistics for both classes
+
+Consider the following .groupby() code:
+# Group by x and compute the standard deviation
+df.groupby(['x']).std()
+
+Here, a DataFrame df is grouped by a column 'x', and then the standard deviation is calculated across all columns of df for each value of 'x'. The .groupby() method is incredibly useful when you want to investigate specific columns of your dataset. Here, you're going to explore the 'Churn' column further to see if there are differences between churners and non-churners. A subset version of the telco DataFrame, consisting of the columns 'Churn', 'CustServ_Calls', and 'Vmail_Message' is available in your workspace.
+
+# Group telco by 'Churn' and compute the mean
+print(telco.groupby(['Churn']).mean())
+=> <script.py> output:
+           CustServ_Calls  Vmail_Message
+    Churn                               
+    no               1.45          8.605
+    yes              2.23          5.116
+
+# Adapt your code to compute the standard deviation
+print(telco.groupby(['Churn']).mean())
+=> <script.py> output:
+           CustServ_Calls  Vmail_Message
+    Churn                               
+    no              1.164         13.913
+    yes             1.853         11.860
+
+Note: Perhaps unsurprisingly, churners seem to make more customer service calls than non-churners.
+
+2) Churn by State
+
+When dealing with customer data, geographic regions may play an important part in determining whether a customer will cancel their service or not. You may have noticed that there is a 'State' column in the dataset. In this exercise, you'll group 'State' and 'Churn' to count the number of churners and non-churners by state. For example, if you wanted to group by x and aggregate by y, you could use .groupby() as follows: df.groupby('x')['y'].value_counts()
+
+# Count the number of churners and non-churners by State
+print(telco.groupby('State')['Churn'].value_counts())
+=> Output: <script.py> output:
+    State  Churn
+    AK     no       49
+           yes       3
+    AL     no       72
+           yes       8
+    AR     no       44
+                    ..
+    WI     yes       7
+    WV     no       96
+           yes      10
+    WY     no       68
+           yes       9
+    Name: Churn, Length: 102, dtype: int64
+Note: While California is the most populous state in the U.S, there are not as many customers from California in our dataset. Arizona (AZ), for example, has 64 customers, 4 of whom ended up churning. In comparison, California has a higher number (and percentage) of customers who churned. This is useful information for a company!
+
+3) Exploring feature distributions
+
+You saw in the video that the 'Account_Length' feature was normally distributed. Let's now visualize the distributions of the following features using seaborn's distribution plot:
+'Day_Mins'
+'Eve_Mins'
+'Night_Mins'
+'Intl_Mins'
+To create a feature's distribution plot, pass it in as an argument to sns.distplot(). The Telco dataset is available to you as a DataFrame called telco.
+
+# Import matplotlib and seaborn
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Visualize the distribution of 'Day_Mins' (replace one by one)
+sns.distplot(telco['Day_Mins'])
+# Display the plot
+plt.show()
+Note: All of these features appear to be well approximated by the normal distribution. If this were not the case, we would have to consider applying a feature transformation of some kind.
+
+4) Customer service calls and churn
+
+You've already seen that there's not much of a difference in account lengths between churners and non-churners, but that there is a difference in the number of customer service calls left by churners.
+Let's now visualize this difference using a box plot and incorporate other features of interest - do customers who have international plans make more customer service calls? Or do they tend to churn more? How about voicemail plans? Let's find out!
+Recall the syntax for creating a box plot using seaborn:
+sns.boxplot(x = "X-axis variable",
+            y = "Y-axis variable",
+            data = DataFrame)
+If you want to remove outliers, you can specify the additional parameter sym="", and you can add a third variable using hue.
+
+# Import matplotlib and seaborn
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Add "Intl_Plan" as a third variable
+sns.boxplot(x = 'Churn',
+            y = 'CustServ_Calls',
+            data = telco,
+            sym = "",
+            hue = "Intl_Plan")
+# Display the plot
+plt.show()
+=> It looks like customers who do churn end up leaving more customer service calls, unless these customers also have an international plan, in which case they leave fewer customer service calls. This type of information is really useful in better understanding the drivers of churn. It's now time to learn about how to preprocess your data prior to modeling.
+
+5) Encoding binary features
+
+Recasting data types is an important part of data preprocessing. In this exercise you will assign the values 1 to 'yes' and 0 to 'no' to the 'Vmail_Plan' and 'Churn' features, respectively.
+You saw two approaches to doing this in the video - one using pandas, and the other using scikit-learn. For straightforward tasks like this, sticking with pandas is recommended, so that's what we'll do in this exercise. If you're trying to build machine learning pipelines, on the other hand - which is beyond the scope of this course - you can explore using LabelEncoder(). When doing data science, it's important to be aware that there is always more than one way to accomplish a task, and you need to pick the one that is most effective for your application.
+
+# Replace 'no' with 0 and 'yes' with 1 in 'Vmail_Plan'
+telco['Vmail_Plan'] = telco['Vmail_Plan'].replace({'no': 0 , 'yes': 1})
+# Replace 'no' with 0 and 'yes' with 1 in 'Churn'
+telco['Churn'] = telco['Churn'].replace({'no': 0 , 'yes': 1})
+# Print the results to verify
+print(telco['Vmail_Plan'].head())
+print(telco['Churn'].head())
+=> Output: <script.py> output:
+    0    1
+    1    1
+    2    0
+    3    0
+    4    0
+    Name: Vmail_Plan, dtype: int64
+    0    0
+    1    0
+    2    0
+    3    0
+    4    0
+    Name: Churn, dtype: int64
+With these features encoded as 0 and 1, you can now use them in machine learning algorithms.
+
+6) One hot encoding
+
+# Import pandas
+import pandas as pd
+# Perform one hot encoding on 'State'
+telco_state = pd.get_dummies(telco['State'])
+# Print the head of telco_state
+print(telco_state.head())
+=> Output: <script.py> output:
+       AK  AL  AR  AZ  CA  ...  VT  WA  WI  WV  WY
+    0   0   0   0   0   0  ...   0   0   0   0   0
+    1   0   0   0   0   0  ...   0   0   0   0   0
+    2   0   0   0   0   0  ...   0   0   0   0   0
+    3   0   0   0   0   0  ...   0   0   0   0   0
+    4   0   0   0   0   0  ...   0   0   0   0   0
+    
+    [5 rows x 51 columns]
+Notice that this creates an entirely new DataFrame. Once you merge this back into the original telco DataFrame, you can begin using these state features in your models. Do note, however, that we now have many more features in our dataset, so we should consider dropping any that are unnecessary.
+
+7) Feature scaling
+
+# Import StandardScaler
+from sklearn.preprocessing import StandardScaler
+# Scale telco
+telco_scaled = StandardScaler().fit_transform(telco)
+# Add column names back for readability
+telco_scaled_df = pd.DataFrame(telco_scaled, columns=["Intl_Calls", "Night_Mins"])
+# Print summary statistics
+print(telco_scaled_df.describe())
+=> Output: <script.py> output:
+           Intl_Calls  Night_Mins
+    count   3.333e+03   3.333e+03
+    mean   -8.527e-18   7.888e-17
+    std     1.000e+00   1.000e+00
+    min    -1.820e+00  -3.514e+00
+    25%    -6.012e-01  -6.699e-01
+    50%    -1.948e-01   6.486e-03
+    75%     6.179e-01   6.808e-01
+    max     6.307e+00   3.839e+00
+Both features are now on the same scale. In practice, you'll need to carefully ensure this is the case for all features of interest. Next up: feature selection and feature engineering. See you in the next video!
+
+8) Dropping unnecessary features
+
+Some features such as 'Area_Code' and 'Phone' are not useful when it comes to predicting customer churn, and they need to be dropped prior to modeling. The easiest way to do so in Python is using the .drop() method of pandas DataFrames, just as you saw in the video, where 'Soc_Sec' and 'Tax_ID' were dropped: telco.drop(['Soc_Sec', 'Tax_ID'], axis=1)
+Here, axis=1 indicates that you want to drop 'Soc_Sec' and 'Tax_ID' from the columns.
+
+# Drop the unnecessary features
+telco = telco.drop(telco[['Area_Code','Phone']], axis=1)
+# Verify dropped features
+print(telco.columns)
+=> Output: <script.py> output:
+    Index(['Account_Length', 'Vmail_Message', 'Day_Mins', 'Eve_Mins', 'Night_Mins', 'Intl_Mins', 'CustServ_Calls', 'Churn', 'Intl_Plan', 'Vmail_Plan', 'Day_Calls', 'Day_Charge', 'Eve_Calls',
+           'Eve_Charge', 'Night_Calls', 'Night_Charge', 'Intl_Calls', 'Intl_Charge', 'State'],
+          dtype='object')
+
+9) Engineering a new column
+
+Leveraging domain knowledge to engineer new features is an essential part of modeling. This quote from Andrew Ng summarizes the importance of feature engineering:
+Coming up with features is difficult, time-consuming, requires expert knowledge. "Applied machine learning" is basically feature engineering.
+Your job in this exercise is to create a new feature that contains information about the average length of night calls made by customers.
+
+# Create the new feature
+telco['Avg_Night_Calls'] = telco['Night_Mins'] / telco['Night_Calls']
+# Print the first five rows of 'Avg_Night_Calls'
+print(telco['Avg_Night_Calls'].head())
+=> Output: <script.py> output:
+    0    2.689
+    1    2.470
+    2    1.563
+    3    2.212
+    4    1.545
+    Name: Avg_Night_Calls, dtype: float64
+
+10) Predicting whether a new customer will churn
+
+As you saw in the video, to train a model using sklearn:
+Import the model of interest - here, a Support Vector Classifier: from sklearn.svm import SVC
+Instantiate it: svc = SVC()
+Train it, or "fit it", to the data: svc.fit(telco['data'], telco['target'])
+Here, the first argument consists of the features, while the second argument is the label that we are trying to predict - whether or not the customer will churn. After you've fitted the model, you can use the model's .predict() method to predict the label of a new customer.
+This process is true no matter which model you use, and sklearn has many! In this exercise, you'll use LogisticRegression.
+
+# Import LogisticRegression
+from sklearn.linear_model import LogisticRegression
+# Instantiate the classifier
+clf = LogisticRegression()
+# Fit the classifier
+clf.fit(telco[features], telco['Churn'])
+# Predict the label of new_customer
+print(clf.predict(new_customer))
+=> Output: <script.py> output:
+    [0]
+
+11) Training another scikit-learn model
+
+All sklearn models have .fit() and .predict() methods like the one you used in the previous exercise for the LogisticRegression model. This feature allows you to easily try many different models to see which one gives you the best performance. To get you more confident with using the sklearn API, in this exercise you'll try fitting a DecisionTreeClassifier instead of a LogisticRegression.
+
+# Import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
+# Instantiate the classifier
+clf = DecisionTreeClassifier()
+# Fit the classifier
+clf.fit(telco[features], telco['Churn'])
+# Predict the label of new_customer
+print(clf.predict(new_customer))
+=> Output: <script.py> output:
+    [0]
+
+12) Creating training and test sets
+
+Before you create any model, it is important to split your dataset into two: a training set which will be used to build your churn model, and a test set which will be used to validate your model. To do this, you can use the train_test_split() function from sklearn.model_selection.
+You'll practice creating training and test sets in this exercise. The telco DataFrame is available in your workspace.
+
+# Import train_test_split
+from sklearn.model_selection import train_test_split
+# Create feature variable
+X = telco.drop('Churn', axis=1)
+# Create target variable
+y = telco['Churn']
+# Create training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+
+13) Computing accuracy
+
+Having split your data into training and testing sets, you can now fit your model to the training data and then predict the labels of the test data. That's what you'll practice doing in this exercise. So far, you've used Logistic Regression and Decision Trees. Here, you'll use a RandomForestClassifier, which you can think of as an ensemble of Decision Trees that generally outperforms a single Decision Tree.
+Your work in the previous exercises has carried over, and the training and test sets are available in the variables X_train, X_test, y_train, and y_test.
+
+# Import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
+# Instantiate the classifier
+clf = RandomForestClassifier()
+# Fit to the training data
+clf.fit(X_train, y_train)
+# Compute accuracy
+print(clf.score(X_test, y_test))
+=> Output: <script.py> output:
+    0.949
+Looks like this random forest classifier outperforms the support vector classifier.
+
+14) Confusion matrix
+
+# Import confusion_matrix
+from sklearn.metrics import confusion_matrix
+# Print the confusion matrix
+print(confusion_matrix(y_test, y_pred))
+=> Output: <script.py> output:
+    [[844  11]
+     [ 40 105]]
+Note: There are 105 true positives and 40 false negatives.
+
+15) Varying training set size
+
+The size of your training and testing sets influences model performance. Models learn better when they have more training data. However, there's a risk that they overfit to the training data and don't generalize well to new data, so in order to properly evaluate the model's ability to generalize, you need enough testing data. As a result, there is a important balance and trade-off involved between how much you use for training and how much you hold for testing.
+So far, you've used 70% for training and 30% for testing. Let's now use 80% of the data for training and evaluate how that changes the model's performance.
+
+# Import train_test_split
+from sklearn.model_selection import train_test_split
+# Create feature variable
+X = telco.drop('Churn', axis=1)
+# Create target variable
+y = telco['Churn']
+# Create training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+# Import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
+# Instantiate the classifier
+clf = RandomForestClassifier()
+# Fit to the training data
+clf.fit(X_train, y_train)
+# Predict the labels of the test set
+y_pred = clf.predict(X_test)
+# Import confusion_matrix
+from sklearn.metrics import confusion_matrix
+# Print confusion matrix
+print(confusion_matrix(y_test, y_pred))
+=> Output: <script.py> output:
+    [[561   8]
+     [ 28  70]]
+
+16) Computing precision and recall
+
+The sklearn.metrics submodule has many functions that allow you to easily calculate interesting metrics. So far, you've calculated precision and recall by hand - this is important while you develop your intuition for both these metrics. In practice, once you do, you can leverage the precision_score and recall_score functions that automatically compute precision and recall, respectively. Both work similarly to other functions in sklearn.metrics - they accept 2 arguments: the first is the actual labels (y_test), and the second is the predicted labels (y_pred). Let's now try a training size of 90%.
+
+# Import train_test_split
+from sklearn.model_selection import train_test_split
+# Create feature variable
+X = telco.drop('Churn', axis=1)
+# Create target variable
+y = telco['Churn']
+# Create training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+# Import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
+# Instantiate the classifier
+clf = RandomForestClassifier()
+# Fit to the training data
+clf.fit(X_train, y_train)
+# Predict the labels of the test set
+y_pred = clf.predict(X_test)
+# Import precision_score
+from sklearn.metrics import precision_score
+# Print the precision
+print(precision_score(y_test, y_pred))
+=> Output: <script.py> output:
+    0.8809523809523809
+
+## FOR RECALL SCORE INSTEAD:
+# Import recall_score
+from sklearn.metrics import recall_score
+# Print the recall
+print(recall_score(y_test, y_pred))
+=> Output: <script.py> output:
+    0.6981132075471698
+
+17) ROC curve
+
+Let's now create an ROC curve for our random forest classifier. The first step is to calculate the predicted probabilities output by the classifier for each label using its .predict_proba() method. Then, you can use the roc_curve function from sklearn.metrics to compute the false positive rate and true positive rate, which you can then plot using matplotlib.
+A RandomForestClassifier with a training set size of 70% has been fit to the data and is available in your workspace as clf.
+
+# Generate the probabilities
+y_pred_prob = clf.predict_proba(X_test)[:, 1]
+# Import roc_curve
+from sklearn.metrics import roc_curve
+# Calculate the roc metrics
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_prob)
+# Plot the ROC curve
+plt.plot(fpr, tpr)
+# Add labels and diagonal line
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.plot([0, 1], [0, 1], "k--")
+plt.show()
+
+18) Area under the curve
+
+The ROC curve from the previous exercise is viewable on the right. Visually, it looks like a well-performing model. Let's quantify this by computing the area under the curve.
+
+# Import roc_auc_score
+from sklearn.metrics import roc_auc_score
+# Print the AUC
+print(roc_auc_score(y_test, y_pred_prob))
+=> Output: <script.py> output:
+    0.9016858237547891
+
+19) F1 score
+
+As you've discovered, there's a tradeoff between precision and recall. Both are important metrics, and depending on how the business is trying to model churn, you may want to focus on optimizing one over the other. Often, stakeholders are interested in a single metric that can quantify model performance. The AUC is one metric you can use in these cases, and another is the F1 score, which is calculated as below: 2 * (precision * recall) / (precision + recall)
+The advantage of the F1 score is it incorporates both precision and recall into a single metric, and a high F1 score is a sign of a well-performing model, even in situations where you might have imbalanced classes. In scikit-learn, you can compute the f-1 score using using the f1_score function.
+
+# Instantiate the classifier
+clf = RandomForestClassifier()
+# Fit to the training data
+clf.fit(X_train, y_train)
+# Predict the labels of the test set
+y_pred = clf.predict(X_test)
+# Import f1_score
+from sklearn.metrics import f1_score
+# Print the F1 score
+print(f1_score(y_test, y_pred))
+=> Output: <script.py> output:
+    0.7789473684210525
+
+20) Tuning the number of features
+
+The default hyperparameters used by your models are not optimized for your data. The goal of grid search cross-validation is to identify those hyperparameters that lead to optimal model performance. In the video, you saw how the random forest's n_estimators hyperparameter was tuned. Here, you'll practice tuning the max_features hyperparameter. The cv hyperparameter is set to 3 so that the code executes quickly.
+Hyperparameter	Purpose
+max_features	Number of features for best split
+A random forest is an ensemble of many decision trees. The n_estimators hyperparameter controls the number of trees to use in the forest, while the max_features hyperparameter controls the number features the random forest should consider when looking for the best split at decision tree.
+A random forest classifier has been instantiated for you as clf.
+
+# Import GridSearchCV
+from sklearn.model_selection import GridSearchCV
+# Create the hyperparameter grid
+param_grid = {'max_features': ['auto', 'sqrt', 'log2']}
+# Call GridSearchCV
+grid_search = GridSearchCV(clf, param_grid, cv=3)
+# Fit the model
+grid_search.fit(X, y)
+# Print the optimal parameters
+print(grid_search.best_params_)
+=> Output: <script.py> output:
+    {'max_features': 'log2'}
+It looks like taking a log of the number of features leads to optimal model performance. By default, the model takes the square root of the number of features.
+
+21) Tuning other hyperparameters
+
+The power of GridSearchCV really comes into play when you're tuning multiple hyperparameters, as then the algorithm tries out all possible combinations of hyperparameters to identify the best combination. Here, you'll tune the following random forest hyperparameters:
+Hyperparameter	Purpose
+criterion	Quality of Split
+max_features	Number of features for best split
+max_depth	Max depth of tree
+bootstrap	Whether Bootstrap samples are used
+The hyperparameter grid has been specified for you, along with a random forest classifier called clf.
+
+# Import GridSearchCV
+from sklearn.model_selection import GridSearchCV
+# Create the hyperparameter grid
+param_grid = {"max_depth": [3, None],
+              "max_features": [1, 3, 10],
+              "bootstrap": [True, False],
+              "criterion": ["gini", "entropy"]}
+# Call GridSearchCV
+grid_search = GridSearchCV(clf, param_grid, cv=3)
+# Fit the model
+grid_search.fit(X, y)
+# Print the best hyperparameters
+print(grid_search.best_params_) 
+=> Output: <script.py> output:
+    {'bootstrap': True, 'criterion': 'entropy', 'max_depth': None, 'max_features': 10}
+
+22) Randomized search
+
+# Call GridSearchCV
+grid_search = GridSearchCV(clf, param_grid)
+# Fit the model
+grid_search.fit(X, y)
+In the above chunk of code from the previous exercise, you may have noticed that the first line of code did not take much time to run, while the call to .fit() took several seconds to execute.
+This is because .fit() is what actually performs the grid search, and in our case, it was grid with many different combinations. As the hyperparameter grid gets larger, grid search becomes slower. In order to solve this problem, instead of trying out every single combination of values, we could randomly jump around the grid and try different combinations. There's a small possibility we may miss the best combination, but we would save a lot of time, or be able to tune more hyperparameters in the same amount of time.
+In scikit-learn, you can do this using RandomizedSearchCV. It has the same API as GridSearchCV, except that you need to specify a parameter distribution that it can sample from instead of specific hyperparameter values. Let's try it out now! The parameter distribution has been set up for you, along with a random forest classifier called clf.
+
+# Import RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+# Create the hyperparameter grid
+param_dist = {"max_depth": [3, None],
+              "max_features": randint(1, 11),
+              "bootstrap": [True, False],
+              "criterion": ["gini", "entropy"]}
+# Call RandomizedSearchCV
+random_search = RandomizedSearchCV(clf, param_dist, cv=3)
+# Fit the model
+random_search.fit(X, y)
+# Print best parameters
+print(random_search.best_params_)
+=> Output: <script.py> output:
+    {'bootstrap': True, 'criterion': 'entropy', 'max_depth': None, 'max_features': 10}
+
+23) Visualizing feature importances
+
+Your random forest classifier from earlier exercises has been fit to the telco data and is available to you as clf. Let's visualize the feature importances and get a sense for what the drivers of churn are, using matplotlib's barh to create a horizontal bar plot of feature importances.
+
+# Calculate feature importances
+importances = clf.feature_importances_
+# Create plot
+plt.barh(range(X.shape[1]), importances)
+plt.show()
+
+24) Improving the plot
+
+In order to make the plot more readable, we need to do achieve two goals:
+Re-order the bars in ascending order.
+Add labels to the plot that correspond to the feature names.
+To do this, we'll take advantage of NumPy indexing. The .argsort() method sorts an array and returns the indices. We'll use these indices to achieve both goals.
+
+# Sort importances
+sorted_index = np.argsort(importances)
+# Create labels
+labels = X.columns[sorted_index]
+# Clear current plot
+plt.clf()
+# Create plot
+plt.barh(range(X.shape[1]), importances[sorted_index], tick_label=labels)
+plt.show()
+=> Now you have a good understanding of which features are important in driving churn. The plot tells us that CustServ_Calls, Day_Mins and Day_Charge are the most important drivers of churn. What if we added additional sources of data and more features? Let's explore this now.
+
+25) Does model performance improve?
+
+6 new features have been added to the telco DataFrame:
+Region_Code
+Cost_Call
+Total_Charge
+Total_Minutes
+Total_Calls
+Min_Call
+Will this improve the churn model? Let's find out!
+
+# Import necessary modules
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+# Create training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+# Instantiate the classifier
+clf = RandomForestClassifier()
+# Fit to the data
+clf.fit(X_train, y_train)
+# Print the accuracy
+print(clf.score(X_test, y_test))
+=> Output: <script.py> output:
+    0.972
+
+26) Computing other metrics
+
+In addition to accuracy, let's also compute the F1 score of this new model to get a better picture of model performance.
+A 70-30 train-test split has already been done for you, and all necessary modules have been imported.
+
+# Import f1_score
+from sklearn.metrics import f1_score
+# Instantiate the classifier
+clf = RandomForestClassifier()
+# Fit to the data
+clf.fit(X_train, y_train)
+# Predict the labels of the test set
+y_pred = clf.predict(X_test)
+# Print the F1 score
+print(f1_score(y_test, y_pred))
+=> Output: <script.py> output:
+    0.8931297709923663
+
+
+*** FINAL PROJECT: COMBATING SUBSCRIBER CHURN WITH TARGETED MARKETING
+
+Description: Get ready to unleash your marketing analytics skills through machine learning models. In this project, you are a machine learning specialist hired by a video streaming platform to build predictive models for subscriber churn and to uncover insightful segmentation among subscribed users.
+
+AZ Watch is a popular video streaming platform specialized in educational content, where creators publish online video tutorials and lessons about any topic, from speaking a new language to cooking to learning to play a musical instrument.
+
+Their next goal is to leverage AI-driven solutions to analyze and make predictions about their subscribers and improve their marketing strategy around attracting new subscribers and retaining current ones. This project uses machine learning to predict subscribers likely to churn and find customer segments. This may help AZ Watch find interesting usage patterns to build subscriber personas in future marketing plans!
+
+The data/AZWatch_subscribers.csv dataset contains information about subscribers and their status over the last year:
+Column name	             Description
+subscriber_id	         The unique identifier of each subscriber user
+age_group	             The subscriber's age group
+engagement_time	         Average time (in minutes) spent by the subscriber per session
+engagement_frequency	 Average weekly number of times the subscriber logged in the platform (sessions) over a year period
+subscription_status	     Whether the user remained subscribed to the platform by the end of the year period (subscribed), or unsubscribed and terminated her/his services (churned)
+Carefully observe and analyze the features in the dataset, asking yourself if there are any categorical attributes requiring pre-processing?
+
+Help AZ Watch improve their marketing strategies by answering the following questions about their subscribers.
+
+What is the predicted subscriber churn for AZ Watch?
+
+Apply the necessary processing steps to prepare the data for modeling.
+Train three standard classification models and save these as model1, model2, and model3.
+Aim to acheive a minimum accuracy of 90% for at least one of the models. Save your best accuracy score as score.
+AZ Watch wants to establish more personalized and targeted campaigns to reduce subscriber churn. What subscriber segments can be identified in the data to make their campaigns more targeted? Apply a standard clustering method to the numerical features X. Analyze the average values by cluster_id for these numerical features and store them in analysis, rounding values to the nearest whole number.
+
+# Import the necessary modules
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.cluster import KMeans
+import seaborn as sns
+from matplotlib import pyplot as plt
+
+# Specify the file path of your CSV file
+file_path = "data/AZWatch_subscribers.csv"
+
+# Read the CSV file into a DataFrame
+df = pd.read_csv(file_path)
+
+# Separate predictor variables from class label
+X = df.drop(['subscriber_id','subscription_status'], axis=1)
+y = df.subscription_status
+
+# Split intro training and test sets (20% test)
+X_train, X_test, y_train, y_test = train_test_split(
+                        X, y, test_size=.2, random_state=42)
+
+# Data processing: Apply One Hot Encoding on the categorical attribute: age_group
+X_train_prepared = pd.get_dummies(X_train, columns=['age_group'])
+
+# Data processing:Apply the same one hot encoding transformation on the test data
+X_test_prepared = pd.get_dummies(X_test, columns=['age_group'])
+
+# LOGISTIC REGRESSION CLASSIFIER
+# Train a logistic regression classifier for subscriber churn prediction
+model1 = LogisticRegression()
+model1.fit(X_train_prepared, y_train)
+
+# Calculate accuracy score of predictions on test set
+score = model1.score(X_test_prepared, y_test)
+print("\nLogistic regression accuracy score: ", score)
+
+# DECISION TREE CLASSIFIER
+# Train a decision tree classifier for subscriber churn prediction
+model2 = DecisionTreeClassifier(max_depth=3, criterion="gini")
+model2.fit(X_train_prepared, y_train)
+
+# Calculate decision tree's accuracy score of predictions on test set
+score = model2.score(X_test_prepared, y_test)
+print("\nDecision tree accuracy score: ", score)
+
+# RANDOM FOREST ENSEMBLE
+# Train a random forest ensemble classifier for subscriber churn prediction
+model3 = RandomForestClassifier(n_estimators = 10, max_depth=3)
+model3.fit(X_train_prepared, y_train)
+
+# Calculate ensemble's accuracy score of predictions on test set
+score = model3.score(X_test_prepared, y_test)
+print("\nRandom Forest accuracy score: ", score)
+
+
+# SUBSCRIBER SEGMENTATION
+# You can optionally use a method like the elbow criterion and silhouette calculation to choose the number of clusters.
+segmentation = X.drop(['age_group'], axis=1)
+
+# Scale the two numerical data attributes
+scaler = StandardScaler()
+scaler.fit(segmentation)
+segmentation_normalized = scaler.transform(segmentation)
+
+sse = {} # sum of squared errors (distances) to each cluster
+for k in range(1,20):
+    kmeans = KMeans(n_clusters=k, random_state=1)
+    kmeans.fit(segmentation_normalized)
+    sse[k] = kmeans.inertia_ 
+    
+plt.title('Elbow method to choose k')
+plt.xlabel('k');plt.ylabel('SSE')
+sns.pointplot(x=list(sse.keys()), y=list(sse.values()))
+plt.show()
+
+# Apply k-means clustering with 3 clusters
+kmeans = KMeans(n_clusters=3, random_state=1)
+kmeans.fit_predict(segmentation_normalized)
+
+# Add cluster labels as a new attribute in the dataset before scaling
+segmentation["cluster_id"] = kmeans.labels_
+
+# Analyze average feature values and counts per cluster
+analysis = segmentation.groupby(['cluster_id']).agg({
+    'engagement_time': ['mean'],
+    'engagement_frequency':['mean']
+}).round(0)
+analysis
