@@ -1,1 +1,549 @@
+1) Exploring objects and classes
 
+ratio = 12 / 8
+# List all attributes and methods for the ratio object
+print(dir(ratio))
+=> Output: <script.py> output:
+    ['__abs__', '__add__', '__bool__', '__ceil__', '__class__', '__delattr__', '__dir__', '__divmod__', '__doc__', '__eq__', '__float__', '__floor__', '__floordiv__', '__format__', '__ge__', '__getattribute__', '__getformat__', '__getnewargs__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__int__', '__le__', '__lt__', '__mod__', '__mul__', '__ne__', '__neg__', '__new__', '__pos__', '__pow__', '__radd__', '__rdivmod__', '__reduce__', '__reduce_ex__', '__repr__', '__rfloordiv__', '__rmod__', '__rmul__', '__round__', '__rpow__', '__rsub__', '__rtruediv__', '__setattr__', '__sizeof__', '__str__', '__sub__', '__subclasshook__', '__truediv__', '__trunc__', 'as_integer_ratio', 'conjugate', 'fromhex', 'hex', 'imag', 'is_integer', 'real']
+
+# List all attributes and methods for the float class
+print(dir(float))
+=> Output: <script.py> output:
+    ['__abs__', '__add__', '__bool__', '__ceil__', '__class__', '__delattr__', '__dir__', '__divmod__', '__doc__', '__eq__', '__float__', '__floor__', '__floordiv__', '__format__', '__ge__', '__getattribute__', '__getformat__', '__getnewargs__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__int__', '__le__', '__lt__', '__mod__', '__mul__', '__ne__', '__neg__', '__new__', '__pos__', '__pow__', '__radd__', '__rdivmod__', '__reduce__', '__reduce_ex__', '__repr__', '__rfloordiv__', '__rmod__', '__rmul__', '__round__', '__rpow__', '__rsub__', '__rtruediv__', '__setattr__', '__sizeof__', '__str__', '__sub__', '__subclasshook__', '__truediv__', '__trunc__', 'as_integer_ratio', 'conjugate', 'fromhex', 'hex', 'imag', 'is_integer', 'real']
+Note: You can use dir() to list all attributes and methods for an object or class, and then if you need more information on something specific you can use help(), passing, for example, one of the object's methods.
+
+2) Understanding class definitions
+
+Objects and classes consist of attributes (storing the state) and methods (storing the behavior).
+
+class MyCounter:
+  def set_count(self, n):
+    self.n = n
+mc = MyCounter()
+mc.set_count(5)
+print(mc.n)
+=> Note: Notice how you first created a MyCounter class and used self.n to refer to the n attribute inside the class definition, then created a mc object, which allowed you to assign a value of 5 to the object's n attribute using the .set_count() method.
+
+3) Create your first class
+
+In this exercise, you'll start building the Employee class, beginning by defining it as an empty class, and then adding a method allowing you to set an object's .name attribute.
+
+# Create an empty class Employee
+class Employee:
+  pass
+# Create an object emp of class Employee  
+emp = Employee()
+
+# Include a set_name method
+class Employee:
+  def set_name(self, new_name):
+    self.name = new_name
+emp = Employee()
+# Use set_name() on emp to set the name of emp to 'Korel Rossi'
+emp.set_name('Korel Rossi')
+print(emp.name)
+=> Output: <script.py> output:
+    Korel Rossi
+In a few lines of code you created your first custom class and used it to initialize an object from that class!
+
+4) Adding methods and attributes
+
+Now you'll start by creating methods that set attributes, and then add a few methods that manipulate them. As mentioned in the first video, an object-oriented approach is most useful when your code involves complex interactions of many objects. In real production code, classes can have dozens of attributes and methods with complicated logic, but the underlying structure is the same as with the most simple class.
+Your classes in this course will only have a few attributes and short methods, but the organizational principles behind them will be directly translatable to more complicated code.
+
+class Employee:
+  def set_name(self, new_name):
+    self.name = new_name
+  # Add set_salary() method  
+  def set_salary(self, new_salary):
+    self.salary = new_salary 
+emp = Employee()
+# Use set_name to set the name of emp to 'Korel Rossi'
+emp.set_name('Korel Rossi')
+# Set the salary of emp to 50000
+emp.set_salary(50000)
+# Print the emp object's salary
+print(emp.salary)
+=> Output:<script.py> output:
+    50000
+
+5) Extending a class
+
+In the previous exercise, you defined an Employee class with two attributes and two methods that set those attributes. Remember, methods are functions, so anything you can do with a function, you can also do with a method. For example, you can use methods to print or return values, or to make plots, as long as the behavior is appropriate for objects of that class, e.g., an Employee probably wouldn't have a pivot_table() method.
+In this exercise, you'll learn how to use existing class attributes to define new methods. The Employee class and the emp object from the previous exercise are in your script.py.
+
+class Employee:
+  def set_name(self, new_name):
+    self.name = new_name
+  def set_salary(self, new_salary):
+    self.salary = new_salary 
+  # Add a give_raise() method with raise amount as a parameter
+  def give_raise(self, amount):
+    self.salary = self.salary + amount
+# Create the emp object
+emp = Employee()
+emp.set_name('Korel Rossi')
+emp.set_salary(50000)
+# Print the salary
+print(emp.salary)
+# Give emp a raise of 1500
+emp.give_raise(1500)
+print(emp.salary)
+=> Output: <script.py> output:
+    50000
+    51500
+See how you can begin to extend a class' functionality with multiple methods and attributes?
+
+6) Add a class constructor
+
+In this exercise, you'll continue working on the Employee class. Instead of using the methods like set_salary() that you wrote in the previous lesson, you will introduce a constructor that assigns name and salary to the employee at the moment when the object is created.
+Initializing attributes in the constructor is a good idea because this ensures that the object has all the necessary attributes the moment it is created.
+
+## Define the Employee class with a constructor that accepts two arguments, name and salary (the latter with a default value of 0). Create two attributes, also called name and salary, setting their values to the corresponding arguments.
+class Employee:
+  # Create __init__() method
+  def __init__(self, name, salary=0):
+    # Create the name and salary attributes
+    self.name = name
+    self.salary = salary
+  def give_raise(self, amount):
+    self.salary += amount
+  def monthly_salary(self):
+    return self.salary / 12
+emp = Employee("Korel Rossi")
+print(emp.name)
+print(emp.salary)
+=> Output: <script.py> output:
+    Korel Rossi
+    0
+
+## Modify __init__() to check whether the salary parameter is positive, assigning to the salary attribute if true, or assigning 0 and printing "Invalid salary!" if false.
+class Employee:
+  def __init__(self, name, salary=0):
+    self.name = name
+    # Check if salary is positive
+    if salary >= 0:
+      self.salary = salary
+    else:
+      self.salary = 0
+      print("Invalid salary!")
+  def give_raise(self, amount):
+    self.salary += amount
+  def monthly_salary(self):
+    return self.salary / 12
+emp = Employee("Korel Rossi", -1000)
+print(emp.name)
+print(emp.salary)
+=> Output: <script.py> output:
+    Invalid salary!
+    Korel Rossi
+    0
+Note: Conditional statements are ideal for validating class attributes, ensuring only appropriate values can be assigned.
+
+7) Building a class from scratch
+
+In the last exercise of the chapter, you'll step into the role of a Python developer and build your own class from scratch including a constructor! You'll design a Calculator class, including methods that enable the addition, subtraction, or multiplication of two values.
+
+# Define and initialize the Calculator class
+class Calculator:
+  def __init__(self, num_one, num_two):
+    self.num_one = num_one
+    self.num_two = num_two
+  # Create the addition method
+  def addition(self):
+    return self.num_one + self.num_two
+  # Create the subtraction method
+  def subtraction(self):
+    return self.num_one - self.num_two
+  # Create the multiplication method
+  def multiplication(self):
+    return self.num_one * self.num_two    
+
+8) Class-level attributes
+
+Class attributes store data that is shared among all the class instances. They are assigned values in the class body and are referred to using the ClassName. syntax rather than self. syntax when used in methods. In this exercise, you will be a game developer working on a game that will have several players moving on a grid and interacting with each other. As the first step, you want to define a Player class that will just move along a straight line. Player will have a position attribute and move along a grid with a limited number of positions, so the position of Player will have a maximal value.
+
+# Create a Player class
+class Player:
+  # Create MAX_POSITION class attribute
+  MAX_POSITION = 10
+  # Add a constructor, setting position to zero
+  def __init__(self, position = 0):
+    self.position = position
+# Create a player p and print its MAX_POSITION
+p = Player()
+print(p.MAX_POSITION)
+=> Output: <script.py> output:
+    10
+See how the p object's value for MAX_POSITION is automatically set when the object is initialized, without you needing to manually specify it. You can go a step further and customize how the value is assigned - let's give that a go!
+
+9) Implementing logic for attributes
+
+The Player class you previously created was a good start, but one of the key benefits of class-level attributes is their ability to restrict the upper and/or lower boundaries of data.
+In this exercise, you'll modify the Player class definition to restrict the value of position from going above the class-level MAX_POSITION value.
+
+class Player:
+  MAX_POSITION = 10
+  # Define a constructor
+  def __init__(self, position):
+    # Check if position is less than the class-level attribute value
+    if position <= Player.MAX_POSITION:
+      self.position = position
+    # If not, set equal to the class-level attribute
+    else:
+      self.position = Player.MAX_POSITION
+# Create a Player object, p, and print its MAX_POSITITON
+p = Player(6)
+print(p.MAX_POSITION)
+=> Output: <script.py> output:
+    10
+People creating objects from the previous version of the Player class could have set their position above 10, violating the class-level data you set. The new class definition prevents this violation from occurring!
+
+10) Changing class attributes
+
+You learned how to define class attributes and how to access them from class instances. So what will happen if you try to assign another value to a class attribute when accessing it from an instance?
+
+The Player class from the previous exercise has been pre-defined, as shown below:
+class Player:
+    MAX_POSITION = 10
+    def __init__(self, position):
+        if position <= Player.MAX_POSITION:
+              self.position = position
+        else:
+              self.position = Player.MAX_POSITION
+
+# Create Players p1 and p2
+p1 = Player(9)
+p2 = Player(5)
+print("MAX_POSITION of p1 and p2 before assignment:")
+# Print p1.MAX_POSITION and p2.MAX_POSITION
+print(p1.MAX_POSITION)
+print(p2.MAX_POSITION)
+# Assign 7 to p1.MAX_POSITION
+p1.MAX_POSITION = 7
+print("MAX_POSITION of p1 and p2 after assignment:")
+# Print p1.MAX_POSITION and p2.MAX_POSITION
+print(p1.MAX_POSITION)
+print(p2.MAX_POSITION)
+=> Output: <script.py> output:
+    MAX_POSITION of p1 and p2 before assignment:
+    10
+    10
+    MAX_POSITION of p1 and p2 after assignment:
+    7
+    10
+You shouldn't be able to change the data in all the instances of the class through a single instance. Imagine if you could change the time on all the computers in the world by changing the time on your own computer! If you want to change the value of the class attribute at runtime, you need to do it by referring to the class name, not through an instance.
+
+11) Adding an alternative constructor
+
+Class methods are a great way of allowing an alternative way to create an object from a class, such as by a file or by accepting different information and performing a task during the construction to return the required attributes. In this exercise, you'll work with the Person class. The constructor expects a name and age during initialization. You will add a class method that allows initialization by providing name and birth year, where the method will then calculate age from the birth year.
+
+class Person:
+  CURRENT_YEAR = 2024
+  def __init__(self, name, age):
+    self.name = name
+    self.age = age
+  # Add a class method decorator
+  @classmethod
+  # Define the from_birth_year method
+  def from_birth_year(cls, name, birth_year):
+    # Create age
+    age = Person.CURRENT_YEAR - birth_year
+    # Return the name and age
+    return cls(name, age)
+bob = Person.from_birth_year("Bob", 1990)
+
+12) Building a BetterDate Class
+
+You are developing a time series package and want to define your own class for working with dates, BetterDate. The attributes of the class will be year, month, and day. You want to have a constructor that creates BetterDate objects given the values for year, month, and day, but you also want to be able to create BetterDate objects from strings, such as 2021-04-30.
+
+class BetterDate:
+  def __init__(self, year, month, day):
+    self.year, self.month, self.day = year, month, day
+  # Define a class method from_str
+  @classmethod
+  def from_str(cls, datestr):
+    # Split the string at "-"
+    parts = datestr.split("-")
+    year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+    # Return the class instance
+    return cls(year, month, day)
+# Create the xmas object      
+xmas = BetterDate.from_str("2024-12-25")   
+print(xmas.year)
+print(xmas.month)
+print(xmas.day)
+=> Output: <script.py> output:
+    2024
+    12
+    25
+
+13) Create a subclass
+
+The purpose of child classes, or sub-classes, is to customize and extend the functionality of the parent class. Recall the Employee class from earlier in the course. In most organizations, managers have more privileges and responsibilities than regular employees. So it would make sense to introduce a Manager class that has more functionality than Employee.
+But a Manager is still an employee, so the Manager class should be inherited from the Employee class. In this exercise, you'll create a Manager child class and, later in the course, you'll add specific functionality to the class.
+
+class Employee:
+    MIN_SALARY = 30000    
+    def __init__(self, name, salary=MIN_SALARY):
+        self.name = name
+        if salary >= Employee.MIN_SALARY:
+            self.salary = salary
+        else:
+            self.salary = Employee.MIN_SALARY
+    def give_raise(self, amount):
+        self.salary += amount
+# Define a new class Manager inheriting from Employee
+class Manager(Employee):
+    # Add a keyword to leave this class empty
+    pass
+# Define a Manager object
+mng = Manager("Debbie Lashko", 86500)
+# Print mng's name
+print(mng.name)
+=> Output: <script.py> output:
+    Debbie Lashko
+The Manager class currently only has the same functionality as the Employee class, but soon you'll discover how to extend the subclass with attributes and methods that are tailored, and cannot be used by the Parent class.
+
+14) Customize a subclass
+
+Inheritance is powerful because it allows us to reuse and customize code without rewriting existing code. By calling methods of the parent class within the child class, we reuse all the code in those methods, making our code concise and manageable. In this exercise, you'll continue working with the Manager class that is inherited from the Employee class. You'll add a constructor that builds on the Employee constructor, taking an additional argument where you can specify the project that the manager is working on.
+A simplified version of the Employee class, as well as the beginning of the Manager class you previously created, has been provided for you in script.py.
+
+class Employee:
+  def __init__(self, name, salary=30000):
+    self.name = name
+    self.salary = salary
+  def give_raise(self, amount):
+    self.salary += amount
+class Manager(Employee):
+  # Add a constructor 
+  def __init__(self, name, salary=50000, project=None):
+    # Call the parent's constructor   
+    Employee.__init__(self, name, salary)
+    # Assign project attribute
+    self.project = project
+  def display(self):
+    print("Manager ", self.name)
+=> Output: Inheritance is an incredibly powerful technique to extend functionality by building on top of an existing class.
+
+15) Method inheritance
+
+In this exercise, you'll extend the Manager class (which is inherited from the Employee class), created in the previous exercise, by creating a method called give_raise(). It will be similar to the method of the same name in the Employee class, but include an additional argument called bonus.
+The Manager class you previously created has been provided for you in script.py.
+
+class Employee:
+  def __init__(self, name, salary=30000):
+    self.name = name
+    self.salary = salary
+  def give_raise(self, amount):
+    self.salary += amount
+class Manager(Employee):
+  def display(self):
+    print("Manager ", self.name)
+  def __init__(self, name, salary=50000, project=None):
+    Employee.__init__(self, name, salary)
+    self.project = project
+  # Add a give_raise method
+  def give_raise(self, amount, bonus=1.05):
+    new_amount = amount * bonus
+    Employee.give_raise(self, new_amount)
+mngr = Manager("Ashta Dunbar", 78500)
+mngr.give_raise(2000, bonus=1.03)
+print(mngr.salary)
+=> Output: <script.py> output:
+    80560.0
+
+16) Inheritance of class attributes
+
+Earlier in the course, you learned about class attributes and methods that are shared among all the instances of a class. How do they work with inheritance?
+In this exercise, you'll create a subclass of the Player class you worked with earlier in the chapter and explore the inheritance of class attributes and methods.
+The Player class has been defined for you, and the code provided here:
+class Player:
+    MAX_POSITION = 10
+    def __init__(self):
+      self.position = 0
+    def move(self, steps):
+      if self.position + steps < Player.MAX_POSITION:
+        self.position += steps 
+      else:
+        self.position = Player.MAX_POSITION                 
+
+# Create a Racer class inheriting from Player
+class Racer(Player):
+  # Create MAX_POSITION with a value of 15
+  MAX_POSITION = 15
+# Create a Player and a Racer objects
+p = Player()
+r = Racer()
+print("p.MAX_POSITION = ", p.MAX_POSITION)
+print("r.MAX_POSITION = ", r.MAX_POSITION)
+=> Output: <script.py> output:
+    p.MAX_POSITION =  10
+    r.MAX_POSITION =  15
+Note: Class attributes CAN be inherited, and the value of class attributes CAN be overwritten in the child class
+
+17) Overloading equality
+
+When comparing two objects of a custom class using ==, Python by default compares just the memory chunks that the objects point to, not the data contained in the objects. To override this behavior, the class can implement a special method, which accepts two arguments, the objects to be compared, and returns True or False. This method will be implicitly called when two objects are compared.
+The BankAccount class from the previous chapter is available for you in the script.py. It has two attributes, balance and number, and a withdraw() method. Two bank accounts with the same balance are not necessarily the same account, but a bank account usually has an account number, and two accounts with the same account number should be considered the same.
+
+class BankAccount:
+  # Modify to initialize a number attribute
+  def __init__(self, number, balance=0):
+    self.balance = balance
+    self.number = number
+  def withdraw(self, amount):
+    self.balance -= amount 
+  # Define __eq__ that returns True if the number attributes are equal 
+  def __eq__(self, other):
+    return self.number == other.number    
+acct1 = BankAccount(123, 1000)
+acct2 = BankAccount(123, 1000)
+acct3 = BankAccount(456, 1000)
+print(acct1 == acct2)
+print(acct1 == acct3)
+=> Output: <script.py> output:
+    True
+    False
+Notice that your method compares just the account numbers, but not balances. What would happen if two accounts have the same account number but different balances? The code you wrote will treat these accounts as equal, but it might be better to throw an error - an exception - instead, informing the user that something is wrong. At the end of the chapter, you'll learn how to define your own exception classes to create these kinds of custom errors.
+
+18) Checking class equality
+
+In the previous exercise, you defined a BankAccount class with a number attribute that was used for comparison. But if you were to compare a BankAccount object to an object of another class that also has a number attribute, you could end up with unexpected results.
+
+For example, consider two classes
+class Phone:
+    def __init__(self, number):
+        self.number = number
+    def __eq__(self, other):
+        return self.number == \
+               other.number
+
+pn = Phone(873555333)
+
+class BankAccount:
+    def __init__(self, number):
+        self.number = number
+    def __eq__(self, other):
+        return self.number == \
+               other.number
+
+acct = BankAccount(873555333)
+Running acct == pn will return True, even though it compares a phone number with a bank account number.
+
+It is good practice to check the class of objects passed to the __eq__() method to make sure the comparison makes sense.
+
+class BankAccount:
+  def __init__(self, number, balance=0):
+    self.number, self.balance = number, balance
+  def withdraw(self, amount):
+    self.balance -= amount 
+  # Modify to add a check for the class type
+  def __eq__(self, other):
+    return (self.number == other.number) and (type(self) == type(other))    
+acct = BankAccount(873555333)      
+pn = Phone(873555333)
+# Check if the two objects are equal
+print(acct == pn)
+=> Output: <script.py> output:
+    False
+Now, only comparing objects of the same class, BankAccount, could return True. Another way to ensure that an object has the same type as you expect is to use the isinstance(obj, Class) function. This can be helpful when handling inheritance, as Python considers an object to be an instance of both the parent and the child class. Try running pn == acct in the console (with reversed order of equality). What does this tell you about the __eq__() method?
+
+19) String representation of objects
+
+There are two special methods in Python that return a string representation of an object. __str__() is called when you use print() or str() on an object, and __repr__() is called when you use repr() on an object, print the object in the console without calling print(), or instead of __str__() if __str__() is not defined.
+__str__() is supposed to provide a "user-friendly" output describing an object, and __repr__() should return the expression that, when evaluated, will return the same object, ensuring the reproducibility of your code.
+
+class Employee:
+    def __init__(self, name, salary=30000):
+        self.name, self.salary = name, salary
+    # Add the __repr__() method  
+    def __repr__(self):
+        emp_str = f"Employee('{self.name}', {self.salary})"
+        return emp_str    
+emp1 = Employee("Amar Howard", 30000)
+print(repr(emp1))
+emp2 = Employee("Carolyn Ramirez", 35000)
+print(repr(emp2))
+=> Output: <script.py> output:
+    Employee('Amar Howard', 30000)
+    Employee('Carolyn Ramirez', 35000)
+
+    # Add the __str__() method
+    def __str__(self):
+        emp_str = f"""Employee name: {self.name}
+Employee salary: {self.salary}"""
+        return emp_str
+
+emp1 = Employee("Amar Howard", 30000)
+print(emp1)
+emp2 = Employee("Carolyn Ramirez", 35000)
+print(emp2)
+=> Output: <script.py> output:
+    Employee name: Amar Howard
+    Employee salary: 30000
+    Employee name: Carolyn Ramirez
+    Employee salary: 35000
+
+20) Catching exceptions
+
+Before you start writing your own custom exceptions, let's make sure you have the fundamentals of handling exceptions down. In this exercise, you are given a function invert_at_index(x, ind) that takes two arguments, a list x and an index ind, and inverts the element of the list at that index. For example invert_at_index([5,6,7], 0) returns 1/5, or 0.2 .
+Your goal is to implement error-handling to raise custom exceptions based on the type of error that occurs.
+
+# Modify the function to catch exceptions
+def invert_at_index(x, ind):
+  try:
+    return 1/x[ind]
+  except ZeroDivisionError:
+    print("Cannot divide by zero!")
+  except IndexError:
+    print("Index out of range!")
+a_list = [5,6,0,7]
+# Works okay
+print(invert_at_index(a_list, 1))
+# Potential ZeroDivisionError
+print(invert_at_index(a_list, 2))
+# Potential IndexError
+print(invert_at_index(a_list, 5))
+=> Output: <script.py> output:
+    0.16666666666666666
+    Cannot divide by zero!
+    None
+    Index out of range!
+    None
+Of course, you can do much more in the except block than just print a message. For example, it might make sense for a function to return a special value when an error occurs. It's important to note, though, that this code will only be able to handle the two particular errors specified in the except blocks. Any other error would still terminate the program.
+
+21) Custom exceptions
+
+You don't have to rely solely on built-in exceptions like IndexError: you can define custom exceptions that are more specific to your application. You can also define exception hierarchies. All you need to define an exception is a class inherited from the built-in Exception class or one of its subclasses.
+Earlier in the course, you defined an Employee class and used print statements and default values to handle errors like creating an employee with a salary below the minimum or giving a raise that is too large. A better way to handle this situation is to use exceptions - because these errors are specific to our application (unlike, for example, a division by zero error, which is universal), it makes sense to use custom exception classes.
+
+# Define SalaryError inherited from ValueError
+class SalaryError(ValueError): 
+  pass
+# Define BonusError inherited from SalaryError
+class BonusError(SalaryError): 
+  pass
+
+class Employee:
+  MIN_SALARY = 30000
+  MAX_RAISE = 5000
+  def __init__(self, name, salary = 30000):
+    self.name = name
+    # If salary is too low
+    if salary < Employee.MIN_SALARY:
+      # Raise a SalaryError exception
+      raise SalaryError("Salary is too low!")
+    self.salary = salary
+
+# Raise exceptions  
+  def give_bonus(self, amount):
+    if amount > Employee.MAX_BONUS:
+      raise BonusError("The bonus amount is too high!")
+    elif self.salary + amount < Employee.MIN_SALARY:
+      raise SalaryError("The salary after bonus is too low!")
+    self.salary += amount
+Note: Notice that if you raise an exception inside an if statement, you don't need to add an else branch to run the rest of the code. Because raise terminates the function, the code after raise will only be executed if an exception did not occur.
+
+22)
