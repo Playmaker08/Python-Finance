@@ -546,4 +546,743 @@ class Employee:
     self.salary += amount
 Note: Notice that if you raise an exception inside an if statement, you don't need to add an else branch to run the rest of the code. Because raise terminates the function, the code after raise will only be executed if an exception did not occur.
 
-22)
+22) Creating and using classes
+
+To help recall the fundamentals of object-oriented programming, you'll create a Computer class from start-to-finish.
+
+class Computer:
+  # Create an __init__() method with the storage parameter
+  def __init__(self, storage):
+    self.storage = storage
+
+    # Allow for external_storage to be added to self.storage
+  def add_external_drive(self, external_storage):
+    self.storage += external_storage
+    print(f"Your computer now has {self.storage} GB of storage.")
+
+    # Add a class method to turn on your computer
+  @classmethod
+  def power_on(cls):
+    print("Your computer is starting up!")
+
+    # Add an external drive of 256 GB
+my_computer.add_external_drive(256)
+
+=> Output: <script.py> output:
+    Your computer now has 768 GB of storage.
+
+23) Inheriting a Computer class
+
+In this exercise, you'll practice inheritance by creating a class called Tablet. Below is the Computer class, which has been defined for you to use in the following steps.
+
+class Computer:
+  def __init__(self, software_version):
+    self.software_version = software_version
+  def install_app(self, app_name, app_store):
+    if app_store:
+      print(f"Installing {app_name} from App Store.")
+    else:
+      print(f"Installing {app_name} from other provider.")
+  def update_software(self, new_software_version):
+      self.software_version = new_software_version
+
+class Tablet(Computer):
+  pass
+# Create the my_tablet instance
+my_tablet = Tablet("1.1.1")
+# Update my_tablet's software to version 1.1.2
+my_tablet.update_software("1.1.2")
+print(my_tablet.software_version)
+
+class Tablet(Computer):
+  # Override the install_app() method
+  def install_app(self, app_name):
+    print(f"{app_name} is being installed from the Tablet App Store.") 
+my_tablet = Tablet("1.1.1")
+# Call the new install_app() method
+my_tablet.install_app("DataCamp")
+=> Output: <script.py> output:
+    DataCamp is being installed from the Tablet App Store.
+Inheritance is one of Python's most powerful object-oriented tools, and makes it easy to share common functionality between classes.
+
+24) Overloading the == operator
+
+Python's built-in operators are handy, especially when comparing instances of a class. When building classes, magic methods can be used to change the functionality of these operators. Here, you'll overload the == operator to determine if two instances of a Computer are equal.
+
+class Computer:
+  def __init__(self, device_id, storage):
+    self.device_id = device_id
+    self.storage = storage
+  # Overload the == operator using a magic method
+  def __eq__(self, other):
+    # Return a boolean based on the value of device_id
+    return self.device_id == other.device_id
+pre_upgrade_computer = Computer("Y391Hky6", 256)
+post_upgrade_computer = Computer("Y391Hky6", 1024)
+# Create two instances of Computer, compare using ==
+print(pre_upgrade_computer == post_upgrade_computer)
+=> Output: <script.py> output:
+    True
+
+25) Overloading ==
+
+Overloading allows for the functionality of built-in operators be customized using magic methods. In this example, you'll overload the == comparison operator for a Computer class, using the serial number for each device.
+
+class Computer:
+  def __init__(self, serial_number):
+    self.serial_number = serial_number
+  # Overload the == operator using a magic method
+  def __eq__(self, other):
+    # Define equality using serial_number
+    return self.serial_number == other.serial_number
+# Validate two Computers with the same serial_number are equal
+first_computer = Computer("81023762")
+second_computer = Computer("81023762")
+print(first_computer == second_computer)
+=> Output: <script.py> output:
+    True
+By implementing your own version of the __eq__() method, you changed how == can be used to compare two Computer's.
+
+26) Overloading +
+
+Comparison operators aren't the only operators that can be overloaded. Classes in Python can implement custom functionality for arithmetic operators such as + and -. In this example, you'll practice overloading the + operator for a Storage class.
+
+class Storage:
+  def __init__(self, capacity):
+    self.capacity = capacity
+  def __add__(self, other):  # Overload the + operator
+    # Create a Storage object with the sum of capacity
+    return Storage(self.capacity + other.capacity)
+onboard_storage = Storage(128)
+external_drive = Storage(64)
+# Add the two Storage objects, show the total
+total_storage = onboard_storage + external_drive
+print(total_storage.capacity)
+=> Output: <script.py> output:
+    192
+Overloading arithmetic operators allows for you to implement custom functionality to your classes, like adding Storage units.
+
+27) Creating a Network of Computers
+
+Now, you'll overload the + operator to create a Network of devices when two Computers are added. The following class has already been defined for you:
+class Network:
+  def __init__(self, ip_addresses):
+    self.ip_addresses = ip_addresses
+Here, ip_addresses is a list of IP addresses, each a string of numbers and dots.
+
+class Computer:
+  # __init__() should define operating_system and ip_address
+  # as instance-level attributes
+  def __init__(self, operating_system, ip_address):
+    self.operating_system = operating_system
+    self.ip_address = ip_address
+
+  # Overload the + operator to create a Network of devices 
+  # if the operating_systems are the same
+  def __add__(self, other):
+    if self.operating_system == other.operating_system:
+    	return Network([self.ip_address, other.ip_address])
+    raise Exception("Incompatible operating systems.")
+
+# Build a network using Morgan and Jenny's Computers
+morgans_computer = Computer("Windows", "182.112.81.991")
+jennys_computer = Computer("Windows", "177.511.64.162")
+network = morgans_computer + jennys_computer
+=> With just a few lines of code, you customized and combined two Computer objects to create a Network. Keep up the great work!
+
+28) Multiple inheritance
+
+In this exercise, you'll practice implementing multiple inheritance by creating a new class, called Smartphone.
+
+Below are the definitions for the Computer and Telephone class, which will be used when creating the Smartphone class. Make sure to take a close look at both of these classes!
+
+class Computer:
+  def __init__(self, brand):
+    self.brand = brand
+  def browse_internet(self):
+    print(f"Using {self.brand}'s default internet browser.")
+class Telephone:
+  def __init__(self, phone_number):
+    self.phone_number = phone_number
+  def make_call(self, recipient):
+    print(f"Calling {recipient} from {self.phone_number}")
+
+# Define a Smartphone class that inherits from Computer and
+# Telephone, and takes parameters brand, phone_number, and 
+# music_app
+class Smartphone(Computer, Telephone):
+  def __init__(self, brand, phone_number, music_app):
+    # Call the contructor for the Computer and Telephone
+    # class, define the music_app instance-level attribute
+    Computer.__init__(self, brand)
+    Telephone.__init__(self, phone_number)
+    self.music_app = music_app
+
+  # Create an instance method to play a song on the
+  # smartphone's music app
+  def play_music(self, song):
+    print(f"Playing {song} using {self.music_app}")
+
+# Browse the internet, make a call to Alex, and play music
+personal_phone.browse_internet()
+personal_phone.make_call("Alex")
+personal_phone.play_music("Creeks and Highways")
+=> Output: <script.py> output:
+    Using Macrosung's default internet browser.
+    Calling Alex from 801-932-7629
+    Playing Creeks and Highways using Dotify
+Just like that, you've built a class that inherits from two classes and implements it's own custom functionality.
+
+29) Multilevel inheritance
+
+You've gotten your hands dirty performing both single and multiple inheritance. In this exercise, you'll implement multilevel inheritance by building a new version of the Smartphone class.
+To help you get started, the Computer and Tablet classes have been defined and provided below. It' important to note that Tablet inherits from the Computer class. Good luck!
+
+class Computer:
+  def __init__(self, brand):
+    self.brand = brand
+  def browse_internet(self):
+    print(f"Using {self.brand}'s default internet browser.")
+
+class Tablet(Computer):
+  def __init__(self, brand, apps):
+    Computer.__init__(self, brand)
+    self.apps = apps
+  def uninstall_app(self, app):
+    if app in self.apps:
+      self.apps.remove(app)
+
+# Create a Smartphone class that inherits from Tablet
+class Smartphone(Tablet):
+  def __init__(self, brand, apps, phone_number):
+    Tablet.__init__(self, brand, apps)
+    self.phone_number = phone_number
+  # Create send_text to send a message to a recipient
+  def send_text(self, message, recipient):
+    print(f"Sending {message} to {recipient} from {self.phone_number}")
+# Create an instance of Smartphone, call methods in each class
+personal_phone = Smartphone("Macrosung", ["Weather", "Camera"], "801-932-7629")    
+personal_phone.browse_internet()
+personal_phone.uninstall_app("Weather")
+personal_phone.send_text("Time for a new mission!", "Chuck")
+=> Output: <script.py> output:
+    Using Macrosung's default internet browser.
+    Sending Time for a new mission! to Chuck from 801-932-7629
+While similar in a number of ways, multilevel inheritance is implemented slightly different than multiple inheritance.
+
+30) Using the Typing library
+
+The typing library helps when adding type hints to objects such as dictionaries and lists, as well as the elements in those objects. In this exercise, you'll practice exactly that.
+
+# Import Dict and List from typing
+from typing import Dict, List
+# Type hint the roster of codenames and number of missions
+roster: Dict[str, int] = {
+  "Chuck": 37,
+  "Devin": 2,
+  "Steven": 4
+}
+# Unpack the values and add type hints for the new list
+agents: List[str] = [
+  f"Agent {agent}, {missions} missions" \
+  for agent, missions in roster.items()
+]
+=> Using the typing library to perform type hinting helps to add even more clarity when reading and writing your code.
+
+31) Type hinting with custom classes
+
+In this exercise, you'll use built-in type keywords, the typing library, and your own custom class to practice type hinting. List has been imported from the typing library.
+
+# Define an agent class with a constructor, add type hints
+class Agent:
+  def __init__(self, codename: str, missions: int):
+    self.codename: str = codename
+    self.missions: int = missions
+
+# Create the add_mission() method, add type hinting
+  def add_mission(self, location: str) -> None:
+    self.missions += 1
+    print(f"{self.codename} completed a mission in " + \
+          f"{location}. This was mission #{self.missions}")
+
+# Create an Agent object, add type hints
+chuck: Agent = Agent("Charles Carmichael", 37)
+# Create a list of locations, add a mission for each
+locations: List[str] = ["Burbank", "Paris", "Prague"]
+for location in locations:
+  chuck.add_mission(location)
+=> Output: <script.py> output:
+    Charles Carmichael completed a mission in Burbank. This was mission #38
+    Charles Carmichael completed a mission in Paris. This was mission #39
+    Charles Carmichael completed a mission in Prague. This was mission #40
+You used three different tools to add type hints to your code. You're going to have the most readable code on the block...
+
+32) Accessing the balance attribute
+
+In this exercise, you'll practice accessing the balance attribute of a BankAccount class that's implemented a descriptor using the @property decorator. The BankAccount class has been created for you, as shown below:
+
+class BankAccount:
+  def __init__(self, balance):
+    self.balance = balance
+  @property
+  def balance(self):
+    return f"${round(self._balance, 2)}"
+  @balance.setter
+  def balance(self, new_balance):
+    if new_balance > 0:
+      self._balance = new_balance
+  @balance.deleter
+  def balance(self):
+    print("Deleting the 'balance' attribute")
+    del self._balance
+
+checking_account = BankAccount(100)
+# Output the balance of the checking_account object
+print(checking_account.balance)
+# Set the balance to 150, output the new balance
+checking_account.balance = 150
+print(checking_account.balance)
+# Delete the balance attribute, attempt to print the balance
+del checking_account.balance
+=> Output: <script.py> output:
+    $100
+    $150
+    Deleting the 'balance' attribute
+
+33) Using the @property decorator
+
+Now that you've practiced working with a class that implements descriptors, you'll get to build your own using the @property decorator.
+
+class BankAccount:
+  def __init__(self, email):
+    self.email = email
+  # Define and decorate a method to begin the process of 
+  # creating a descriptor for the email attribute 
+  @property
+  def email(self):
+    return f"Email for this account is: {self._email}"
+
+# Build a method to update the value of email using the
+  # new email address, if it contains the "@" symbol
+  @email.setter
+  def email(self, new_email_address):
+    if "@" in new_email_address:
+      self._email = new_email_address
+    else:
+      print("Please make sure to enter a valid email.")
+
+# Define a method to be used when deleting the email attribute
+  @email.deleter
+  def email(self):
+    del self._email
+    print("Email deleted, make sure to add a new email!")
+=> Note: When creating descriptors with the property decorator, "setter" and "deleter" methods will be defined using the attribute name and decorated to control how an attribute is stored and deleted.
+
+34) Accessing attributes that don't exist
+
+Sometimes, you may try to access an attribute that does not exist in the namespace for an object. When this happens, typically, an AttributeError is thrown. In this exercise, you'll practice handling this scenario using one of Python's magic methods.
+
+class BankAccount:
+  def __init__(self, account_number):
+    self.account_number = account_number
+  
+  # Define a magic method to handle references to attribute
+  # not in an object's namespace
+  def __getattr__(self, name):
+    # Output a message to instruct further action
+    print(f"""{name} is not defined in BankAccount object.
+    	Please define this attribute if needed.""")
+# Create a BankAccount object, reference routing_number
+checking_account = BankAccount("123456")
+checking_account.routing_number
+=> Output: <script.py> output:
+    routing_number is not defined in BankAccount object.
+        	Please define this attribute if needed.
+
+35) Customizing attribute assignment with __setattr__
+
+Previously, we used descriptors to implement logic that was run when a specific attribute was retrieved, set, or deleted. But what if we'd like to make sure a certain block of code runs each time any attribute is set? In this exercise, you'll practice doing this with a Python magic method.
+
+class BankAccount:
+  def __init__(self, account_number):
+    self.account_number = account_number
+  
+  # Define a method to be executed when setting attributes
+  def __setattr__(self, name, value):
+    pass
+
+class BankAccount:
+  def __init__(self, account_number):
+    self.account_number = account_number
+  def __setattr__(self, name, value):
+    # If the name is in below list, set the value, otherwise
+    # print a message
+    if name in ["account_number", "balance"]:
+      print(f"{name} is an allowed attribute.")
+      self.__dict__[name] = value
+    else:
+      print(f"Invalid Attribute: {name}")
+# Create a BankAccount object, attempt to set attributes
+savings_account = BankAccount("12345678")
+savings_account.balance = 100
+savings_account.beneficiary = "Anna Wu"
+=> Output: <script.py> output:
+    account_number is an allowed attribute.
+    balance is an allowed attribute.
+    Invalid Attribute: beneficiary
+
+36) Building a Playlist
+
+Now that you've gotten the hang of building custom iterators, you'll practice creating your own Playlist class, to play your favorite songs.
+
+class Playlist:
+  def __init__(self, songs, shuffle=False):
+    self.songs = songs
+    self.index = 0
+    if shuffle:
+      random.shuffle(self.songs)
+  # Define a magic method that returns the iterator object
+  def __iter__(self):
+    return self
+
+# Define a magic a method to iterate through songs
+  def __next__(self):
+    if self.index >= len(self.songs):
+      raise StopIteration
+    # Pull the next song, increment index, and return
+    song = self.songs[self.index]
+    self.index += 1
+    return song
+
+# Shuffle a Playlist, use for loop to iterate through
+favorite_songs = Playlist(["Ticking", "Tiny Dancer"], shuffle=True)
+for song in favorite_songs:
+  print(song)
+=> Output: <script.py> output:
+    Tiny Dancer
+    Ticking
+Using the __iter__() and __next__() magic methods, you created a Playlist that can shuffle and play a sequence of songs.
+
+37) Handling a StopIteration error
+
+The Playlist class from the previous exercise has been updated to print a message including a current song being played, and is shown below. Using this custom iterator, you'll practice handling a StopIteration exception gracefully.
+
+class Playlist:
+  def __init__(self, songs, shuffle=False):
+    self.songs = songs
+    self.index = 0
+    if shuffle:
+      random.shuffle(self.songs)
+  def __iter__(self):
+    return self
+  def __next__(self):
+    if self.index >= len(self.songs):
+      raise StopIteration
+    print(f"Playing {self.songs[self.index]}")
+    self.index += 1
+
+# Create a classic rock playlist using the songs list
+songs = ["Hooked on a Feeling", "Yesterday", "Mr. Blue Sky"]
+classic_rock_playlist = Playlist(songs, shuffle=True)
+while True:
+	try:
+		# Play the next song in the playlist
+		next(classic_rock_playlist)	
+	# If there is a StopIteration error, print a message and
+    # stop the playlist
+	except StopIteration:
+		print("Reached end of playlist!")
+		break
+=> Output: <script.py> output:
+    Playing Mr. Blue Sky
+    Playing Hooked on a Feeling
+    Playing Yesterday
+    Reached end of playlist!
+Implementing and handling a StopIteration exception helps to ensure the last element of an iterator is treated properly, and helps to avoid infinite loops.
+
+38) Creating a Lottery iterator
+
+You've practiced building an iterator, and handling StopIteration exceptions when using an iterator. Now, it's time to put it all together. You'll be building a Lottery iterator to draw integers at random and create a winning number.
+
+class Lottery:
+  def __init__(self, number_digits):
+    self.number_digits = number_digits
+    self.counter = 0
+  # Create an iterator using a magic method
+  def __iter__(self):
+    return self
+
+  # Check if the number of digits have been reached, or else
+  # pull another number
+  def __next__(self):
+    if self.counter < self.number_digits:
+      self.counter += 1
+      return random.randint(0, 9)
+    raise StopIteration
+
+charity_lottery = Lottery(4)
+# Announce all four numbers
+while True:
+  try:
+    print(next(charity_lottery))
+  # Handle the last element of the iterator, print a message
+  except StopIteration:
+    print("... is the winner!")
+    break
+=> Output: <script.py> output:
+    9
+    2
+    5
+    2
+    ... is the winner!
+Not only did you build an iterator, but you traversed its elements to mimic a lottery drawing.
+
+39) Creating an Abstract Base Class
+
+Abstract base classes are a great way to create a "blueprint" for a number of classes that are quite similar. In this example, you'll create an abstract base class called Company with one abstract and one concrete method.
+
+# Import the ABC class and abstractmethod decorator from abc
+from abc import ABC, abstractmethod
+# Define an abstract base class called Company
+class Company(ABC):
+  # Create an abstract method called create_budget()
+  @abstractmethod
+  def create_budget(self):
+    pass
+  # Create a concrete method with name hire_employee()
+  def hire_employee(self, name): 
+    print(f"Welcome to the team, {name}!")
+
+40) Implementing Abstract Base Classes
+
+Now that you've built the Company abstract base class, it can be used as a "blueprint" for different companies. You'll practice doing just this by creating a Technology class.
+
+The Company class from the previous exercises has been defined for you, and looks like this:
+class Company(ABC):
+  @abstractmethod
+  def create_budget(self):
+    pass
+  def hire_employee(self, name):
+    print(f"Welcome to the team, {name}!")
+
+# Create a class with the name "Technology"
+class Technology(Company):
+  def __init__(self, name):
+    self.name = name
+  # Define a create_budget() method
+  def create_budget(self, year, expenses):
+    for expense, amount in expenses.items():
+      print(f"{year} budget for {expense} is {amount}")
+# Create an instance of the Technology class, call methods
+t = Technology("Tina's Tech Advisors")
+t.create_budget(2024, {"Salaries": 10000, "Supplies": 500})
+t.hire_employee("Christian")
+=> Output: <script.py> output:
+    2024 budget for Salaries is 10000
+    2024 budget for Supplies is 500
+    Welcome to the team, Christian!
+Using the Company abstract base class, you created the Technology class and implemented the create_budget() method.
+
+41) Creating a Manufacturing Company
+
+In the final exercise of this lesson, you'll create an updated version of the Company abstract base class before creating a Manufacturing company. The ABC class and abstractmethod decorators have been imported from abc for you.
+
+# Define a Company abstract base class with a pay_taxes() method
+class Company(ABC):
+  @abstractmethod
+  def pay_taxes(self):
+    pass
+  def report_revenue(self):
+    print(f"{self.name} is reporting ${self.revenue} of revenue")
+
+class Manufacturing(Company):
+  def __init__(self, name, revenue):
+    self.name = name
+    self.revenue = revenue
+  # Implement the pay_taxes() method
+  def pay_taxes(self, tax_rate):
+    tax_amount = self.revenue * tax_rate
+    print(f"{self.name} is paying ${tax_amount} of taxes")
+
+# Create an instance of the Manufacturing class
+m = Manufacturing("Morgan's Manufacturing", 5000)
+# Make call to the pay_taxes() method, observe report_revenue()
+m.pay_taxes(.10)
+m.report_revenue()
+=> Output: <script.py> output:
+    Morgan's Manufacturing is paying $500.0 of taxes
+    Morgan's Manufacturing is reporting $5000 of revenue
+Creating abstract base classes defines a blueprint for all classes that inherit it, helping to provide consistent performance in your code.
+
+42) Informal interfaces
+
+Informal interfaces provide a set of methods that must be defined in all classes that implement that interface. Below is a class named Supplier that will act as an informal interface. In order for YogurtSupplier to fulfill the contract set out by the Supplier interface, it must define the methods take_order() and make_delivery().
+
+class Supplier:
+  def take_order(self, product_name, quantity):
+    pass
+  def make_delivery(self, order_id, location):
+    pass
+
+class YogurtSupplier:
+  def __init__(self):
+    self.orders = {}
+  # Finish defining the take_order() method
+  def take_order(self, product_name, quantity):
+    self.orders[f"{product_name}_{quantity}"] = {
+      "product_name": product_name, "quantity": quantity
+    }
+  # Implement a make_delivery() abstract method
+  def make_delivery(self, order_id, location):
+    print(f"Delivering order: {order_id} to {location}")
+    del self.orders[order_id]
+=> The class you built informally fulfills the contract set out by the supplier class by the Supplier interface.
+
+43) Building a formal interface with ABC
+
+Formal interfaces offer a more enforceable contract between an interface and any classes that implement it. You'll practice creating a formal interface made up of two abstract methods, using the abc module. The ABC class and abstractmethod decorator have been imported from abc.
+
+# Create a Product interface
+class Product(ABC):
+  # Define a purchase() abstract method
+  @abstractmethod
+  def purchase(self, quantity):
+    pass
+  # Create an update_price() abstract method
+  @abstractmethod
+  def update_price(self, new_price):
+    pass
+
+44) Implementing a formal interface with ABC
+
+You'll practice implementing a formal interface created using the ABC class and the @abstractmethod decorator. The Business interface has been created for you, and is shown below.
+class Business(ABC):
+  @abstractmethod
+  def sell_product(self, product_name, price, quantity):
+    pass
+
+# Create a class that inherits the Business interface
+class Bakery(Business):
+  def __init__(self, business_name):
+    self.business_name = business_name
+# Attempt to create a Bakery object, observe the exception
+try:
+  blue_eyed_baker = Bakery("Blue Eyed Baker")
+except Exception as e:
+  print(e)
+
+  # Provide a definition of the sell_product() method 
+  def sell_product(self, product_name, price, quantity):
+    total_revenue = price * quantity
+    print(f"""{self.business_name} sold {quantity} 
+          {product_name} for a total of ${total_revenue}""")
+# Attempt to create a Bakery object
+blue_eyed_baker = Bakery("Blue Eyed Baker")
+=> Output: Formal interfaces created using abstract methods enforce the contract between the interface and a class by raising an exception if the contract is violated.
+
+45) Building a factory method
+
+Now that you're ready to get your feet wet building factory methods, you'll start by creating a Checkout class, using the factory method design pattern. The following Customer interface has been defined for you, along with the RewardsMember and NewCustomer concrete products. Check it out below!
+
+class Customer(ABC):
+  @abstractmethod
+  def make_payment(self, price):
+    pass
+class RewardsMember(Customer):
+  def make_payment(self, price):
+    print(f"""Total price for rewards member is 
+          ${price * .90}, which is 10% off""")
+class NewCustomer(Customer):
+  def make_payment(self, price):
+    print(f"""Total price for new customer is ${price}""")
+
+class Checkout:
+  # Create a _get_customer() factory method
+  def _get_customer(self, customer_type):
+    if customer_type == "Rewards Member":
+      return RewardsMember()
+    elif customer_type == "New Customer":
+      return NewCustomer()
+  # Define the complete_transaction() method
+  def complete_transaction(self, customer_type, price):
+    customer = self._get_customer(customer_type)
+    customer.make_payment(price)
+=> Output: Factory methods make it easy to handle multiple scenarios in a single method without the need for significant conditional logic.
+
+46) Building a data pipeline
+
+Using factory methods not only makes code easier to read, it also makes it easier to use. In this example, you'll get to practice creating a data pipeline that extracts data from a database. The DataPipeline class implements a factory method design pattern, and is shown here. Also defined for you are two concrete products of the Database class; Postgres and Redshift.
+
+class DataPipeline:
+  def _get_database(self, provider):
+    if provider == "Postgres":
+      return Postgres()
+    elif provider == "Redshift":
+      return Redshift()
+  def extract_data(self, provider, query):
+    database = self._get_database(provider)
+    dataset = database.query_data(query)
+    print(f"Extracted dataset from {provider} database")
+    return dataset
+
+# Create an ETL DataPipeline, query using Redshift
+items_pipeline = DataPipeline()
+items_pipeline.extract_data("Redshift", "SELECT * FROM items;")
+# Now, switch the pipeline to Postgres
+items_pipeline.extract_data("Postgres", "SELECT * FROM items;")
+# Finally, create an etl_pipeline with Redshift
+etl_pipeline = DataPipeline()
+etl_pipeline.extract_data("Redshift", "SELECT * FROM sales;")
+=> Output: <script.py> output:
+    
+    Made connection to Redshift using boto3...
+    WARNING: Try not to select all columns when using Redshift
+    Executing SELECT * FROM items; against column-oriented warehouse
+    Extracted dataset from Redshift database
+    
+    Made connection to Postgres using psycopg2
+    Executing SELECT * FROM items; against row-oriented database
+    Extracted dataset from Postgres database
+    
+    Made connection to Redshift using boto3...
+    WARNING: Try not to select all columns when using Redshift
+    Executing SELECT * FROM sales; against column-oriented warehouse
+    Extracted dataset from Redshift database
+See how simple factory methods can make your code? By changing a single parameter, you can change the source system you're extracting data from in a data pipeline.
+
+47) Creating a ChatBot
+
+Large language models, or LLM's are generative AI tools that can perform tasks such as text summarization and sentence completion with a simple call to an API. In this exercise, you'll design a ChatBot class that leverages a factory method to "hot-swap" LLM's in order to perform sentence completion. Below is the LLM "product" interface that has been created for you. 
+
+class LLM(ABC):
+  @abstractmethod
+  def complete_sentence(self, prompt):
+    pass
+
+# Finish defining OpenAI and Anthropic classes
+class OpenAI(LLM):
+  def complete_sentence(self, prompt):
+    return prompt + " ... OpenAI end of sentence."
+class Anthropic(LLM):
+  def complete_sentence(self, prompt):
+    return prompt + " ... Anthropic end of sentence."
+
+class ChatBot:
+  # Define the _get_llm() factory method
+  def _get_llm(self, provider):
+    if provider == "OpenAI":
+      return OpenAI()
+    elif provider == "Anthropic":
+      return Anthropic()
+
+  def chat(self, prompt, provider):
+    # Return an llm object, then call complete_sentence()
+    llm = self._get_llm(provider)
+    return llm.complete_sentence(prompt)
+=> Using an interface and factory method in tandem, you built a chat bot that can use multiple generative AI providers to complete a sentence.
+
+
+*** CASE STUDY: BUILDING SOFTWARE IN PYTHON
+
+1)
+
