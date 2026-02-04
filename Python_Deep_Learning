@@ -140,5 +140,2195 @@ class BinaryImageClassifier(nn.Module):
         self.sigmoid = nn.Sigmoid()
 => Notice that the fully connected (fc) layer has an input size of 16x32x32. This is due to the original image input size being 64x64. After passing through the max pooling layer, the spatial dimensions are reduced in half, resulting in 32x32.
 
-2)
+2) Multi-class classification model
 
+With a template for a binary classification model in place, you can now build on it to design a multi-class classification model. The model should handle different numbers of classes via a parameter, allowing you to tailor the model to a specific multi-class classification task in the future.
+The packages torch and torch.nn as nn have been imported. All image sizes are 64x64 pixels.
+
+class MultiClassImageClassifier(nn.Module):
+    # Define the init method
+    def __init__(self, num_classes):
+        super(MultiClassImageClassifier, self).__init__()
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)
+        self.relu = nn.ReLU()
+        self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.flatten = nn.Flatten()
+        # Create a fully connected layer
+        self.fc = nn.Linear(16 * 32 * 32, num_classes)
+        # Create an activation function
+        self.softmax = nn.Softmax(dim=1)
+
+3) Adding a new convolutional layer
+
+Your project lead provided you with a new CNN model. Let's take a look at the model's architecture and append a new convolutional layer to it.
+The model is available as CNNModel. The packages torch and torch.nn as nn have been imported.
+
+# Create a model
+model = CNNModel()
+print("Original model: ", model)
+# Create a new convolutional layer
+conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
+# Append the new layer to the model
+model.add_module("conv2", conv2)
+print("Extended model: ", model)
+=> Output: <script.py> output:
+    Original model:  CNNModel(
+      (conv1): Conv2d(3, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+    Extended model:  CNNModel(
+      (conv1): Conv2d(3, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (conv2): Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+Knowing the model architecture is a great way to learn about the model complexity.
+
+4) Creating a sequential block
+
+You decided to redesign your binary CNN model template by creating a block of convolutional layers. This will help you stack multiple layers sequentially. With this improved model, you will be able to easily design various CNN architectures.
+torch and torch.nn as nn have been imported.
+
+class BinaryImageClassification(nn.Module):
+  def __init__(self):
+    super(BinaryImageClassification, self).__init__()
+    # Create a convolutional block
+    self.conv_block = nn.Sequential(
+      nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
+      nn.ReLU(),
+      nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+      nn.ReLU(),
+    )
+  def forward(self, x):
+    # Pass inputs through the convolutional block
+    x = self.conv_block(x)
+    return x
+=> With this knowledge, you can now efficiently stack multiple layers to build complex CNN architectures for various image processing tasks.
+
+5) Save and load a model
+
+A manufacturing company wants to classify their projects based on images and determine the appropriate shipping packaging. Having trained a highly accurate model in PyTorch, you now plan to save the model and its pre-trained weights for future use and to share it with your team, making sure they can seamlessly load it.
+torch and torch.nn as nn have been imported. The pre-trained model object is available in your workspace as model, and its architecture as ManufacturingCNN.
+
+# Save the model
+torch.save(model.state_dict(), 'ModelCNN.pth')
+# Create a new model
+loaded_model = ManufacturingCNN()
+# Load the saved model
+loaded_model.load_state_dict(torch.load('ModelCNN.pth'))
+print(loaded_model)
+=> Output: <script.py> output:
+    ManufacturingCNN(
+      (conv1): Conv2d(3, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (relu): ReLU()
+      (maxpool): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (fc1): Linear(in_features=4096, out_features=4, bias=True)
+    )
+Saving and later re-using models make your workflow more efficient.
+
+6) Loading a pre-trained model
+
+You are building an application to label images from the social media. This task requires high accuracy and speed. You are going to use a pre-trained ResNet18 model to infer image classes.
+
+# Import resnet18 model
+from torchvision.models import resnet18, ResNet18_Weights
+# Initialize model with default weights
+weights = ResNet18_Weights.DEFAULT
+model = resnet18(weights=weights)
+# Set model to the evaluation mode
+model.eval()
+# Initialize the transforms
+transform = weights.transforms()
+=> Output: Using DEFAULT weights is very convenient as it will provide you with the latest version of weights.
+
+7) Image classification with ResNet
+
+You have created the model from the pre-trained ResNet18. Now, it is time to test it on an example image.
+You are going to apply preprocessing transforms to an image and classify it. You will need to use the softmax() layer followed by the argmax(), since ResNet18 has been trained on a multi-class dataset.
+You have selected the following image to use for prediction testing: A cup of espresso
+The preprocessing transform is saved as preprocess. The PIL image is uploaded as img.
+
+# Apply preprocessing transforms
+batch = preprocess(img).unsqueeze(0)
+# Apply model with softmax layer
+prediction = model(batch).squeeze(0).softmax(0)
+# Apply argmax
+class_id = prediction.argmax().item()
+score = prediction[class_id].item()
+category_name = weights.meta["categories"][class_id]
+print(category_name)
+=> Output: <script.py> output:
+    espresso
+With the ResNet pre-trained model you are able to classify images without training and without any additional labeled data!
+
+8) Image tensors
+
+A coffee company has an object detection project where they need to annotate objects of interest, in this case, espresso shots. You have created a list with the bounding box coordinates for an espresso shot image. Now, you need to convert the image and the coordinates into tensors.
+torch and torchvision have been imported. torchvision.transforms is imported as transforms. The image has been loaded as image using Image.open() from PIL library. The bounding box coordinates are stored in the variable bbox.
+
+# Convert bbox into tensors
+bbox_tensor = torch.tensor(bbox)
+# Add a new batch dimension
+bbox_tensor = bbox_tensor.unsqueeze(0)
+# Resize image and transform tensor
+transform = transforms.Compose([
+  transforms.Resize(224),
+  transforms.PILToTensor()
+])
+# Apply transform to image
+image_tensor = transform(image)
+print(image_tensor)
+=> Output: <script.py> output:
+    tensor([[[  0,   0,   0,  ...,  25,  24,  23],
+             [  0,   0,   0,  ...,  26,  25,  23],
+             [  0,   0,   0,  ...,  27,  27,  23],
+             ...,
+             [130, 132, 132,  ..., 233, 233, 231],
+             [135, 135, 135,  ..., 226, 226, 230],
+             [135, 137, 135,  ..., 226, 226, 230]],
+    
+            [[  1,   1,   1,  ...,  30,  29,  28],
+             [  1,   1,   1,  ...,  31,  30,  28],
+             [  1,   1,   1,  ...,  32,  32,  28],
+             ...,
+             [119, 122, 122,  ..., 185, 185, 182],
+             [121, 124, 124,  ..., 178, 178, 181],
+             [121, 123, 124,  ..., 178, 178, 181]],
+    
+            [[  5,   5,   5,  ...,  33,  32,  31],
+             [  5,   5,   5,  ...,  34,  33,  31],
+             [  5,   5,   5,  ...,  35,  35,  31],
+             ...,
+             [117, 120, 120,  ..., 180, 180, 177],
+             [118, 120, 120,  ..., 174, 174, 177],
+             [118, 120, 120,  ..., 174, 174, 177]]], dtype=torch.uint8)
+Usually, we use transforms.ToTensor() float transformation for images to scale them in the range [0, 1]. However, the bounding box requires an unscaled image type with the range [0, 255], so we use transforms.PILToTensor().
+
+9) Drawing a bounding box
+
+Having prepared the image and bounding box tensors, you can now draw the box on top of the image and visually inspect its accuracy.
+torch, torchvision,torchvision.transforms have been imported. Image has been already transformed to tensors as image_tensor. The coordinates have been assigned to the variables: x_min, y_min, x_max, y_max.
+
+# Import draw_bounding_boxes
+from torchvision.utils import draw_bounding_boxes
+# Define the bounding box coordinates
+bbox = [x_min, y_min, x_max, y_max]
+bbox_tensor = torch.tensor(bbox).unsqueeze(0)
+# Implement draw_bounding_boxes
+img_bbox = draw_bounding_boxes(image_tensor, bbox_tensor, width=3, colors="red")
+# Tranform tensors to image
+transform = transforms.Compose([
+    transforms.ToPILImage()
+])
+plt.imshow(transform(img_bbox))
+plt.show()
+=> The bounding box seems to fit well! In the next video, we will take a look at a more qunatitative approach to evaluating the bounding box accuracy.
+
+10) Bounding boxes prediction
+
+You have trained an object recognition model. Now, you want to use to generate bounding boxes and classifications for a test image.
+The model is available as model and it's already in the evaluation mode. The test_image is also available, and torch and torch.nn as nn have been imported.
+
+# Get model's prediction
+with torch.no_grad():
+    output = model(test_image)
+# Extract boxes from the output
+boxes = output[0]["boxes"]
+# Extract scores from the output
+scores = output[0]["scores"]
+print(boxes, scores)
+=> Output: <script.py> output:
+    tensor([[0.0309, 0.4667, 0.6057, 0.4133],
+            [0.6190, 0.9396, 0.7334, 0.3594],
+            [0.2674, 0.7727, 0.5534, 0.3586],
+            [0.4809, 0.0888, 0.4361, 0.5937],
+            [0.5453, 0.4328, 0.9537, 0.2947]]) tensor([0.9689, 0.8510, 0.8533, 0.9105, 0.7601])
+Predicted box coordinates and their confidence scores are important values for understanding how the model is performing.
+
+11) Calculate NMS
+
+Having extracted the predicted bounding boxes and scores from your object recognition model, your next task is to ensure that only the most accurate and non-overlapping predicted bounding boxes are retained by using the non-max suppression technique.
+boxes and scores you created in the previous exercise are available in your workspace and torch and torchvision have been imported.
+
+# Import nms
+from torchvision.ops import nms
+# Set the IoU threshold
+iou_threshold = 0.5
+# Apply non-max suppression
+box_indices = nms(boxes, scores, iou_threshold)
+# Filter boxes
+filtered_boxes = boxes[box_indices]
+print("Filtered Boxes:", filtered_boxes)
+=> Output: <script.py> output:
+    Filtered Boxes: tensor([[ 40.,  50., 140., 150.],
+            [ 70.,  50., 140., 120.],
+            [ 60.,  40., 120., 100.]])
+You filtered boxes with the highest IoU overlap and highest probability scores. You can make the threshold more strict by decreasing it: feel free to verify that with iou_threshold = 0.2, you will only get a single, best bounding box!
+
+12) Pre-trained model backbone
+
+It's time to build an R-CNN architecture! You will use the vgg16 pre-trained model's backbone for feature extraction. You also remember to store the output shape of the backbone which will serve as the input shape for the subsequent blocks: the classifier and the box regressor.
+torch, torchvision, torch.nn as nn have been imported. The model has been imported as vgg16 with the weights stored in VGG16_Weights.
+
+# Load pre-trained weights
+vgg_model = vgg16(weights=VGG16_Weights.DEFAULT)
+# Extract the input dimension
+input_dim = nn.Sequential(*list(vgg_model.classifier.children()))[0].in_features
+# Create a backbone with convolutional layers
+backbone = nn.Sequential(*list(vgg_model.features.children()))
+# Print the backbone model
+print(backbone)
+=> Output: <script.py> output:
+    Sequential(
+      (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (1): ReLU(inplace=True)
+      (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (3): ReLU(inplace=True)
+      (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (5): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (6): ReLU(inplace=True)
+      (7): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (8): ReLU(inplace=True)
+      (9): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (10): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (11): ReLU(inplace=True)
+      (12): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (13): ReLU(inplace=True)
+      (14): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (15): ReLU(inplace=True)
+      (16): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (17): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (18): ReLU(inplace=True)
+      (19): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (20): ReLU(inplace=True)
+      (21): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (22): ReLU(inplace=True)
+      (23): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+      (24): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (25): ReLU(inplace=True)
+      (26): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (27): ReLU(inplace=True)
+      (28): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (29): ReLU(inplace=True)
+      (30): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    )
+The pre-trained backbone is essential for extracting features from the input image.
+
+13) Classifier block
+
+Your next task is to create a classifier block that will replace the original VGG16 classifier. You decide to use a block with two fully connected layers with a ReLU activation in between.
+The vgg_model and input_dim you defined in the last exercise are available in your workspace, and torch and torchvision.models have been imported.
+
+# Create a variable with the number of classes
+num_classes = 2
+# Create a sequential block
+classifier = nn.Sequential(
+	# Create a linear layer with input features
+	nn.Linear(input_dim, 512),
+	nn.ReLU(),
+	# Add the output dimension to the classifier
+	nn.Linear(512, num_classes),
+)
+
+14) Box regressor block
+
+Your final task is to create a regressor block to predict bounding box coordinates. You decide to have a block with 2 fully connected layers with a ReLU activation in between, similar to the classifier you defined earlier. Your vgg_model and input_dim are still available and torch and torchvision.models have been imported.
+
+# Define the number of coordinates
+num_coordinates = 4
+bb = nn.Sequential(  
+	# Add input and output dimensions
+	nn.Linear(input_dim, 32),
+	nn.ReLU(),
+	# Add the output for the last regression layer
+	nn.Linear(32, num_coordinates),
+)
+
+15) Anchor generator
+
+Your team is developing object detection models based on the Faster R-CNN architecture and using pre-trained backbones. Your task is to create anchor boxes to serve as reference bounding boxes for proposing potential object regions. You will create 9 standard anchors (3 box sizes and 3 aspect ratios).
+
+# Import AnchorGenerator
+from torchvision.models.detection.rpn import AnchorGenerator
+# Configure anchor size
+anchor_sizes = ((32, 64, 128),)
+# Configure aspect ratio
+aspect_ratios = ((0.5, 1.0, 2.0),)
+# Instantiate AnchorGenerator
+rpn_anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
+=> The AnchorGenerator can generate anchor boxes for multiple sizes and for different scales in the image.
+
+15) Faster R-CNN model
+
+Your next task is to build a Faster R-CNN model that can detect objects of different sizes in an image. For this task, you will be using a handy class MultiScaleRoIAlign() from torchvision.ops. FasterRCNN class has been imported from torchvision.models.detection. Your anchor_generator from the last exercise is available in your workspace and torch, torch.nn as nn, and torchvision have been imported.
+
+# Import MultiScaleRoIAlign
+from torchvision.ops import MultiScaleRoIAlign
+# Instantiate RoI pooler
+roi_pooler = MultiScaleRoIAlign(
+	featmap_names=["0"],
+	output_size=7,
+	sampling_ratio=2,
+)
+mobilenet = torchvision.models.mobilenet_v2(weights="DEFAULT")
+backbone = nn.Sequential(*list(mobilenet.features.children()))
+backbone.out_channels = 1280
+# Create Faster R-CNN model
+model = FasterRCNN(
+	backbone=backbone,
+	num_classes=2,
+	anchor_generator=anchor_generator,
+	box_roi_pool=roi_pooler,
+)
+
+16) Define losses for RPN and R-CNN
+
+You are planning to train an object detection model that utilizes both the RPN and R-CNN components. To be able to train it, you will need to define the loss function for each component.
+You remember that the RPN component classifies whether a region contains an object and predicts the bounding box coordinates for the proposed regions.The R-CNN component classifies the object into one of multiple classes while also predicting the final bounding box coordinates.
+
+# Implement the RPN classification loss function
+rpn_cls_criterion = nn.BCEWithLogitsLoss()
+# Implement the RPN regression loss function
+rpn_reg_criterion = nn.MSELoss()
+# Implement the R-CNN classification Loss function
+rcnn_cls_criterion = nn.CrossEntropyLoss()
+# Implement the R-CNN regression loss function
+rcnn_reg_criterion = nn.MSELoss()
+=> Using the correct loss functions is crucial for training machine learning models effectively and it ensures that the model updates its parameters correctly.
+
+17) Creating binary masks
+
+Images for segmentation tasks are typically annotated with pixel-level masks. Consider this image of an Egyptian Mau cat.
+In this and the next exercise, you will use the corresponding mask to segment the cat out of the image. First, you will need to load the mask and binarize it. 
+Image from PIL, transforms from torchvision, and torch have already been imported for you.
+
+# Load mask image
+mask = Image.open("annotations/Egyptian_Mau_123.png")
+# Transform mask to tensor
+transform = transforms.Compose([transforms.ToTensor()])
+mask_tensor = transform(mask)
+# Create binary mask
+binary_mask = torch.where(
+    mask_tensor == 1/255, 
+    torch.tensor(1.0),
+    torch.tensor(0.0),
+)
+# Print unique mask values
+print(binary_mask.unique())
+=> Output: <script.py> output:
+    tensor([0., 1.])
+It's important to remember that the toTensor() transformation normalizes the pixel values by dividing them by 255. Now that you can binarize a segmentation mask, let's use it to segment an image!
+
+18) Segmenting image with a mask
+
+With the binary mask ready, you can use it to segment the object, that is the cat, out of the image. To do so, you will need to load the original image and transform it to a tensor. Next, you will create the object tensor by masking the original image. Finally, you will display the result.
+transforms from torchvision have been imported, and the binary_mask you created in the previous exercise is available to you.
+
+# Load image and transform to tensor
+image = Image.open("images/Egyptian_Mau_123.jpg")
+transform = transforms.Compose([transforms.ToTensor()])
+image_tensor = transform(image)
+# Segment object out of the image
+object_tensor = image_tensor * binary_mask
+# Convert segmented object to image and display
+to_pil_image = transforms.ToPILImage()
+object_image = to_pil_image(object_tensor)
+plt.imshow(object_image)
+plt.show()
+=> You know how annotation masks work for image segmentation. Now, let's look at how to use machine learning models to predict those masks for unlabeled images!
+
+19) Segmenting with pre-trained Mask R-CNN
+
+In this exercise, you will use the pre-trained Mask R-CNN model to perform instance segmentation on the following image of two cats.
+The model you will use has been pre-trained on the COCO dataset, which contains images of common objects, including animals. Thanks to this, the model should be able to recognize cats out of the box, without the need to fine-tune it.
+Your task is to load the model and the two cats image, prepare the image, and pass it to the model to obtain the predictions. Image from PIL, torch, transforms from torchvision, and maskrcnn_resnet50_fpn have been imported for you.
+
+# Load a pre-trained Mask R-CNN model
+model = maskrcnn_resnet50_fpn(pretrained=True)
+model.eval()
+# Load an image and convert to a tensor
+image = Image.open("two_cats.jpg")
+transform = transforms.Compose([transforms.ToTensor()])
+image_tensor = transform(image).unsqueeze(0)
+# Perform inference
+with torch.no_grad():
+    prediction = model(image_tensor)
+    print(prediction)
+=> Output: <script.py> output:
+    [{'boxes': tensor([[5.1118e-01, 7.4041e+01, 2.7799e+02, 3.6954e+02],
+            [2.5714e+02, 9.7250e+01, 6.4000e+02, 4.0461e+02],
+            [0.0000e+00, 2.3408e+02, 6.3491e+02, 4.2700e+02],
+            [1.6090e+02, 0.0000e+00, 6.2564e+02, 2.2101e+02],
+            [1.4894e+02, 3.2507e+02, 6.4000e+02, 4.2272e+02],
+            [0.0000e+00, 1.9097e+01, 6.4000e+02, 4.0304e+02],
+            [4.4481e+01, 6.9097e+01, 5.0252e+02, 3.9630e+02]]), 'labels': tensor([17, 17, 15, 64, 15, 15, 17]), 'scores': tensor([0.9982, 0.9951, 0.2266, 0.1373, 0.1315, 0.1109, 0.1036]), 'masks': tensor([[[[0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              ...,
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000]]],
+    
+    
+            [[[0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              ...,
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000]]],
+    
+    
+            [[[0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              ...,
+              [0.1959, 0.2135, 0.2310,  ..., 0.0738, 0.0658, 0.0577],
+              [0.1635, 0.1782, 0.1928,  ..., 0.0616, 0.0549, 0.0482],
+              [0.1312, 0.1429, 0.1547,  ..., 0.0494, 0.0440, 0.0386]]],
+    
+    
+            ...,
+    
+    
+            [[[0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              ...,
+              [0.0000, 0.0000, 0.0000,  ..., 0.0489, 0.0447, 0.0405],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000]]],
+    
+    
+            [[[0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              ...,
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000]]],
+    
+    
+            [[[0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              ...,
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000],
+              [0.0000, 0.0000, 0.0000,  ..., 0.0000, 0.0000, 0.0000]]]])}]
+Using the pre-trained Mask R-CNN is very convenient: just load it, prepare the input image, and run inference! Let's analyze the prediction in greater detail next.
+
+20) Displaying soft masks
+
+In the previous exercise, you have learned that the top two most likely objects the Mask R-CNN model has segmented are both cats. Now, you will display the masks for these two cats overlaid on top of the original image to visually verify their accuracy. This will require iterating over the two masks, and for each of them, plotting the original image followed by a semi-transparent mask on top of it.
+
+# Extract masks and labels from prediction
+masks = prediction[0]["masks"]
+labels = prediction[0]["labels"]
+# Plot image with two overlaid masks
+for i in range(2):
+    plt.imshow(image)
+    plt.imshow(masks[i, 0], cmap="jet", alpha=0.5)
+    plt.title(f"Object: {class_names[labels[i]]}")
+    plt.show()
+=> Make sure to toggle between the two images you have drawn, one for each of the top two masks. Since this is intance segmentation, each instance of a cat was assigned a separate mask. 
+
+21) Building a U-Net: layers definitions
+
+In this and the next exercise, you will construct a U-Net architecture from scratch. Here, you start with defining the __init__() method where you will define layers and blocks of layers for the model to use. The encoder and transposed convolution have already been defined for you. What's left is the decoder's convolutional blocks. You need to pass the appropriate number of input and output channels to each of them, taking into account the skip connections.
+The first block, dec1, will take as input the concatenation of upconv3 output with the enc3 output. The dec1 output, in turn, should be equal to enc3 output.
+
+class UNet(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(UNet, self).__init__()
+        self.enc1 = self.conv_block(in_channels, 64)
+        self.enc2 = self.conv_block(64, 128)
+        self.enc3 = self.conv_block(128, 256)
+        self.enc4 = self.conv_block(256, 512)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.upconv3 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
+        self.upconv2 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
+        self.upconv1 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
+        # Define the decoder blocks
+        self.dec1 = self.conv_block(512, 256)
+        self.dec2 = self.conv_block(256, 128)
+        self.dec3 = self.conv_block(128, 64)
+        self.out = nn.Conv2d(64, out_channels, kernel_size=1)
+=> With all the layers defined, you can now proceed to constructing the forward() method.
+
+22) Building a U-Net: forward method
+
+With the encoder and decoder layers defied, you can now implement the forward() method of the U-net. The inputs have already been passed through the encoder for you. However, you need to define the last decoder block. The goal of the decoder is to upsample the feature maps so that its output is of the same height and width as the U-Net's input image. This will allow you to obtain pixel-level semantic masks.
+
+def forward(self, x):
+    x1 = self.enc1(x)
+    x2 = self.enc2(self.pool(x1))
+    x3 = self.enc3(self.pool(x2))
+    x4 = self.enc4(self.pool(x3))
+    x = self.upconv3(x4)
+    x = torch.cat([x, x3], dim=1)
+    x = self.dec1(x)
+    x = self.upconv2(x)
+    x = torch.cat([x, x2], dim=1)
+    x = self.dec2(x)
+    # Define the last decoder block with skip connections
+    x = self.upconv1(x)
+    x = torch.cat([x, x1], dim=1)
+    x = self.dec3(x)
+    return self.out(x)
+
+23) Running semantic segmentation
+
+Good job designing the U-Net! You will find an already pre-trained model very similar to the one you have just built available to you. This model has been trained on a large set of images and contains a few small additions to the architecture, such as the batch norm layers.
+You can instantiate the model as UNet(), which will provide the model with the pre-trained weights. You task is to use it to produce segmentation masks for the following image of a car.
+
+# Load model
+model = UNet()
+model.eval()
+# Load and transform image
+image = Image.open("car.jpg")
+transform = transforms.Compose([transforms.ToTensor()])
+image_tensor = transform(image).unsqueeze(0)
+# Predict segmentation mask
+with torch.no_grad():
+    prediction = model(image_tensor).squeeze(0)
+# Display mask
+plt.imshow(prediction[1, :, :])
+plt.show()
+=> The mask might not be perfect but remember we are using a model pre-trained on different data. Fine-tuning it on car images should improve the results.
+
+24) Setup up semantic masks
+
+A common way to perform panoptic segmentation is to combine together the outputs of semantic and instance segmentation. Consider the following image of a New York street.
+Your task is to segment it panoptically, such that each cab is identified as a separate object, while distinguishing between the asphalt and building backgrounds.
+To achieve it, you will start by producing a semantic mask with a pre-trained U-Net, available to you as UNet(). Hopefully, it should distinguish between the two background types (but not between particular cabs)
+
+# Instantiate the model
+model = UNet()
+# Produce semantic masks for the input image
+with torch.no_grad():
+    semantic_masks = model(image_tensor) 
+# Choose highest-probability class for each pixel
+semantic_mask = torch.argmax(semantic_masks, dim=1)
+# Display the mask
+plt.imshow(semantic_mask.squeeze(0))
+plt.axis("off")
+plt.show()
+=> Good job producing the semantic mask! It will serve as a backgroud on which you will overlay instance masks next!
+
+25) Overlay instance masks
+
+Now, you can overwrite it with instance masks in the locations where the objects have been identified by the instance segmentation model. You will use the pre-trained MaskRCNN available in your workspace to produce instance segmentation masks. Then, you will loop over these masks and for each of them, you will overlay the parts where an object is detected with high certainty on top of the semantic mask. torch is already imported for you.
+
+# Instantiate model and produce instance masks
+model = MaskRCNN()
+with torch.no_grad():
+    instance_masks = model(image_tensor)[0]["masks"]
+# Initialize panoptic mask as semantic_mask
+panoptic_mask = torch.clone(semantic_mask)
+# Iterate over instance masks
+instance_id = 3
+for mask in instance_masks:
+    # Set panoptic mask to instance_id where mask > 0.5
+    panoptic_mask[mask > 0.5] = instance_id
+    instance_id += 1
+# Display panoptic mask
+plt.imshow(panoptic_mask.squeeze(0))
+plt.axis("off")
+plt.show()
+=> Now you can combine semantic and instance segmentation outputs to produce panoptic masks! Notice how each cab and even is segmented as a separate object, while the buildings background is distinguished from the street.
+
+26) Generator
+
+A GAN generator takes a random noise vector as input and produces a generated image. To make its architecture more reusable, you will pass both input and output shapes as parameters to the model. This way, you can use the same model with different sizes of input noise and images of varying shapes. You will find torch.nn imported already imported for you as nn. You can also access a custom gen_block() function which returns a block of: linear layer, batch norm, and ReLU activation. You will use it as a building block for the generator:
+def gen_block(in_dim, out_dim):
+    return nn.Sequential(
+        nn.Linear(in_dim, out_dim),
+        nn.BatchNorm1d(out_dim),
+        nn.ReLU(inplace=True)
+    )
+
+class Generator(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super(Generator, self).__init__()
+        # Define generator block
+        self.generator = nn.Sequential(
+            gen_block(in_dim, 256),
+            gen_block(256, 512),
+            gen_block(512, 1024),
+          	# Add linear layer
+            nn.Linear(1024, out_dim),
+            # Add activation
+            nn.Sigmoid(),
+        )
+    def forward(self, x):
+      	# Pass input through generator
+        return self.generator(x)
+=> Once trained, it will accept random noise of size in_dim as input, and produce the generated image of size out_dim
+
+27) Discriminator
+
+With the generator defined, the next step in building a GAN is to construct the discriminator. It takes the generator's output as input, and produces a binary prediction: is the input generated or real? You will find torch.nn imported already imported for you as nn. You can also access a custom disc_block() function which returns a block of a linear layer followed by a LeakyReLU activation. You will use it as a building block for the discriminator:
+def disc_block(in_dim, out_dim):
+    return nn.Sequential(
+        nn.Linear(in_dim, out_dim),
+        nn.LeakyReLU(0.2)
+    )
+
+class Discriminator(nn.Module):
+    def __init__(self, im_dim):
+        super(Discriminator, self).__init__()
+        self.disc = nn.Sequential(
+            disc_block(im_dim, 1024),
+            disc_block(1024, 512),
+            # Define last discriminator block
+            disc_block(512, 256),
+            # Add a linear layer
+            nn.Linear(256, 1),
+        )
+    def forward(self, x):
+        # Define the forward method
+        return self.disc(x)
+
+28) Convolutional Generator
+
+torch.nn has been pre-imported as nn for your convenience. Additionally, a custom function dc_gen_block() is available, which eturns a block of a transposed convolution, batch norm, and ReLU activation. This function serves as a foundational component for constructing the convolutional generator. You can get familiar with dc_gen_block()'s definition below:
+def dc_gen_block(in_dim, out_dim, kernel_size, stride):
+    return nn.Sequential(
+        nn.ConvTranspose2d(in_dim, out_dim, kernel_size, stride=stride),
+        nn.BatchNorm2d(out_dim),
+        nn.ReLU()
+    )
+
+class DCGenerator(nn.Module):
+    def __init__(self, in_dim, kernel_size=4, stride=2):
+        super(DCGenerator, self).__init__()
+        self.in_dim = in_dim
+        self.gen = nn.Sequential(
+            dc_gen_block(in_dim, 1024, kernel_size, stride),
+            dc_gen_block(1024, 512, kernel_size, stride),
+            # Add last generator block
+            dc_gen_block(512, 256, kernel_size, stride),
+            # Add transposed convolution
+            nn.ConvTranspose2d(256, 3, kernel_size, stride=stride),
+            # Add tanh activation
+            nn.Tanh()
+        )
+    def forward(self, x):
+        x = x.view(len(x), self.in_dim, 1, 1)
+        return self.gen(x)
+
+29) Convolutional Discriminator
+
+With the DCGAN's generator ready, the last step before you can proceed to training it is to define the convolutional discriminator. torch.nn is imported for you under its usual alias. To build the convolutional discriminator, you will use a custom gc_disc_block() function which returns a block of a convolution followed by a batch norm and the leaky ReLU activation. You can inspect dc_disc_block()'s definition below:
+def dc_disc_block(in_dim, out_dim, kernel_size, stride):
+    return nn.Sequential(
+        nn.Conv2d(in_dim, out_dim, kernel_size, stride=stride),
+        nn.BatchNorm2d(out_dim),
+        nn.LeakyReLU(0.2),
+    )
+
+class DCDiscriminator(nn.Module):
+    def __init__(self, kernel_size=4, stride=2):
+        super(DCDiscriminator, self).__init__()
+        self.disc = nn.Sequential(
+          	# Add first discriminator block
+            dc_disc_block(3, 512, kernel_size, stride),
+            dc_disc_block(512, 1024, kernel_size, stride),
+          	# Add a convolution
+            nn.Conv2d(1024, 1, kernel_size, stride=stride),
+        )
+    def forward(self, x):
+        # Pass input through sequential block
+        x = self.disc(x)
+        return x.view(len(x), -1)
+
+30) Generator loss
+
+Before you can train your GAN, you need to define loss functions for both the generator and the discriminator. You will start with the former. Recall that the generator's job is to produce such fake images that would fool the discriminator into classifying them as real. Therefore, the generator incurs a loss if the images it generated are classified by the discriminator as fake (label 0). Define the gen_loss() function that calculates the generator loss. It takes four arguments:
+gen, the generator model
+disc, the discriminator model
+num_images, the number of images in batch
+z_dim, the size of the input random noise
+
+def gen_loss(gen, disc, num_images, z_dim):
+    # Define random noise
+    noise = torch.randn(num_images, z_dim)
+    # Generate fake image
+    fake = gen(noise)
+    # Get discriminator's prediction on the fake image
+    disc_pred = disc(fake)
+    # Compute generator loss
+    criterion = nn.BCEWithLogitsLoss()
+    gen_loss = criterion(disc_pred, torch.ones_like(disc_pred))
+    return gen_loss
+
+31) Discriminator loss
+
+It's time to define the loss for the discriminator. Recall that the discriminator's job is to classify images either real or fake. Therefore, the generator incurs a loss if it classifies generator's outputs as real (label 1) or the real images as fake (label 0). Define the disc_loss() function that calculates the discriminator loss. It takes five arguments:
+gen, the generator model
+disc, the discriminator model
+real, a sample of real images from the training data
+num_images, the number of images in batch
+z_dim, the size of the input random noise
+
+def disc_loss(gen, disc, real, num_images, z_dim):
+    criterion = nn.BCEWithLogitsLoss()
+    noise = torch.randn(num_images, z_dim)
+    fake = gen(noise)
+    # Get discriminator's predictions for fake images
+    disc_pred_fake = disc(fake)
+    # Calculate the fake loss component
+    fake_loss = criterion(disc_pred_fake, torch.zeros_like(disc_pred_fake))
+    # Get discriminator's predictions for real images
+    disc_pred_real = disc(real)
+    # Calculate the real loss component
+    real_loss = criterion(disc_pred_real, torch.ones_like(disc_pred_real))
+    disc_loss = (real_loss + fake_loss) / 2
+    return disc_loss
+
+32) Training loop
+
+Finally, all the hard work you put into defining the model architectures and loss functions comes to fruition: it's training time! Your job is to implement and execute the GAN training loop. Note: a break statement is placed after the first batch of data to avoid a long runtime. The two optimizers, disc_opt and gen_opt, have been initialized as Adam() optimizers. The functions to compute the losses that you defined earlier, gen_loss() and disc_loss(), are available to you. A dataloader is also prepared for you.
+Recall that:
+disc_loss()'s arguments are: gen, disc, real, cur_batch_size, z_dim.
+gen_loss()'s arguments are: gen, disc, cur_batch_size, z_dim.
+
+for epoch in range(1):
+    for real in dataloader:
+        cur_batch_size = len(real)
+        disc_opt.zero_grad()
+        # Calculate discriminator loss
+        d_loss = disc_loss(gen, disc, real, cur_batch_size, z_dim=16)
+        # Compute discriminator gradients 
+        d_loss.backward()
+        disc_opt.step()
+        gen_opt.zero_grad()
+        # Calculate generator loss
+        g_loss = gen_loss(gen, disc, cur_batch_size, z_dim=16)
+        # Compute generator gradients
+        g_loss.backward()
+        gen_opt.step()
+        print(f"Generator loss: {g_loss}")
+        print(f"Discriminator loss: {d_loss}")
+        break
+=> Output: <script.py> output:
+    Generator loss: 3.434101104736328
+    Discriminator loss: 0.720882773399353
+
+33) Generating images
+
+Now that you have designed and trained your GAN, it's time to evaluate the quality of the images it can generate. For a start, you will perform a visual inspection to see if the generation resemble the Pokemons at all. To do this, you will create random noise as input for the generator, pass it to the model and plot the outputs.
+The Deep Convolutional Generator with trained weights is available to you as gen. torch and matplotlib.pyplot as plt are already imported for you.
+
+num_images_to_generate = 5
+# Create random noise tensor
+noise = torch.randn(num_images_to_generate, 16)
+# Generate images
+with torch.no_grad():
+    fake = gen(noise)
+print(f"Generated tensor shape: {fake.shape}")
+for i in range(num_images_to_generate):
+    # Slice fake to select i-th image
+    image_tensor = fake[i, :, :, :]
+    # Permute the image dimensions
+    image_tensor_permuted = image_tensor.permute(1, 2, 0)
+    plt.imshow(image_tensor_permuted)
+    plt.show()
+=> Output: <script.py> output:
+    Generated tensor shape: torch.Size([5, 3, 96, 96])
+Some of them are quite well-shaped Pokemons, while others might be missing an eye or a leg. Feel free to run the code again with different random noise to generate more images!
+
+34) Fréchet Inception Distance
+
+The visual inspection of generated images is a great start. But given they look okay, a more precise, quantitative evaluation will be helpful to understand the generator's performance. You will evaluate your GAN using the Fréchet Inception Distance, or FID. Two tensors with fake and real images, 32 examples each, are available to you as fake and real, respectively.
+
+# Import FrechetInceptionDistance
+from torchmetrics.image.fid import FrechetInceptionDistance
+# Instantiate FID
+fid = FrechetInceptionDistance(feature=64)
+# Update FID with real images
+fid.update((fake * 255).to(torch.uint8), real=False)
+fid.update((real * 255).to(torch.uint8), real=True)
+# Compute the metric
+fid_score = fid.compute()
+print(fid_score)
+=> Output: <script.py> output:
+    tensor(7.5159)
+The FID below 10 indicates a really good quality and variety of generated images!
+
+
+## CHAPTER 2: DEEP LEARNING FOR TEXT WITH PYTORCH
+
+1) Word frequency analysis
+
+You've just joined PyBooks. PyBooks is developing a book recommendation system and they want to find patterns and trends in text to improve their recommendations. To begin, you'll want to understand the frequency of words in a given text and remove any rare words. Note that typical real-world datasets will be larger than this example.
+
+# Import the necessary functions
+from torchtext.data.utils import get_tokenizer
+from nltk.probability import FreqDist
+text = "In the city of Dataville, a data analyst named Alex explores hidden insights within vast data. With determination, Alex uncovers patterns, cleanses the data, and unlocks innovation. Join this adventure to unleash the power of data-driven decisions."
+# Initialize the tokenizer and tokenize the text
+tokenizer = get_tokenizer("basic_english")
+tokens = tokenizer(text)
+threshold = 1
+# Remove rare words and print common tokens
+freq_dist = FreqDist(tokens)
+common_tokens = [token for token in tokens if freq_dist[token] > threshold]
+print(common_tokens)
+=> Output: <script.py> output:
+    ['the', 'of', ',', 'data', 'alex', 'data', '.', ',', 'alex', ',', 'the', 'data', ',', '.', 'the', 'of', '.']
+You have removed rare words from your text. It looks like data and alex are pretty common.
+
+2) Preprocessing text
+
+Building a recommendation system, or any model, requires text to be preprocessed first.
+A block of text from Sherlock Holmes is loaded here. Preprocess this text using the various techniques presented in the video to prepare it for further analysis. The text variable is an excerpt from The Hound of the Baskervilles by Arthur Conan Doyle. The following packages and functions have been loaded for you: nltk, torch, get_tokenizer, PorterStemmer, stopwords.
+
+# Initialize and tokenize the text
+tokenizer = get_tokenizer("basic_english")
+tokens = tokenizer(text)
+# Remove any stopwords
+stop_words = set(stopwords.words("english"))
+filtered_tokens = [token for token in tokens if token.lower() not in stop_words]
+# Perform stemming on the filtered tokens
+stemmer = PorterStemmer()
+stemmed_tokens = [stemmer.stem(token) for token in filtered_tokens]
+print(stemmed_tokens)
+=> Output: <script.py> output:
+    ['moor', 'spars', 'inhabit', ',', 'live', 'near', 'thrown', 'much', 'togeth', '.', 'reason', 'saw', 'good', 'deal', 'sir', 'charl', 'baskervil', '.', 'except', 'mr', '.', 'frankland', ',', 'lafter', 'hall', ',', 'mr', '.', 'stapleton', ',', 'naturalist', ',', 'men', 'educ', 'within', 'mani', 'mile', '.', 'sir', 'charl', 'retir', 'man', ',', 'chanc', 'ill', 'brought', 'us', 'togeth', ',', 'commun', 'interest', 'scienc', 'kept', 'us', '.', 'brought', 'back', 'much', 'scientif', 'inform', 'south', 'africa', ',', 'mani', 'charm', 'even', 'spent', 'togeth', 'discuss', 'compar', 'anatomi', 'bushman', 'hottentot', '.']
+You've cracked the case of the convoluted text. Now, you have a clean, processed list of words that you can use to analyze the text.
+
+3) One-hot encoded book titles
+
+PyBooks wants to catalog and analyze the book genres in its library. Apply one-hot encoding to a list of book genres to make them machine-readable.
+
+genres = ['Fiction','Non-fiction','Biography', 'Children','Mystery']
+# Define the size of the vocabulary
+vocab_size = len(genres)
+# Create one-hot vectors
+one_hot_vectors = torch.eye(vocab_size)
+# Create a dictionary mapping genres to their one-hot vectors
+one_hot_dict = {genre: one_hot_vectors[i] for i, genre in enumerate(genres)}
+for genre, vector in one_hot_dict.items():
+    print(f'{genre}: {vector.numpy()}')
+=> Output: <script.py> output:
+    Fiction: [1. 0. 0. 0. 0.]
+    Non-fiction: [0. 1. 0. 0. 0.]
+    Biography: [0. 0. 1. 0. 0.]
+    Children: [0. 0. 0. 1. 0.]
+    Mystery: [0. 0. 0. 0. 1.]
+The output matrix represents the presence of genres in a binary format. This type of encoding allows machines to better understand and use the genre data for various tasks, such as predicting book popularity or making book recommendations.
+
+4) Bag-of-words for book titles
+
+PyBooks now has a list of book titles that need to be encoded for further analysis. The data team believes the Bag of Words (BoW) model could be the best approach.
+
+# Import from sklearn
+from sklearn.feature_extraction.text import CountVectorizer
+titles = ['The Great Gatsby','To Kill a Mockingbird','1984','The Catcher in the Rye','The Hobbit', 'Great Expectations']
+# Initialize Bag-of-words with the list of book titles
+vectorizer = CountVectorizer()
+bow_encoded_titles = vectorizer.fit_transform(titles)
+# Extract and print the first five features
+print(vectorizer.get_feature_names_out()[:5])
+print(bow_encoded_titles.toarray()[0, :5])
+=> Output: <script.py> output:
+    ['1984' 'catcher' 'expectations' 'gatsby' 'great']
+    [0 0 0 1 1]
+The output matrix provides a clear picture of the word frequencies in the book titles. By analyzing the output, you can identify the frequency of words like 'catcher' and 'great' in the titles. The word frequency feature vectors can be used later by machine learning algorithms.
+
+5) Applying TF-IDF to book descriptions
+
+PyBooks has collected several book descriptions and wants to identify important words within them using the TF-IDF encoding technique. By doing this, they hope to gain more insights into the unique attributes of each book to help with their book recommendation system. The following packages have been imported for you: torch, torchtext.
+
+# Importing TF-IDF from sklearn
+from sklearn.feature_extraction.text import TfidfVectorizer
+# Initialize TF-IDF encoding vectorizer
+vectorizer = TfidfVectorizer()
+tfidf_encoded_descriptions = vectorizer.fit_transform(descriptions)
+# Extract and print the first five features
+print(vectorizer.get_feature_names_out()[:5])
+print(tfidf_encoded_descriptions.toarray()[0, :5])
+=> Output: <script.py> output:
+    ['adventure' 'age' 'all' 'and' 'by']
+    [0.         0.25943581 0.321564   0.21535516 0.        ]
+By examining the feature names and their corresponding TF-IDF values, you can uncover significant words that contribute to the uniqueness and relevance of each book.
+
+6) Shakespearean language preprocessing pipeline
+
+Over at PyBooks, the team wants to transform a vast library of Shakespearean text data for further analysis. The most efficient way to do this is with a text processing pipeline, starting with the preprocessing steps. The following have been loaded for you: torch, nltk, stopwords, PorterStemmer, get_tokenizer.
+The Shakespearean text data is saved as shakespeare and the sentences have already been extracted.
+
+# Create a list of stopwords
+stop_words = set(stopwords.words("english"))
+# Initialize the tokenizer and stemmer
+tokenizer = get_tokenizer("basic_english")
+stemmer = PorterStemmer() 
+# Complete the function to preprocess sentences
+def preprocess_sentences(sentences):
+    processed_sentences = []
+    for sentence in sentences:
+        sentence = sentence.lower()
+        # Tokenize the sentence
+        tokens = tokenizer(sentence)
+        # Remove stop words
+        tokens = [token for token in tokens if token not in stop_words]
+        # Stem the tokens
+        tokens = [stemmer.stem(token) for token in tokens]
+        processed_sentences.append(' '.join(tokens))
+    return processed_sentences
+processed_shakespeare = preprocess_sentences(shakespeare)
+print(processed_shakespeare[:5]) 
+=> Output: <script.py> output:
+    ['project gutenberg ebook complet work william shakespear , william shakespear ebook use anyon anywher unit state part world cost almost restrict whatsoev .', 'may copi , give away re-us term project gutenberg licens includ ebook onlin www .', 'locat unit state , check law countri locat use ebook .', 'titl complet work william shakespear author william shakespear releas date januari 1994 [ebook #100] [most recent updat may 18 , 2023] languag english *** start project gutenberg ebook complet work william shakespear *** complet work william shakespear william shakespear content sonnet all’ well end well tragedi antoni cleopatra like comedi error tragedi coriolanu cymbelin tragedi hamlet , princ denmark first part king henri fourth second part king henri fourth life king henri fifth first part henri sixth second part king henri sixth third part king henri sixth king henri eighth life death king john tragedi juliu caesar tragedi king lear love’ labour’ lost tragedi macbeth measur measur merchant venic merri wive windsor midsumm night’ dream much ado noth tragedi othello , moor venic pericl , princ tyre king richard second king richard third tragedi romeo juliet tame shrew tempest life timon athen tragedi titu andronicu troilu cressida twelfth night , two gentlemen verona two nobl kinsmen winter’ tale lover’ complaint passion pilgrim phoenix turtl rape lucrec venu adoni sonnet 1 fairest creatur desir increas , therebi beauty’ rose might never die , riper time deceas , tender heir might bear memori thou contract thine bright eye , feed’st thi light’ flame self-substanti fuel , make famin abund lie , thyself thi foe , thi sweet self cruel thou art world’ fresh ornament , herald gaudi spring , within thine bud buriest thi content , , tender churl , mak’st wast niggard piti world , els glutton , eat world’ due , grave thee .', 'forti winter shall besieg thi brow , dig deep trench thi beauty’ field , thi youth’ proud liveri gaze , tatter weed small worth held ask , thi beauti lie , treasur thi lusti day say , within thine deep sunken eye , all-eat shame , thriftless prais .']
+Note: You have successfully preprocessed the sentences and prepared them for encoding. Now you have a clean and transformed dataset to work with for the next step.
+
+7) Shakespearean language encoder
+
+With the preprocessed Shakespearean text at your fingertips, you now need to encode it into a numerical representation. You will need to define the encoding steps before putting the pipeline together. To better handle large amounts of data and efficiently perform the encoding, you will use PyTorch's Dataset and DataLoader for batching and shuffling the data.
+The following has been loaded for you: torch, nltk, stopwords, PorterStemmer, get_tokenizer, CountVectorizer, Dataset, DataLoader, and preprocess_sentences.
+
+# Define your Dataset class
+class ShakespeareDataset(Dataset):
+    def __init__(self, data):
+        self.data = data
+    def __len__(self):
+        return len(self.data)      
+    def __getitem__(self, idx):
+        return self.data[idx]
+# Complete the encoding function
+def encode_sentences(sentences):
+    vectorizer = CountVectorizer()
+    X = vectorizer.fit_transform(sentences)
+    return X.toarray(), vectorizer
+# Complete the text processing pipeline
+def text_processing_pipeline(sentences):
+    processed_sentences = preprocess_sentences(sentences)
+    encoded_sentences, vectorizer = encode_sentences(processed_sentences)
+    dataset = ShakespeareDataset(encoded_sentences)
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+    return dataloader, vectorizer
+dataloader, vectorizer = text_processing_pipeline(processed_shakespeare)
+# Print the vectorizer's feature names and the first 10 components of the first item
+print(vectorizer.get_feature_names_out()[:10]) 
+print(next(iter(dataloader))[0, :10])
+=> Output: <script.py> output:
+    ['100' '18' '1994' '2023' '29' '_for' '_kneeling_' 'ab' 'abandon' 'abhor']
+    tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+You have successfully encoded the Shakespearean text data, and made it useful for your publishing company. The first ten feature representations of the first sentence in your batched data provides a numerical representation, enabling analysis and modeling of the Shakespearean language.
+
+8) Embedding in PyTorch
+
+PyBooks found success with a book recommendation system. However, it doesn't account for some of the semantics found in the text. PyTorch's built-in embedding layer can learn and represent the relationship between words directly from data. Your team is curious to explore this capability to improve the book recommendation system. Can you help implement it?
+torch and torch.nn as nn have been imported for you.
+
+# Map a unique index to each word
+words = ["This", "book", "was", "fantastic", "I", "really", "love", "science", "fiction", "but", "the", "protagonist", "was", "rude", "sometimes"]
+word_to_idx = {word: i for i, word in enumerate(words)}
+# Convert word_to_idx to a tensor
+inputs = torch.LongTensor([word_to_idx[w] for w in words])
+# Initialize embedding layer with ten dimensions
+embedding = nn.Embedding(num_embeddings=len(words), embedding_dim=10)
+# Pass the tensor to the embedding layer
+output = embedding(inputs)
+print(output)
+=> Output: <script.py> output:
+    tensor([[-1.5175e+00,  4.9672e-01,  1.5111e+00, -2.9257e-01, -3.3408e-02,
+              1.6174e-01, -1.4318e+00, -1.0991e+00,  9.3471e-01,  2.0135e+00],
+            [-9.5575e-01, -4.0563e-01,  3.0699e-03, -4.4801e-02,  3.2708e-01,
+              1.3663e+00,  9.2377e-01,  4.2693e-02,  1.2331e-02, -5.8294e-01],
+            [-6.5715e-01, -1.0771e-01, -6.9840e-02, -2.1218e+00, -3.5482e-01,
+             -5.2743e-01, -7.3975e-01,  3.2394e-01, -1.5259e+00,  1.8578e+00],
+            [ 1.6545e+00,  1.2453e+00,  4.9767e-01,  4.3927e-01, -6.6399e-02,
+             -2.5573e-01, -2.2704e+00,  2.5981e-01,  1.3430e-01, -1.5425e+00],
+            [-5.1372e-01,  4.4120e-01,  3.6291e-01,  1.2041e+00, -1.8781e-01,
+              1.2684e-01,  7.8674e-01,  8.0318e-02, -2.2544e-01, -9.8152e-01],
+            [-7.8935e-01,  4.2290e-01, -1.0979e+00, -2.4907e-01,  9.3771e-01,
+              7.0053e-01, -4.1244e-01, -1.6187e+00, -1.6815e+00, -9.0236e-01],
+            [-2.8035e-01,  4.6408e-02,  7.5034e-01,  1.3771e+00, -3.2974e-02,
+             -3.9412e-02,  3.1188e-01,  2.7524e-01,  1.1771e-02, -3.7659e-01],
+            [ 9.5601e-01,  6.3895e-01,  5.8683e-01,  2.9532e-01, -5.2687e-01,
+              7.0382e-01,  1.1813e-01, -4.4803e-01, -3.1325e-01, -1.1994e+00],
+            [ 1.5639e+00,  5.4803e-01, -2.5647e+00, -1.6484e-01,  5.3656e-01,
+             -1.2135e+00, -5.7298e-03, -3.1319e-01, -1.1756e+00, -5.0971e-01],
+            [ 1.1435e+00, -1.7898e-01,  1.1624e+00,  1.9757e-01, -9.6588e-02,
+             -2.5590e-01, -1.7392e+00, -4.3066e-01,  1.8470e+00, -2.9994e-01],
+            [-1.6610e+00,  2.5692e+00,  7.7486e-01, -1.0373e+00,  1.7152e+00,
+             -1.7240e+00, -9.8849e-01, -1.6336e+00, -5.4868e-01,  5.3328e-01],
+            [-2.6746e-01,  1.4438e+00,  9.2965e-01,  1.4506e+00, -5.2100e-01,
+             -4.4403e-01,  1.2581e-01,  3.7809e-01, -3.6720e-01,  1.3787e+00],
+            [-6.5715e-01, -1.0771e-01, -6.9840e-02, -2.1218e+00, -3.5482e-01,
+             -5.2743e-01, -7.3975e-01,  3.2394e-01, -1.5259e+00,  1.8578e+00],
+            [-8.0393e-02, -2.2025e-01,  1.5809e-03, -4.4922e-01,  4.8533e-01,
+              6.0965e-01, -1.1130e+00, -4.3063e-01, -8.7914e-01,  5.5308e-02],
+            [-4.0820e-01,  1.2454e+00,  8.1877e-01, -5.3227e-01,  5.4553e-01,
+             -1.4841e-02, -4.6067e-01,  1.0508e+00, -6.4617e-01,  3.3043e-01]],
+           grad_fn=<EmbeddingBackward0>)
+You've just implemented PyTorch's nn.Embedding for PyBooks. The output shows each elements representing the respective word embeddings.
+
+9) Build a CNN model for text
+
+PyBooks has successfully built a book recommendation engine. Their next task is to implement a sentiment analysis model to understand user reviews and gain insight into book preferences. You'll use a Convolutional Neural Network (CNN) model to classify text data (book reviews) based on their sentiment.
+torch, torch.nn as nn, and torch.nn.functional as F have been loaded for you.
+
+class TextClassificationCNN(nn.Module): 
+    def __init__(self, vocab_size, embed_dim):
+        super(TextClassificationCNN, self).__init__()
+        # Initialize the embedding layer
+        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.conv = nn.Conv1d(embed_dim, embed_dim, kernel_size=3, stride=1, padding=1)
+        self.fc = nn.Linear(embed_dim, 2)
+    def forward(self, text):
+        embedded = self.embedding(text).permute(0, 2, 1)
+        # Pass the embedded text through the convolutional layer and apply a ReLU
+        conved = F.relu(self.conv(embedded))
+        conved = conved.mean(dim=2) 
+        return self.fc(conved)
+
+10) Train a CNN model for text
+
+Well done defining the TextClassificationCNN class. PyBooks now needs to train the model to optimize it for accurate sentiment analysis of book reviews.
+The following packages have been imported for you: torch, torch.nn as nn, torch.nn.functional as F, torch.optim as optim.
+An instance of TextClassificationCNN() with arguments vocab_size and embed_dim has also been loaded and saved as model.
+
+# Define the loss function
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(model.parameters(), lr=0.1)
+for epoch in range(10):  
+    for sentence, label in data:
+        # Clear the gradients
+        model.zero_grad()
+        sentence = torch.LongTensor([word_to_ix.get(w, 0) for w in sentence]).unsqueeze(0) 
+        label = torch.LongTensor([int(label)])
+        outputs = model(sentence)
+        loss = criterion(outputs, label)
+        loss.backward()
+        # Update the parameters
+        optimizer.step()
+print('Training complete!')
+=> Output: <script.py> output:
+    Training complete!
+You've successfully built and trained a CNN for sentiment analysis. This will be a great addition to the PyBooks' recommendation engine, assisting the team in understanding users' sentiments towards different books.
+
+11) Testing the Sentiment Analysis CNN Model
+
+Now that model is trained, PyBooks wants to check its performance on some new book reviews. You need to check if the sentiment in a review is positive or negative.
+The following packages have been imported for you: torch, torch.nn as nn, torch.nn.functional as F, torch.optim as optim.
+An instance of TextClassificationCNN() with arguments vocab_size and embed_dim has also been loaded and saved as model.
+
+book_reviews = [
+    "I love this book".split(),
+    "I do not like this book".split()
+]
+for review in book_reviews:
+    # Convert the review words into tensor form
+    input_tensor = torch.tensor([word_to_ix[w] for w in review], dtype=torch.long).unsqueeze(0) 
+    # Get the model's output
+    outputs = model(input_tensor)
+    # Find the index of the most likely sentiment category
+    _, predicted_label = torch.max(outputs.data, 1)
+    # Convert the predicted label into a sentiment string
+    sentiment = "Positive" if predicted_label.item() == 1 else "Negative"
+    print(f"Book Review: {' '.join(review)}")
+    print(f"Sentiment: {sentiment}\n")
+=> Output: <script.py> output:
+    Book Review: I love this book
+    Sentiment: Positive
+    Book Review: I do not like this book
+    Sentiment: Negative
+You've successfully applied the trained CNN model to predict the sentiment of a given text. Did the model predict the sentiment correctly? If not, don't worry we will look into more techniques to improve it!
+
+12) Building an RNN model for text
+
+As a data analyst at PyBooks, you often encounter datasets that contain sequential information, such as customer interactions, time series data, or text documents. RNNs can effectively analyze and extract insights from such data. In this exercise, you will dive into the Newsgroup dataset that has already been processed and encoded for you. This dataset comprises articles from different categories. Your task is to apply an RNN to classify these articles into three categories: rec.autos, sci.med, and comp.graphics.
+The following has been loaded for you: torch, nn, optim.
+Additionally, the parameters input_size, hidden_size (32), num_layers (2), and num_classes have been preloaded for you.
+This and the following exercises use the fetch_20newsgroups dataset from sklearn.
+
+# Complete the RNN class
+class RNNModel(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(RNNModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.rnn = nn.RNN(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+        out, _ = self.rnn(x, h0)
+        out = out[:, -1, :] 
+        out = self.fc(out)
+        return out
+# Initialize the model
+rnn_model = RNNModel(input_size, hidden_size, num_layers, num_classes)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(rnn_model.parameters(), lr=0.01)
+# Train the model for ten epochs and zero the gradients
+for epoch in range(10): 
+    optimizer.zero_grad()
+    outputs = rnn_model(X_train_seq)
+    loss = criterion(outputs, y_train_seq)
+    loss.backward()
+    optimizer.step()
+    print(f'Epoch: {epoch+1}, Loss: {loss.item()}')
+=> Output: <script.py> output:
+    Epoch: 1, Loss: 1.1066070795059204
+    Epoch: 2, Loss: 1.01222825050354
+    Epoch: 3, Loss: 0.9298970103263855
+    Epoch: 4, Loss: 0.8456040620803833
+    Epoch: 5, Loss: 0.7616336345672607
+    Epoch: 6, Loss: 0.6835649013519287
+    Epoch: 7, Loss: 0.612591564655304
+    Epoch: 8, Loss: 0.5515431761741638
+    Epoch: 9, Loss: 0.5012911558151245
+    Epoch: 10, Loss: 0.46089011430740356
+Model loss should always decrease as it shows how well the model has learned new patterns.
+
+13) Building an LSTM model for text
+
+At PyBooks, the team is constantly seeking to enhance the user experience by leveraging the latest advancements in technology. In line with this vision, they have assigned you a critical task. The team wants you to explore the potential of another powerful tool: LSTM, known for capturing more complexities in data patterns. You are working with the same Newsgroup dataset, with the objective remaining unchanged: to classify news articles into three distinct categories: rec.autos, sci.med, and comp.graphics.
+The following packages have been loaded for you: torch, nn, optim.
+
+# Initialize the LSTM and the output layer with parameters
+class LSTMModel(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(LSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)       
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+        out, _ = self.lstm(x, (h0, c0))
+        out = out[:, -1, :] 
+        out = self.fc(out)
+        return out
+# Initialize model with required parameters
+lstm_model = LSTMModel(input_size, hidden_size, num_layers, num_classes)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(lstm_model.parameters(), lr=0.01)
+# Train the model by passing the correct parameters and zeroing the gradient
+for epoch in range(10): 
+    optimizer.zero_grad()
+    outputs = lstm_model(X_train_seq)
+    loss = criterion(outputs, y_train_seq)
+    loss.backward()
+    optimizer.step()
+    print(f'Epoch: {epoch+1}, Loss: {loss.item()}')
+=> Output: <script.py> output:
+    Epoch: 1, Loss: 1.1060612201690674
+    Epoch: 2, Loss: 1.096670150756836
+    Epoch: 3, Loss: 1.0869996547698975
+    Epoch: 4, Loss: 1.0734801292419434
+    Epoch: 5, Loss: 1.0540962219238281
+    Epoch: 6, Loss: 1.0271416902542114
+    Epoch: 7, Loss: 0.9913904070854187
+    Epoch: 8, Loss: 0.946643054485321
+    Epoch: 9, Loss: 0.8940384984016418
+    Epoch: 10, Loss: 0.8356568217277527
+The output presents model loss that would keep decreasing with each epoch. This information could be utilized by the team at PyBooks to compare with other models.
+
+14) Building a GRU model for text
+
+At PyBooks, the team has been impressed with the performance of the two models you previously trained. However, in their pursuit of excellence, they want to ensure the selection of the absolute best model for the task at hand. Therefore, they have asked you to further expand the project by experimenting with the capabilities of GRU models, renowned for their efficiency and effectiveness in text classification tasks. Your new assignment is to apply the GRU model to classify articles from the Newsgroup dataset into the following categories:
+rec.autos, sci.med, and comp.graphics. The following packages have been loaded for you: torch, nn, optim.
+
+# Complete the GRU model
+class GRUModel(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(GRUModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.gru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)    
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+        out, _ = self.gru(x, h0)
+        out = out[:, -1, :] 
+        out = self.fc(out)
+        return out
+# Initialize the model
+gru_model = GRUModel(input_size, hidden_size, num_layers, num_classes)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(gru_model.parameters(), lr=0.01)
+# Train the model and backpropagate the loss after initialization
+for epoch in range(15):
+    optimizer.zero_grad()
+    outputs = gru_model(X_train_seq)
+    loss = criterion(outputs, y_train_seq)
+    loss.backward()
+    optimizer.step()
+    print(f'Epoch: {epoch+1}, Loss: {loss.item()}')
+=> Output: <script.py> output:
+    Epoch: 1, Loss: 1.0981968641281128
+    Epoch: 2, Loss: 1.0621050596237183
+    Epoch: 3, Loss: 1.0224156379699707
+    Epoch: 4, Loss: 0.970187783241272
+    Epoch: 5, Loss: 0.9023439884185791
+    Epoch: 6, Loss: 0.8240284323692322
+    Epoch: 7, Loss: 0.7481850385665894
+    Epoch: 8, Loss: 0.6794835329055786
+    Epoch: 9, Loss: 0.6142259836196899
+    Epoch: 10, Loss: 0.5568534731864929
+    Epoch: 11, Loss: 0.5092020034790039
+    Epoch: 12, Loss: 0.46657148003578186
+    Epoch: 13, Loss: 0.42808276414871216
+    Epoch: 14, Loss: 0.3959297239780426
+    Epoch: 15, Loss: 0.36967921257019043
+You've effectively trained GRU models for text classification. The decreasing model loss across epochs is promising, and can be used by the PyBooks team for comparison with other models!
+
+15) Evaluating RNN classification models
+
+The team at PyBooks now wants you to evaluate the RNN model you created and ran using the Newsgroup dataset. Recall, the goal was to classify the articles into one of three categories: rec.autos, sci.med, and comp.graphics.
+The model was trained and you printed epoch and loss for each model. Use torchmetrics to evaluate various metrics for your model. The following has been loaded for : Accuracy, Precision, Recall, F1Score. An instance of rnn_model trained in the previous exercise in preloaded for you, too.
+
+# Create an instance of the metrics
+accuracy = Accuracy(task="multiclass", num_classes=3)
+precision = Precision(task="multiclass", num_classes=3)
+recall = Recall(task="multiclass", num_classes=3)
+f1 = F1Score(task="multiclass", num_classes=3)
+# Generate the predictions
+outputs = rnn_model(X_test_seq)
+_, predicted = torch.max(outputs, 1)
+# Calculate the metrics
+accuracy_score = accuracy(predicted, y_test_seq)
+precision_score = precision(predicted, y_test_seq)
+recall_score = recall(predicted, y_test_seq)
+f1_score = f1(predicted, y_test_seq)
+print("RNN Model - Accuracy: {}, Precision: {}, Recall: {}, F1 Score: {}".format(accuracy_score, precision_score, recall_score, f1_score))
+=> Output: <script.py> output:
+    RNN Model - Accuracy: 0.7633802890777588, Precision: 0.7633802890777588, Recall: 0.7633802890777588, F1 Score: 0.7633802890777588
+The model metrics provide significant insights on the effectiveness of our model. We can notice that all metrics are around 0.80 which is a good sign.
+
+16) Evaluating the model's performance
+
+The PyBooks team has been making strides on the book recommendation engine. The modeling team has provided you two different models ready for your book recommendation engine at PyBooks. One model is based on LSTM (lstm_model) and the other uses a GRU (gru_model). You've been tasked to evaluate and compare these models.
+The testing labels y_test and the model's predictions y_pred_lstm for lstm_model and y_pred_gru for gru_model.
+
+# Create an instance of the metrics
+accuracy = Accuracy(task="multiclass", num_classes=3)
+precision = Precision(task="multiclass", num_classes=3)
+recall = Recall(task="multiclass", num_classes=3)
+f1 = F1Score(task="multiclass", num_classes=3)
+# Calculate metrics for the LSTM model
+accuracy_1 = accuracy(y_pred_lstm, y_test)
+precision_1 = precision(y_pred_lstm, y_test)
+recall_1 = recall(y_pred_lstm, y_test)
+f1_1 = f1(y_pred_lstm, y_test)
+print("LSTM Model - Accuracy: {}, Precision: {}, Recall: {}, F1 Score: {}".format(accuracy_1, precision_1, recall_1, f1_1))
+# Calculate metrics for the GRU model
+accuracy_2 = accuracy(y_pred_gru, y_test)
+precision_2 = precision(y_pred_gru, y_test)
+recall_2 = recall(y_pred_gru, y_test)
+f1_2 = f1(y_pred_gru, y_test)
+print("GRU Model - Accuracy: {}, Precision: {}, Recall: {}, F1 Score: {}".format(accuracy_2, precision_2, recall_2, f1_2))
+=> Output: <script.py> output:
+    LSTM Model - Accuracy: 0.7633802890777588, Precision: 0.7633802890777588, Recall: 0.7633802890777588, F1 Score: 0.7633802890777588
+    GRU Model - Accuracy: 0.8169013857841492, Precision: 0.8169013857841492, Recall: 0.8169013857841492, F1 Score: 0.8169013857841492
+Well done! You've evaluated and compared two different models. Now, PyBooks can decide which model to deploy for their book recommendation engine.
+
+17) Creating a RNN model for text generation
+
+At PyBooks, you've been tasked to develop an algorithm that can perform text generation. The project involves auto-completion of book names. To kickstart this project, you decide to experiment with a Recurrent Neural Network (RNN). This way, you can understand the nuances of RNNs before moving to more complex models. The following has been imported for you: torch, torch.nn as nn.
+
+# Include an RNN layer and linear layer in RNNmodel class
+class RNNmodel(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(RNNmodel, self).__init__()
+        self.hidden_size = hidden_size
+        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
+    def forward(self, x):
+      h0 = torch.zeros(1, x.size(0), self.hidden_size)
+      out, _ = self.rnn(x, h0)  
+      out = self.fc(out[:, -1, :]) 
+      return out
+# Instantiate the RNN model
+model = RNNmodel(len(chars), 16, len(chars))
+=> By successfully creating this RNN model, you have taken the first step towards developing an advanced text generation system. By adding the fully connected layer for text generation, you have allowed RNN to predict the next element in a sequence. Let's further train and evaluate the model.
+
+18) Text generation using RNN - Training and Generation
+
+The team at PyBooks now wants you to train and test the RNN model, which is designed to predict the next character in the sequence based on the provided input for auto-completion of book names. This project will help the team further develop models for text completion. The model instance for the RNNmodel class is preloaded for you. The data variable has been preprocessed and encoded as a sequence.
+
+# Instantiate the loss function
+criterion = nn.CrossEntropyLoss()
+# Instantiate the optimizer
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+# Train the model
+for epoch in range(100):
+    model.train()
+    outputs = model(inputs)
+    loss = criterion(outputs, targets)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    if (epoch+1) % 10 == 0:
+        print(f'Epoch {epoch+1}/100, Loss: {loss.item()}')
+# Test the model
+model.eval()
+test_input = char_to_ix['r']
+test_input = nn.functional.one_hot(torch.tensor(test_input).view(-1, 1), num_classes=len(chars)).float()
+predicted_output = model(test_input)
+predicted_char_ix = torch.argmax(predicted_output, 1).item()
+print(f"Test Input: 'r', Predicted Output: '{ix_to_char[predicted_char_ix]}'")
+=> Output: <script.py> output:
+    Epoch 10/100, Loss: 2.9952824115753174
+    Epoch 20/100, Loss: 2.7484049797058105
+    Epoch 30/100, Loss: 2.577470064163208
+    Epoch 40/100, Loss: 2.379507541656494
+    Epoch 50/100, Loss: 2.1949691772460938
+    Epoch 60/100, Loss: 2.0455703735351562
+    Epoch 70/100, Loss: 1.939955711364746
+    Epoch 80/100, Loss: 1.8697600364685059
+    Epoch 90/100, Loss: 1.8239189386367798
+    Epoch 100/100, Loss: 1.7942695617675781
+    Test Input: 'r', Predicted Output: 'a'
+ Your RNN model has been successfully trained and tested. The model looks to be predicting the word 'rabbit'. You can also explore the same example with LSTMs or GRUs.
+
+19) Building a generator and discriminator
+
+At PyBooks, you're tasked with working on an automatic text generator to help writers overcome writer's block. By using GANs, or Generative Adversarial Networks, you believe you can create a system where one network, the generator, creates new text while the other network, the discriminator, evaluates its authenticity. To do this, you need to initialize both a generator and discriminator network. These networks will then be trained against each other to create new, believable text. The following has been imported for you: torch, torch.nn as nn.
+
+# Define the generator class
+class Generator(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = nn.Sequential(nn.Linear(seq_length, seq_length), nn.Sigmoid())
+    def forward(self, x):
+        return self.model(x)
+# Define the discriminator networks
+class Discriminator(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = nn.Sequential(nn.Linear(seq_length, 1), nn.Sigmoid())
+    def forward(self, x):
+        return self.model(x)
+=> You have successfully defined a generator and a discriminator for your GAN. These networks will be the backbone of your text generation system. Now you're ready to move on to the next step, which is to train these networks against each other so they can start generating and evaluating new text!
+
+20) Training a GAN model
+
+Your team at PyBooks has made good progress in building the text generator using a Generative Adversarial Network (GAN). You have successfully defined the generator and discriminator networks. Now, it's time to train them. The final step is to generate some fake data and compare it with the real data to see how well your GAN has learned. We have used tensors as an input and the output would try to resemble the input tensors. The team at PyBooks can then use this synthetic data for text analysis as the features will have same relationship as text data. The generator and discriminator have been initialized and saved to generator and discriminator, respectively.
+
+The following variables have been initialized in the exercise:
+seq_length = 5: Length of each synthetic data sequence
+num_sequences = 100: Total number of sequences generated
+num_epochs = 50: Number of complete passes through the dataset
+print_every = 10: Output display frequency, showing results every 10 epochs
+
+# Define the loss function and optimizer
+criterion = nn.BCELoss()
+optimizer_gen = torch.optim.Adam(generator.parameters(), lr=0.001)
+optimizer_disc = torch.optim.Adam(discriminator.parameters(), lr=0.001)
+for epoch in range(num_epochs):
+    for real_data in data:
+        # Unsqueezing real_data and prevent gradient recalculations
+        real_data = real_data.unsqueeze(0)
+        noise = torch.rand((1, seq_length))
+        fake_data = generator(noise)
+        disc_real = discriminator(real_data)
+        disc_fake = discriminator(fake_data.detach())
+        loss_disc = criterion(disc_real, torch.ones_like(disc_real)) + criterion(disc_fake, torch.zeros_like(disc_fake))
+        optimizer_disc.zero_grad()
+        loss_disc.backward()
+        optimizer_disc.step()
+        # Train the generator
+        disc_fake = discriminator(fake_data)
+        loss_gen = criterion(disc_fake, torch.ones_like(disc_fake))
+        optimizer_gen.zero_grad()
+        loss_gen.backward()
+        optimizer_gen.step()
+    if (epoch+1) % print_every == 0:
+        print(f"Epoch {epoch+1}/{num_epochs}:\t Generator loss: {loss_gen.item()}\t Discriminator loss: {loss_disc.item()}")
+print("\nReal data: ")
+print(data[:5])
+print("\nGenerated data: ")
+for _ in range(5):
+    noise = torch.rand((1, seq_length))
+    generated_data = generator(noise)
+    # Detach the tensor and print data
+    print(torch.round(generated_data).detach())
+=> Output: <script.py> output:
+    Epoch 10/20:	 Generator loss: 0.7247792482376099	 Discriminator loss: 1.3488365411758423
+    Epoch 20/20:	 Generator loss: 0.7011949419975281	 Discriminator loss: 1.4254050254821777
+    
+    Real data: 
+    tensor([[1., 1., 1., 0., 1.],
+            [1., 0., 1., 0., 0.],
+            [1., 0., 0., 1., 0.],
+            [0., 1., 0., 0., 0.],
+            [1., 1., 1., 0., 0.]])
+    
+    Generated data: 
+    tensor([[0., 1., 0., 1., 1.]])
+    tensor([[0., 1., 0., 1., 1.]])
+    tensor([[0., 1., 0., 1., 1.]])
+    tensor([[0., 1., 0., 1., 1.]])
+    tensor([[0., 1., 0., 1., 1.]])
+You have now successfully generated and printed synthetic data using the trained generator network. Fantastic work! The team at PyBooks can then use this synthetic data for text analysis.
+
+21) Text completion with pre-trained GPT-2 models
+
+Back at PyBooks, your current project involves creating captivating narratives based on existing stories to engage customers and enhance their experience. To achieve this, you need a powerful text generation tool that can seamlessly generate compelling text continuations. You'll be using a pre-trained model to get the job done.
+The following has been loaded for you: torch and GPT2Tokenizer,GPT2LMHeadModel from transformers.
+
+# Initialize the tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+# Initialize the pre-trained model
+model = GPT2LMHeadModel.from_pretrained('gpt2')
+seed_text = "Once upon a time"
+# Encode the seed text to get input tensors
+input_ids = tokenizer.encode(seed_text, return_tensors='pt')
+# Generate text from the model
+output = model.generate(input_ids, max_length=100, temperature=0.7, no_repeat_ngram_size=2, pad_token_id=tokenizer.eos_token_id) 
+generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+print(generated_text)
+=> Output: <script.py> output:
+    Once upon a time, the world was a place of great beauty and great danger. The world of the gods was the place where the great gods were born, and where they were to live.
+    The world that was created was not the same as the one that is now. It was an endless, endless world. And the Gods were not born of nothing. They were created of a single, single thing. That was why the universe was so beautiful. Because the cosmos was made of two
+NOTE: You have successfully completed the text completion exercise using the GPT-2 model and tokenizer. By analyzing the generated output, you can explore the fascinating world of language generation and witness the model's ability to generate imaginative and coherent text based on the provided seed text.
+
+22) Language translation with pretrained PyTorch model
+
+Your team at PyBooks is working on an AI project that involves translation from one language to another. They want to leverage pre-trained models for this task, which can save a lot of training time and resources. The task for this exercise is to set up a translation model from HuggingFace's Transformers library, specifically the T5 (Text-To-Text Transfer Transformer) model, and use it to translate an English phrase to French. T5Tokenizer, T5ForConditionalGeneration have been loaded for you.
+
+# Initalize tokenizer and model
+tokenizer = T5Tokenizer.from_pretrained("t5-small")
+model = T5ForConditionalGeneration.from_pretrained("t5-small")
+input_prompt = "translate English to French: 'Hello, my name is Shubham, your instructor for this course.'"
+# Encode the input prompt using the tokenizer
+input_ids = tokenizer.encode(input_prompt, return_tensors="pt")
+# Generate the translated ouput
+output = model.generate(input_ids, max_length=50)
+generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+print("Generated text:",generated_text)
+=> Output: <script.py> output:
+    Generated text: « Bonjour, mon nom est Shubham, votre instructeur pour ce cours. »
+NOTE: You've successfully used a pre-trained T5 model to translate an English phrase to French. This example shows the power of transformer models and how they can be leveraged for various NLP tasks, including translation.
+
+23) Evaluating pretrained text generation model
+
+The PyBooks team has used a pre-trained GPT-2 model that you experimented to generate a text based on a given prompt. Now, they want to evaluate the quality of this generated text. To achieve this, they have tasked you to evaluate generated text using a reference text. BLEUScore, ROUGEScore have been loaded for you.
+
+reference_text = "Once upon a time, there was a little girl who lived in a village near the forest."
+generated_text = "Once upon a time, the world was a place of great beauty and great danger. The world of the gods was the place where the great gods were born, and where they were to live."
+# Initialize BLEU and ROUGE scorers
+bleu = BLEUScore()
+rouge = ROUGEScore()
+# Calculate the BLEU and ROUGE scores
+bleu_score = bleu([generated_text], [[reference_text]])
+rouge_score = rouge([generated_text], [[reference_text]])
+# Print the BLEU and ROUGE scores
+print("BLEU Score:", bleu_score.item())
+print("ROUGE Score:", rouge_score)
+=> Output: <script.py> output:
+    BLEU Score: 0.08170417696237564
+    ROUGE Score: {'rouge1_fmeasure': tensor(0.2692), 'rouge1_precision': tensor(0.2000), 'rouge1_recall': tensor(0.4118), 'rouge2_fmeasure': tensor(0.1600), 'rouge2_precision': tensor(0.1176), 'rouge2_recall': tensor(0.2500), 'rougeL_fmeasure': tensor(0.2692), 'rougeL_precision': tensor(0.2000), 'rougeL_recall': tensor(0.4118), 'rougeLsum_fmeasure': tensor(0.2692), 'rougeLsum_precision': tensor(0.2000), 'rougeLsum_recall': tensor(0.4118)}
+You've successfully calculated the BLEU and ROUGE scores for the text generation gpt2 model. Let's analyse the results in the next exercise.
+
+24) Transfer learning using BERT
+
+At PyBooks, the company has decided to leverage the power of the BERT model, a pre-trained transformer model, for sentiment analysis. BERT has seen remarkable performance across various NLP tasks, making it a prime candidate for this use case. You're tasked with setting up a basic workflow using the BERT model from the transformers library for binary sentiment classification. The following has been imported for you: BertTokenizer, BertForSequenceClassification, torch. The example data texts and corresponding labels are also preloaded.
+
+# Load the BERT tokenizer and model
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2)
+# Tokenize your data and return PyTorch tensors
+inputs = tokenizer(texts, padding=True, truncation=True, return_tensors="pt", max_length=32)
+inputs["labels"] = torch.tensor(labels)
+# Setup the optimizer using model parameters
+optimizer = torch.optim.AdamW(model.parameters(), lr=0.00001)
+model.train()
+for epoch in range(1):
+    outputs = model(**inputs)
+    loss = outputs.loss
+    loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()
+    print(f"Epoch: {epoch+1}, Loss: {loss.item()}")
+=> Output: <script.py> output:
+    Epoch: 1, Loss: 0.8873976469039917
+You've successfully fine-tuned the BERT model for sentiment analysis. This foundation will serve as a robust base for understanding user sentiments in book reviews. The output should show you model loss!
+
+25) Evaluating the BERT model
+
+Having tokenized the sample reviews using BERT's tokenizer, it's now time to evaluate the BERT model with the samples at PyBooks. Additionally, you will evaluate the model's sentiment prediction on new data.
+The following has been imported for you: BertTokenizer, BertForSequenceClassification, torch. The trained model instance is also preloaded. We will now test it on a new data sample.
+
+text = "I had an awesome day!"
+# Tokenize the text and return PyTorch tensors
+input_eval = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=32)
+outputs_eval = model(**input_eval)
+# Convert the output logits to probabilities
+predictions = torch.nn.functional.softmax(outputs_eval.logits, dim=-1)
+# Display the sentiments
+predicted_label = 'positive' if torch.argmax(predictions) > 0 else 'negative'
+print(f"Text: {text}\nSentiment: {predicted_label}")
+=> Output: Epoch: 1, Loss: 0.7809629440307617
+<script.py> output:
+    Text: I had an awesome day!
+    Sentiment: negative
+Using the fine-tuned BERT model, you've accurately predicted sentiments of new texts. The printed sentiment should give you a glimpse of how the model perceives the provided text. With more training data and epochs the prediction can be improved. Remember, at PyBooks, understanding the sentiment of a review can be the key to the next bestseller recommendation!
+
+26) Creating a transformer model
+
+At PyBooks, the recommendation engine you're working on needs more refined capabilities to understand the sentiments of user reviews. You believe that using transformers, a state-of-the-art architecture, can help achieve this. You decide to build a transformer model that can encode the sentiments in the reviews to kickstart the project.
+The following packages have been imported for you: torch, nn, optim. The input data contains sentences such as : "I love this product", "This is terrible", "Could be better" … and their respective binary sentiment labels such as : 1, 0, 0, ... The input data is split and converted to embeddings in the following variables: train_sentences, train_labels ,test_sentences,test_labels,token_embeddings
+
+class TransformerEncoder(nn.Module):
+    def __init__(self, embed_size, heads, num_layers, dropout):
+        super(TransformerEncoder, self).__init__()
+        # Initialize the encoder
+        self.encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=embed_size, nhead=heads),
+            num_layers=num_layers)
+        # Define the fully connected layer
+        self.fc = nn.Linear(embed_size, 2)
+    def forward(self, x):
+        # Pass the input through the transformer encoder 
+        x = self.encoder(x)
+        x = x.mean(dim=1) 
+        return self.fc(x)
+model = TransformerEncoder(embed_size=512, heads=8, num_layers=3, dropout=0.5)
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+criterion = nn.CrossEntropyLoss()
+=> You've successfully created a Transformer model for sentiment analysis. With this architecture, you can encode and understand the nuances of reviews more effectively.
+
+27) Training and testing the Transformer model
+
+With the TransformerEncoder model in place, the next step at PyBooks is to train the model on sample reviews and evaluate its performance. Training on these sample reviews will help PyBooks understand the sentiment trends in their vast repository. By achieving a well-performing model, PyBooks can then automate sentiment analysis, ensuring readers get insightful recommendations and feedback. The following packages have been imported for you: torch, nn, optim.
+The model instance of the TransformerEncoder class, token_embeddings, and the train_sentences, train_labels ,test_sentences,test_labels are preloaded for you.
+
+for epoch in range(5): 
+    for sentence, label in zip(train_sentences, train_labels):
+        # Split the sentences into tokens and stack the embeddings
+        tokens = sentence.split()
+        data = torch.stack([token_embeddings[token] for token in tokens], dim=1)
+        output = model(data)
+        loss = criterion(output, torch.tensor([label]))
+        # Zero the gradients and perform a backward pass
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        print(f"Epoch {epoch}, Loss: {loss.item()}")
+def predict(sentence):
+    model.eval()
+    # Deactivate the gradient computations and get the sentiment prediction.
+    with torch.no_grad():
+        tokens = sentence.split()
+        data = torch.stack([token_embeddings.get(token, torch.rand((1, 512))) for token in tokens], dim=1)
+        output = model(data)
+        predicted = torch.argmax(output, dim=1)
+        return "Positive" if predicted.item() == 1 else "Negative"
+sample_sentence = "This product can be better"
+print(f"'{sample_sentence}' is {predict(sample_sentence)}")
+=> Output: <script.py> output:
+    Epoch 0, Loss: 0.5183966755867004
+    Epoch 0, Loss: 13.739718437194824
+    Epoch 0, Loss: 4.11965799331665
+    Epoch 1, Loss: 5.505362033843994
+    Epoch 1, Loss: 0.21438904106616974
+    Epoch 1, Loss: 0.5917049050331116
+    Epoch 2, Loss: 2.001128673553467
+    Epoch 2, Loss: 0.5232648849487305
+    Epoch 2, Loss: 0.5420070290565491
+    Epoch 3, Loss: 1.3280043601989746
+    Epoch 3, Loss: 0.5041146874427795
+    Epoch 3, Loss: 0.4478869140148163
+    Epoch 4, Loss: 1.2288222312927246
+    Epoch 4, Loss: 0.4376329779624939
+    Epoch 4, Loss: 0.4116699695587158
+    'This product can be better' is Negative
+You've successfully trained and tested the Transformer model. With such models in place, PyBooks' recommendation engine will provide even more accurate book recommendations based on user reviews.
+
+28) Creating a RNN model with attention
+
+At PyBooks, the team has been exploring various deep learning architectures. After some research, you decide to implement an RNN with Attention mechanism to predict the next word in a sentence. You're given a dataset with sentences and a vocabulary created from them. The following packages have been imported for you: torch, nn.
+
+The following has been preloaded for you:
+vocab and vocab_size: The vocabulary set and its size
+word_to_ix and ix_to_word: dictionary for word to index and index to word mappings
+input_data and target_data: converted dataset to input-output pairs
+embedding_dim and hidden_dim: dimensions for embedding and RNN hidden state
+You can inspect the data variable in the console to see the example sentences.
+
+class RNNWithAttentionModel(nn.Module):
+    def __init__(self):
+        super(RNNWithAttentionModel, self).__init__()
+        # Create an embedding layer for the vocabulary
+        self.embeddings = nn.Embedding(vocab_size, embedding_dim)
+        self.rnn = nn.RNN(embedding_dim, hidden_dim, batch_first=True)
+        # Apply a linear transformation to get the attention scores
+        self.attention = nn.Linear(hidden_dim, 1)
+        self.fc = nn.Linear(hidden_dim, vocab_size)
+    def forward(self, x):
+        x = self.embeddings(x)
+        out, _ = self.rnn(x)
+        #  Get the attention weights
+        attn_weights = torch.nn.functional.softmax(self.attention(out).squeeze(2), dim=1)
+        # Compute the context vector 
+        context = torch.sum(attn_weights.unsqueeze(2) * out, dim=1)
+        out = self.fc(context)
+        return out
+attention_model = RNNWithAttentionModel()
+optimizer = torch.optim.Adam(attention_model.parameters(), lr=0.01)
+criterion = nn.CrossEntropyLoss()
+print("Model Instantiated")
+=> Output: <script.py> output:
+    Model Instantiated
+You've incorporated the attention mechanism into the RNN, which helps the model to focus on relevant parts of the input when making a prediction.
+
+29) Training and testing the RNN model with attention
+
+At PyBooks, the team had previously built an RNN model for word prediction without the attention mechanism. This initial model, referred to as rnn_model, has already been trained and its instance is preloaded. Your task now is to train the new RNNWithAttentionModel and compare its predictions with that of the earlier rnn_model.
+
+The following has been preloaded for you:
+inputs: list of input sequences as tensors
+targets: tensor containing target words for each input sequence
+optimizer: Adam optimizer function
+criterion: CrossEntropyLoss function
+pad_sequences: function to pad input sequences for batching
+attention_model: defined model class from the previous exercise
+rnn_model:trained RNN model from the team at PyBooks
+
+for epoch in range(300):
+    attention_model.train()
+    optimizer.zero_grad()
+    padded_inputs = pad_sequences(inputs)
+    outputs = attention_model(padded_inputs)
+    loss = criterion(outputs, targets)
+    loss.backward()
+    optimizer.step()
+for input_seq, target in zip(input_data, target_data):
+    input_test = torch.tensor(input_seq, dtype=torch.long).unsqueeze(0)
+    #  Set the RNN model to evaluation mode
+    rnn_model.eval()
+    # Get the RNN output by passing the appropriate input 
+    rnn_output = rnn_model(input_test)
+    # Extract the word with the highest prediction score 
+    rnn_prediction = ix_to_word[torch.argmax(rnn_output).item()]
+    attention_model.eval()
+    attention_output = attention_model(input_test)
+    # Extract the word with the highest prediction score
+    attention_prediction = ix_to_word[torch.argmax(attention_output).item()]
+    print(f"\nInput: {' '.join([ix_to_word[ix] for ix in input_seq])}")
+    print(f"Target: {ix_to_word[target]}")
+    print(f"RNN prediction: {rnn_prediction}")
+    print(f"RNN with Attention prediction: {attention_prediction}")
+=> Output: <script.py> output:
+    
+    Input: the cat sat on the
+    Target: mat
+    RNN prediction: mat
+    RNN with Attention prediction: mat
+    
+    Input: dogs are very loyal
+    Target: animals
+    RNN prediction: noisy
+    RNN with Attention prediction: animals
+    
+    Input: parrots are colorful and
+    Target: noisy
+    RNN prediction: animals
+    RNN with Attention prediction: noisy
+    
+    Input: whales are the largest
+    Target: mammals
+    RNN prediction: mammals
+    RNN with Attention prediction: mammals
+With the attention mechanism, the model can potentially focus better on the context of the input sequence when predicting the next word compared to RNN. The results make it clear that using Attention layer has improved the results significantly!
+
+
+## CHAPTER 3: TRANSFORMER MODELS WITH PYTORCH
+
+1) PyTorch Transformers
+
+Now you're familiar with the different components of the transformer architecture, it's time to define one! The torch.nn module, imported for you as nn, provides a really nice way to do this in just a few lines of code.
+
+# Define the transformer model
+model = nn.Transformer(
+    d_model=1536,
+    nhead=8,
+    num_encoder_layers=6,
+    num_decoder_layers=6
+)
+# Print the model object
+print(model)
+=> Output: <script.py> output:
+    Transformer(
+      (encoder): TransformerEncoder(
+        (layers): ModuleList(
+          (0-5): 6 x TransformerEncoderLayer(
+            (self_attn): MultiheadAttention(
+              (out_proj): NonDynamicallyQuantizableLinear(in_features=1536, out_features=1536, bias=True)
+            )
+            (linear1): Linear(in_features=1536, out_features=2048, bias=True)
+            (dropout): Dropout(p=0.1, inplace=False)
+            (linear2): Linear(in_features=2048, out_features=1536, bias=True)
+            (norm1): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+            (norm2): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+            (dropout1): Dropout(p=0.1, inplace=False)
+            (dropout2): Dropout(p=0.1, inplace=False)
+          )
+        )
+        (norm): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+      )
+      (decoder): TransformerDecoder(
+        (layers): ModuleList(
+          (0-5): 6 x TransformerDecoderLayer(
+            (self_attn): MultiheadAttention(
+              (out_proj): NonDynamicallyQuantizableLinear(in_features=1536, out_features=1536, bias=True)
+            )
+            (multihead_attn): MultiheadAttention(
+              (out_proj): NonDynamicallyQuantizableLinear(in_features=1536, out_features=1536, bias=True)
+            )
+            (linear1): Linear(in_features=1536, out_features=2048, bias=True)
+            (dropout): Dropout(p=0.1, inplace=False)
+            (linear2): Linear(in_features=2048, out_features=1536, bias=True)
+            (norm1): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+            (norm2): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+            (norm3): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+            (dropout1): Dropout(p=0.1, inplace=False)
+            (dropout2): Dropout(p=0.1, inplace=False)
+            (dropout3): Dropout(p=0.1, inplace=False)
+          )
+        )
+        (norm): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+      )
+    )
+Congratulations on defining your first transformer model! Take a moment to look at the output. You should be able to see the encoder and decoder blocks, as well as a few others things that may be familiar to you, like linear layers, dropouts, and layer normalizations. Let's now zoom into the first critical transformer component: positional encoding!
+
+2) Creating input embeddings
+
+Time to begin creating your very own transformer model, and the first step is to embed the input token IDs!
+You'll define an InputEmbeddings class with the following parameters:
+vocab_size: the size of the model vocabulary
+d_model: the dimensionality of the input embeddings
+The torch and math libraries have been imported for you, as well as torch.nn as nn. These will be loaded throughout the course exercises.
+
+class InputEmbeddings(nn.Module):
+    def __init__(self, vocab_size: int, d_model: int) -> None:
+        super().__init__()
+        # Set the model dimensionality and vocabulary size
+        self.d_model = d_model
+        self.vocab_size = vocab_size
+        # Instantiate the embedding layer
+        self.embedding = nn.Embedding(vocab_size, d_model)
+    def forward(self, x):
+        # Return the embeddings multiplied by the square root of d_model
+        return self.embedding(x) * math.sqrt(self.d_model)
+# Instantiate InputEmbeddings and apply it to token_ids
+embedding_layer = InputEmbeddings(vocab_size=10_000, d_model=512)
+output = embedding_layer(token_ids)
+print(output.shape)
+=> Output: <script.py> output:
+    torch.Size([2, 4, 512])
+In the shape, [2, 4, 512], 2 is the number of batches, 4 is the sequence length, and 512 is the embedding dimensionality. In other words, you created token embeddings for each token ID in each batch
+
+3) Creating positional encodings
+
+Embedding the tokens is a good start, but these embeddings still lack information about each token's position in the sequence. To remedy this, the transformer architecture makes use of positional encodings. This encodes positional information from each token into the embeddings.
+You'll create a PositionalEncoding class with the following parameters:
+d_model: the dimensionality of the input embeddings
+max_seq_length: the maximum sequence length (or the sequence length if each sequence is the same length)
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_seq_length):
+        super().__init__()
+        # Create a matrix of zeros of dimensions max_seq_length by d_model
+        pe = torch.zeros(max_seq_length, d_model)
+        position = torch.arange(0, max_seq_length, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model))
+        # Perform the sine and cosine calculations
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        # Ensure pe isn't a learnable parameter during training
+        self.register_buffer('pe', pe.unsqueeze(0))
+    def forward(self, x):
+        # Add the positional embeddings to the token embeddings
+        return x + self.pe[:, :x.size(1)]
+pos_encoding_layer = PositionalEncoding(d_model=512, max_seq_length=4)
+output = pos_encoding_layer(token_embeddings)
+print(output.shape)
+print(output[0][0][:10])
+=> Output: <script.py> output:
+    torch.Size([2, 4, 512])
+    tensor([-12.3562, -13.2593, -14.3605,  23.0541,   4.7482,   1.6763,  38.6756,
+            -15.4220, -17.5031,  14.4908], grad_fn=<SliceBackward0>)
+Here you can see the shape of the embeddings after the positional encoding, along with the first ten embedding values for the first token in the first sequence. Notice that the positional encoder didn't change the shape of the embeddings, and the resulting values are the sum of the original token embeddings and the positional embeddings!
+
+4) Implementing multi-head attention
+
+Before you dive in and begin building your own MultiHeadAttention class, you'll try out using the class to see how it transforms the query, key, and value matrices. Recall that these matrices are generated by projecting the input embeddings using linear transformations with learned weights.
+query, key, and value matrices have already been created for you, and the MultiHeadAttention has been defined for you.
+
+# Define attention parameters
+d_model = 512
+num_heads = 8
+# Instantiate a MultiHeadAttention instance
+multihead_attn = MultiHeadAttention(d_model, num_heads)
+# Pass the query, key, and value matrices through the mechanism
+output = multihead_attn(query, key, value)
+print(output.shape)
+=> Output: <script.py> output:
+    torch.Size([16, 10, 512])
+Notice the shape (batch_size, seq_length, d_model) matches the shape of the input embeddings, which you would expect as the multi-head attention mechanism is essentially adding more information to the input embeddings. Time to have a go at coding this class out!
+
+5) Starting the MultiHeadAttentionClass
+
+Now that you've defined classes for creating token embeddings and positional embeddings, it's time to define a class for performing multi-head attention. To start, set up the parameters used for the attention calculation and the linear layers used for transforming the input embeddings into query, key, and value matrices, and one for projecting the combined attention weights back into embeddings. torch.nn has been imported as nn.
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+        # Calculate the dimensions each head will process
+        self.num_heads = num_heads
+        self.d_model = d_model
+        self.head_dim = d_model // num_heads
+        # Define the three input layers and one output layer
+        self.query_linear = nn.Linear(d_model, d_model, bias=False)
+        self.key_linear = nn.Linear(d_model, d_model, bias=False)
+        self.value_linear = nn.Linear(d_model, d_model, bias=False)
+        self.output_linear = nn.Linear(d_model, d_model)
+=> With the __init__ method set up, time to move onto the methods that perform the calculations and processes inside the mechanism.
+
+6) Adding methods to the MultiHeadAttention class
+
+In this exercise, you'll build the rest of the MultiHeadAttention class from the ground up by defining four methods:
+.split_heads(): split and transform the input embeddings between the attention heads
+.compute_attention(): calculate the scaled dot-product attention weights multiplied by the values matrix
+.combine_heads(): transform the attention weights back into the same shape as the input embeddings, x
+.forward(): call the other methods to pass the input embeddings through each process
+torch.nn has been imported as nn, torch.nn.functional is available as F, and torch is also available.
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+        self.num_heads = num_heads
+        self.d_model = d_model
+        self.head_dim = d_model // num_heads
+        self.query_linear = nn.Linear(d_model, d_model, bias=False)
+        self.key_linear = nn.Linear(d_model, d_model, bias=False)
+        self.value_linear = nn.Linear(d_model, d_model, bias=False)
+        self.output_linear = nn.Linear(d_model, d_model)
+    def split_heads(self, x, batch_size):
+        seq_length = x.size(1)
+        # Split the input embeddings and permute
+        x = x.reshape(batch_size, seq_length, self.num_heads, self.head_dim)
+        return x.permute(0, 2, 1, 3)
+    def compute_attention(self, query, key, value, mask=None):
+        # Compute scaled dot-product attention
+        scores = torch.matmul(query, key.transpose(-2, -1)) / (self.head_dim ** 0.5)
+        if mask is not None:
+            scores = scores.masked_fill(mask == 0, float('-inf'))
+        attention_weights = F.softmax(scores, dim=-1)
+        return torch.matmul(attention_weights, value)
+    def combine_heads(self, x, batch_size):
+        seq_length = x.size(1)
+        # Combine heads back to (batch_size, seq_length, d_model)
+        x = x.permute(0, 2, 1, 3).contiguous()
+        return x.view(batch_size, -1, self.d_model)
+    def forward(self, query, key, value, mask=None):
+        batch_size = query.size(0)
+        # Build the forward pass
+        query = self.split_heads(self.query_linear(query), batch_size)
+        key = self.split_heads(self.key_linear(key), batch_size)
+        value = self.split_heads(self.value_linear(value), batch_size)
+        attention_weights = self.compute_attention(query, key, value, mask)
+        output = self.combine_heads(attention_weights, batch_size)
+        return self.output_linear(output)
+NOTE:  The attention mechanism has revolutionized text modeling and is crucial in the transformer architecture. Its importance was highlighted in the title of the famous transformers paper, Attention is all you need.
+
+7) Feed-forward sublayers
+
+Feed-forward sub-layers map attention outputs into abstract nonlinear representations to better capture complex relationships.
+In this exercise, you'll create a FeedForwardSubLayer for your encoder-only transformer. This layer will consist of two linear layers with a ReLU activation function between them. It also takes two parameters, d_model and d_ff, which represent the dimensionality of the input embeddings and the dimension between the linear layers, respectively.
+d_model and d_ff are already available for you to use.
+
+class FeedForwardSubLayer(nn.Module):
+    def __init__(self, d_model, d_ff):
+        super().__init__()
+        # Define the layers and activation
+        self.fc1 = nn.Linear(d_model, d_ff)
+        self.fc2 = nn.Linear(d_ff, d_model)
+        self.relu = nn.ReLU()
+    def forward(self, x):
+        # Pass the input through the layers and activation
+        return self.fc2(self.relu(self.fc1(x)))
+# Instantiate the FeedForwardSubLayer and apply it to x
+feed_forward = FeedForwardSubLayer(d_model, d_ff)
+output = feed_forward(x)
+print(f"Input shape: {x.shape}")
+print(f"Output shape: {output.shape}")
+=> Output: <script.py> output:
+    Input shape: torch.Size([32, 10, 512])
+    Output shape: torch.Size([32, 10, 512])
+As you can see, the input and output shapes are the same, which is expected because the first linear layer projects the embeddings into a higher-dimensional space, the activation function introduces non-linearity, and the second linear layer projects the features back into the original dimensions. Let's integrate this into an encoder layer!
+
+8) The encoder transformer layer
+
+With a FeedForwardSubLayer class defined, you have all of the pieces you need to define an EncoderLayer class. Recall that the encoder layer typically consists of a multi-head attention mechanism, and a feed-forward sublayer with layer normalization and dropout on the sublayer's inputs and outputs. The classes you have already defined are available for you with the same names, along with torch and torch.nn as nn.
+
+class EncoderLayer(nn.Module):
+    def __init__(self, d_model, num_heads, d_ff, dropout):
+        super().__init__()
+        # Instantiate the layers
+        self.self_attn = MultiHeadAttention(d_model, num_heads)
+        self.ff_sublayer = FeedForwardSubLayer(d_model, d_ff)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+    def forward(self, x, src_mask):
+        # Complete the forward method
+        attn_output = self.self_attn(x, x, x, src_mask)
+        x = self.norm1(x + self.dropout(attn_output))
+        ff_output = self.ff_sublayer(x)
+        x = self.norm2(x + self.dropout(ff_output))
+        return x
+=> Output: From here, you're only one final step away from completing the encoder transformer body.
+
+9) The encoder transformer body
+
+Your encoder-only transformer body is almost complete! It's time to combine the InputEmbeddings, PositionalEncoding, and EncoderLayer classes you've created previously into a TransformerEncoder class.
+
+class TransformerEncoder(nn.Module):
+    def __init__(self, vocab_size, d_model, num_layers, num_heads, d_ff, dropout, max_seq_length):
+        super().__init__()
+        # Define the embedding, positional encoding, and encoder layers
+        self.embedding = InputEmbeddings(vocab_size, d_model)
+        self.positional_encoding = PositionalEncoding(d_model, max_seq_length)
+        self.layers = nn.ModuleList([EncoderLayer(d_model, num_heads, d_ff, dropout) for _ in range(num_layers)])
+    def forward(self, x, src_mask):
+        # Perform the forward pass through the layers
+        x = self.embedding(x)
+        x = self.positional_encoding(x)
+        for layer in self.layers:
+            x = layer(x, src_mask)
+        return x
+=> Once trained, the encoder body will encode the input sequences into rich embeddings that capture complex patterns in the sequence. To convert these embeddings into a prediction, you need to add a head to your body. Head on over to the next exercise to build a classification head and test out passing it some token IDs!
+
+10) Adding the transformer head
+
+Time to design a transformer head that could be used for classification tasks like sentiment analysis or categorization. You'll define a ClassifierHead class, create instances of the body and head, and pass a series of token IDs through them both to test that they work as expected.
+Note: because this model has been trained yet, the outputs will be meaningless, but testing the code can process inputs and generate outputs in the form you expect is a good test.
+
+# Complete the classification head
+class ClassifierHead(nn.Module):
+    def __init__(self, d_model, num_classes):
+        super().__init__()
+        self.fc = nn.Linear(d_model, num_classes)
+    def forward(self, x):
+        logits = self.fc(x)
+        return F.log_softmax(logits, dim=-1)
+# Instantiate the encoder transformer's body and head
+encoder = TransformerEncoder(vocab_size, d_model, num_layers, num_heads, d_ff, dropout, seq_length)
+classifier = ClassifierHead(d_model, num_classes)
+# Complete the forward pass 
+output = encoder(input_sequence, src_mask)
+classification = classifier(output)
+print(f"Classification outputs for a batch of {batch_size} sequences:\n{classification}")
+print(f"Encoder output shape: {output.shape}\nClassification head output shape: {classification.shape}")
+=> Output: <script.py> output:
+    Classification outputs for a batch of 8 sequences:
+    tensor([[[-1.1122, -1.6480, -0.7366],
+             [-1.8497, -1.5274, -0.4690],
+             [-1.4183, -1.0220, -0.9213],
+             ...,
+             [-1.6998, -1.2417, -0.6379],
+             [-1.1986, -0.6202, -1.8294],
+             [-1.4231, -1.4654, -0.6385]],
+    
+            [[-0.8684, -1.7473, -0.9010],
+             [-1.3551, -0.5766, -1.7134],
+             [-1.0129, -1.0883, -1.2037],
+             ...,
+             [-2.1576, -0.6169, -1.0648],
+             [-1.5488, -0.7907, -1.0967],
+             [-0.8143, -1.4087, -1.1628]],
+    
+            [[-1.5805, -0.5919, -1.4235],
+             [-1.2870, -1.2336, -0.8378],
+             [-1.0994, -0.7531, -1.6294],
+             ...,
+             [-1.1505, -1.0059, -1.1464],
+             [-1.4094, -1.2263, -0.7714],
+             [-2.2438, -0.5769, -1.1016]],
+    
+            ...,
+    
+            [[-1.4192, -1.1250, -0.8360],
+             [-0.9580, -0.8637, -1.6362],
+             [-1.0160, -1.5145, -0.8722],
+             ...,
+             [-2.3837, -0.6382, -0.9688],
+             [-1.3941, -0.6666, -1.4334],
+             [-1.8868, -0.9286, -0.7911]],
+    
+            [[-1.0639, -0.7547, -1.6888],
+             [-0.5152, -1.9248, -1.3598],
+             [-1.1164, -1.4703, -0.8149],
+             ...,
+             [-1.2430, -1.0801, -0.9891],
+             [-1.9959, -0.5108, -1.3314],
+             [-0.6926, -1.4755, -1.3055]],
+    
+            [[-0.8901, -2.6314, -0.6589],
+             [-1.0134, -1.1864, -1.1035],
+             [-1.5367, -0.8068, -1.0829],
+             ...,
+             [-2.3968, -0.8304, -0.7484],
+             [-1.1347, -0.9233, -1.2684],
+             [-1.7742, -1.1048, -0.6950]]], grad_fn=<LogSoftmaxBackward0>)
+    Encoder output shape: torch.Size([8, 256, 512])
+    Classification head output shape: torch.Size([8, 256, 3])
+As you can see from the output shapes, the classification head has successfully reduced the output embeddings into classification predictions. Until trained these predictions are meaningless, but it's a good test that the class works as expected!
+
+11) Designing a mask for self-attention
+
+To ensure that the decoder can learn to predict tokens, it's important to mask future tokens when modeling the input sequences. You'll build a mask in the form of a triangular matrix of True and False values, with False values in the upper diagonal to exclude future tokens.
+
+seq_length = 3
+# Create a Boolean matrix to mask future tokens
+tgt_mask = (1 - torch.triu(
+  torch.ones(1, seq_length, seq_length), diagonal=1)
+).bool()
+print(tgt_mask)
+=> Output: <script.py> output:
+    tensor([[[ True, False, False],
+             [ True,  True, False],
+             [ True,  True,  True]]])
+Marvellous mask making! Masking future values during this attention process greatly improves the model's ability for next-word prediction, as it doesn't have access to this future knowledge.
+
+12) The decoder layer
+
+Like encoder transformers, decoder transformers are also built of multiple layers that make use of multi-head attention and feed-forward sublayers. Have a go at combining these components to build a DecoderLayer class. The MultiHeadAttention and FeedForwardSubLayer classes are available for you to use, and along with the tgt_mask you created.
+
+class DecoderLayer(nn.Module):
+    def __init__(self, d_model, num_heads, d_ff, dropout):
+        super().__init__()
+        self.self_attn = MultiHeadAttention(d_model, num_heads)
+        self.ff_sublayer = FeedForwardSubLayer(d_model, d_ff)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+    def forward(self, x, tgt_mask):
+        # Perform the attention calculation
+        attn_output = self.self_attn(x, x, x, tgt_mask)
+        # Apply dropout and the first layer normalization
+        x = self.norm1(x + self.dropout(attn_output))
+        # Pass through the feed-forward sublayer
+        ff_output = self.ff_sublayer(x)
+        # Apply dropout and the second layer normalization
+        x = self.norm2(x + self.dropout(ff_output))
+        return x
+=> Notice that the __init__ method is the same for the decoder layer as the encoder layer, and in fact, the only change to the forward() method is changing the src_mask to tgt_mask.
+
+13) Completing the decoder transformer
+
+Time to build the decoder transformer body! This will mean combining the InputEmbeddings, PositionalEncoding, and DecoderLayer classes you've created previously.
+
+class TransformerDecoder(nn.Module):
+    def __init__(self, vocab_size, d_model, num_layers, num_heads, d_ff, dropout, max_seq_length):
+        super(TransformerDecoder, self).__init__()
+        self.embedding = InputEmbeddings(vocab_size, d_model)
+        self.positional_encoding = PositionalEncoding(d_model, max_seq_length)
+        # Define the list of decoder layers and linear layer
+        self.layers = nn.ModuleList([DecoderLayer(d_model, num_heads, d_ff, dropout) for _ in range(num_layers)])
+        # Define a linear layer to project hidden states to likelihoods
+        self.fc = nn.Linear(d_model, vocab_size)
+    def forward(self, x, tgt_mask):
+        # Complete the forward pass
+        x = self.embedding(x)
+        x = self.positional_encoding(x)
+        for layer in self.layers:
+            x = layer(x, tgt_mask)
+        x = self.fc(x)
+        return F.log_softmax(x, dim=-1)
+# Instantiate a decoder transformer and apply it to input_tokens and tgt_mask
+transformer_decoder = TransformerDecoder(vocab_size, d_model, num_layers, num_heads, d_ff, dropout, max_seq_length)   
+output = transformer_decoder(input_tokens, tgt_mask)
+print(output)
+print(output.shape)
+=> Output: <script.py> output:
+    tensor([[[ -9.6957,  -9.7641, -10.7757,  ...,  -9.1617,  -9.0148, -10.5382],
+             [-10.0174,  -9.6834,  -9.4023,  ...,  -8.8480,  -9.6867,  -9.5536],
+             [-10.0357,  -9.2262, -10.9825,  ...,  -9.3057,  -9.4094,  -9.2079],
+             ...,
+             [ -8.8643,  -9.5922,  -8.8882,  ...,  -8.9938,  -8.8175,  -9.5518],
+             [ -8.8995,  -9.3144,  -9.5323,  ...,  -8.6762,  -8.8349, -10.3030],
+             [ -8.2631,  -9.9587,  -9.1400,  ...,  -8.4914,  -9.9150,  -9.8688]],
+    
+            [[ -9.2845,  -9.6468,  -9.7326,  ...,  -8.2411,  -9.3901, -10.1235],
+             [ -9.5278,  -9.5395,  -9.2801,  ..., -10.2007,  -9.1402, -10.3673],
+             [ -9.2038,  -9.1953,  -8.9823,  ...,  -9.0996, -10.3499,  -9.4035],
+             ...,
+             [ -9.1439,  -9.0702,  -9.5682,  ..., -10.3378,  -9.7013,  -8.6952],
+             [ -8.7802,  -9.1960, -10.1040,  ...,  -8.4276,  -9.2396, -10.1342],
+             [ -8.9772,  -8.4926, -10.3372,  ...,  -8.7280,  -9.3354, -10.4660]]],
+           grad_fn=<LogSoftmaxBackward0>)
+    torch.Size([2, 10, 10000])
+The shape [2, 10, 10000] matches [batch_size, seq_length, vocab_size], so your decoder transformer successfully projected the embeddings into token probabilities. Remember, because this model hasn't been trained, these probabilities won't be meaningful. Let's now learn how to combine the decoder and encoder transformers into the encoder-decoder transformer that was shown in the Attention Is All You Need paper.
+
+14) Adding cross-attention to the decoder layer
+
+To integrate the encoder and decoder stacks you've defined previously into an encoder-decoder transformer, you need to create a cross-attention mechanism to act as a bridge between the two. The MultiHeadAttention class you defined previously is still available.
+
+class DecoderLayer(nn.Module):
+    def __init__(self, d_model, num_heads, d_ff, dropout):
+        super().__init__()
+        self.self_attn = MultiHeadAttention(d_model, num_heads)
+        # Define cross-attention and a third layer normalization
+        self.cross_attn = MultiHeadAttention(d_model, num_heads)
+        self.ff_sublayer = FeedForwardSubLayer(d_model, d_ff)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.norm3 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+    def forward(self, x, y, tgt_mask, cross_mask):
+        self_attn_output = self.self_attn(x, x, x, tgt_mask)
+        x = self.norm1(x + self.dropout(self_attn_output))
+        # Complete the forward pass
+        cross_attn_output = self.cross_attn(x, y, y, cross_mask)
+        x = self.norm2(x + self.dropout(cross_attn_output))
+        ff_output = self.ff_sublayer(x)
+        x = self.norm3(x + self.dropout(ff_output))
+        return x
+=> Output: You're now ready to integrate all of the classes you've worked so hard to create into a single, master Transformer class.
+
+15) Constructing the encoder-decoder transformer
+
+Now that you've updated the DecoderLayer class, and the equivalent changes have been made to TransformerDecoder, you're ready to put everything together. Because you've built your classes in a modular and hierarchical way, you only need to call instantiate two of them to build the encoder-decoder transformer: TransformerDecoder and TransformerEncoder.
+
+class Transformer(nn.Module):
+    def __init__(self, vocab_size, d_model, num_heads, num_layers, d_ff, max_seq_length, dropout):
+        super().__init__()
+        self.encoder = TransformerEncoder(vocab_size, d_model, num_layers, num_heads, d_ff, dropout, max_seq_length)
+        self.decoder = TransformerDecoder(vocab_size, d_model, num_layers, num_heads, d_ff, dropout, max_seq_length)
+    def forward(self, x, src_mask, tgt_mask, cross_mask):
+        # Complete the forward pass
+        encoder_output = self.encoder(x, src_mask)
+        decoder_output = self.decoder(x, encoder_output, tgt_mask, cross_mask)
+        return decoder_output
+# Instantiate and call the transformer
+transformer = Transformer(vocab_size, d_model, num_heads, num_layers, d_ff, max_seq_length, dropout)
+outputs = transformer(input_tokens, src_mask, tgt_mask, cross_mask)
+print(outputs)
+print(outputs.shape)
+=> Output: <script.py> output:
+    tensor([[[ -9.0712,  -8.0924,  -9.4708,  ...,  -9.9957, -10.2430,  -8.9925],
+             [ -9.3859,  -8.9242,  -9.1667,  ...,  -9.0311,  -9.8124,  -9.3671],
+             [ -8.8325,  -8.9751,  -9.2692,  ...,  -9.1104,  -9.8917,  -9.4929],
+             ...,
+             [ -9.3038,  -8.1439,  -9.6607,  ..., -10.2264,  -9.2950,  -9.7369],
+             [ -9.7537,  -9.8571,  -9.5863,  ...,  -8.9524, -10.0021,  -9.6048],
+             [ -8.9876,  -9.7789,  -8.9373,  ...,  -9.2447, -10.1680,  -9.2987]],
+    
+            [[ -9.6580,  -9.2996,  -9.4856,  ...,  -9.0297,  -9.4815,  -8.6380],
+             [ -9.4556,  -9.0052,  -9.4578,  ...,  -9.1989,  -9.1145,  -8.9232],
+             [-10.1578,  -8.6715,  -9.5518,  ...,  -9.1662,  -9.5052,  -8.8780],
+             ...,
+             [ -9.6386,  -9.8557,  -8.5088,  ..., -10.2268,  -9.7348,  -9.3016],
+             [ -9.5978,  -9.3123,  -9.7360,  ...,  -8.5580,  -9.3167,  -9.3112],
+             [ -9.5872,  -9.1370,  -9.2807,  ...,  -9.1017,  -9.7345,  -9.1378]]],
+           grad_fn=<LogSoftmaxBackward0>)
+    torch.Size([2, 10, 10000])
+You've built an encoder-decoder transformer from end to end with PyTorch.
