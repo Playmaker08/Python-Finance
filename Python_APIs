@@ -17,5 +17,618 @@ with urlopen('http://localhost:3000/lyrics/') as response:
     N' I never miss Cause I'm a problem child - AC/DC, Problem Child
 Using the urllib module you have retrieved the 'Lyric of the day' from the Lyric API. The code is quite complex though, as we had to deal with decoding, etc.
 
-2)
+2) Using the requests package
 
+Using urllib to integrate APIs can result in verbose and complex code as you need to take care of a lot of additional things like encoding and decoding responses.
+As an alternative to urllib, the requests Python package offers a simpler way to integrate APIs. A lot of functionality is available out of the box with requests, which makes your code a lot easier to write and read. Let's try the same exercise again but now with the requests package.
+Remember, as with the previous exercise, the URL for the Lyrics API is http://localhost:3000/lyrics.
+
+# Import the requests package
+import requests
+# Pass the API URL to the get function
+response = requests.get('http://localhost:3000/lyrics/')
+# Print out the text attribute of the response object
+print(response.text)
+=> Output: <script.py> output:
+    N' I never miss Cause I'm a problem child - AC/DC, Problem Child
+Nice, using the requests package you have simplified the code a lot. The requests package even took care of decoding the response for you, how cool is that? Let's move on and see what more can be done with the requests package.
+
+3) Constructing a URL with parameters
+
+You can fine-tune your API requests using the path and query parameters of the URL. Let's learn how you can use HTTP verbs, URL paths, and parameters using the requests package.
+In this exercise, you will make another API request to the Lyrics API, but instead of getting today's lyric, you will send a request to the random lyrics API. You will then further customize the API request by adding query parameters to filter on specific artists and include the track title. Below, you can find the details needed to construct the correct URL.
+
+Component	                        Value
+Protocol	                        http
+Domain	                          localhost
+Port	                            3000
+Path	                            /lyrics/random
+Artist filter parameter	          artist
+Include track parameter	          include_track
+The requests library is already imported for your convenience.
+
+# Construct the URL string and pass it to the requests.get() function
+response = requests.get('http://localhost:3000/lyrics/random')
+print(response.text)
+=> <script.py> output:
+    Livin' it up when I'm goin' down - Aerosmith
+
+# Create a dictionary variable with query params
+query_params = {'artist': 'Deep Purple'}
+# Pass the dictionary to the get() function
+response = requests.get('http://localhost:3000/lyrics/random', params=query_params)
+print(response.text)
+=> <script.py> output:
+    Smoke on the water, a fire in the sky - Deep Purple
+
+# Add the `include_track` parameter
+query_params = {'artist': 'Deep Purple', 'include_track': True}
+response = requests.get('http://localhost:3000/lyrics/random', params=query_params)
+# Print the response URL
+print(response.url)
+# Print the lyric
+print(response.text)
+=> Output: <script.py> output:
+    http://localhost:3000/lyrics/random?artist=Deep+Purple&include_track=True
+    Smoke on the water, a fire in the sky - Deep Purple, Smoke on the Water
+
+4) Creating and deleting resources using an API
+
+Now that you have learned how to construct a URL, you can send requests to specific API resources. Let's see what more you can do with HTTP verbs on these resources.
+In this exercise, you will use the playlists API available via http://localhost:3000/playlists/. This API offers the following actions:
+
+Verb	     Path	                             Description
+GET	       playlists	                       get a list of all playlists
+GET	       /playlists/{PlaylistId}	         get information on a single playlist using it's unique identifier PlaylistId
+POST	     /playlists	                       create a new playlist
+DELETE	   /playlists/{PlaylistId}	         remove an existing playlist using it's unique identifier PlaylistId
+Start by getting a list of all existing playlists, then you will learn how to create a new playlist and verify it's creation, and last you will learn how to remove an existing playlist.
+The requests library is already imported for your convenience.
+
+# Get a list of all playlists from the API
+response = requests.get('http://localhost:3000/playlists')
+print(response.text)
+=> <script.py> output:
+    [{"PlaylistId":1,"Name":"Classical music"},{"PlaylistId":2,"Name":"Classical music"},{"PlaylistId":3,"Name":"Pop"},{"PlaylistId":4,"Name":"Pop"}]
+
+# Create a dictionary with the playlist info
+playlist_data = {'Name': 'Rock Ballads'}
+# Perform a POST request to the playlists API with your dictionary as data parameter
+response = requests.post('http://localhost:3000/playlists', data=playlist_data)
+print(response.text)
+=> <script.py> output:
+    [{"PlaylistId":1,"Name":"Classical music"},{"PlaylistId":2,"Name":"Classical music"},{"PlaylistId":3,"Name":"Pop"},{"PlaylistId":4,"Name":"Pop"},{"PlaylistId":5,"Name":"Rock Ballads"},{"PlaylistId":6,"Name":"Rock Ballads"}]
+
+# Perform a GET request to get info on playlist with ID 2
+response = requests.get('http://localhost:3000/playlists/2')
+print(response.text)
+=> <script.py> output:
+    {"PlaylistId":2,"Name":"Classical music"}
+
+# Perform a DELETE request to the playlist API using the path to playlist with PlaylistId 2
+requests.delete('http://localhost:3000/playlists/2')
+# Get the list of all existing playlists again
+response = requests.get('http://localhost:3000/playlists')
+print(response.text)
+=> <script.py> output:
+    [{"PlaylistId":1,"Name":"Classical music"},{"PlaylistId":3,"Name":"Pop"},{"PlaylistId":4,"Name":"Pop"}]
+
+5) Response codes and APIs
+
+When a client sends a request to a server, the server response includes a numeric status code, which is used to tell the client how the server responded to the request. In this exercise you will learn about the most important status codes you should know. We will send requests to valid and invalid paths and learn how we can access the status code to determine if our request was successful or not. The requests package comes with a built-in status code lookup object requests.codes you can use when you don't remember the exact numerical values.
+The requests package has been imported for you.
+
+response = requests.get('http://localhost:3000/lyrics')
+# Check the response status code
+if (response.status_code == 200):
+  print('The server responded succesfully!')
+=> <script.py> output:
+    The server responded succesfully!
+
+# Make a request to the movies endpoint of the API
+response = requests.get('http://localhost:3000/movies')
+if (response.status_code == 200):
+  print('The server responded succesfully!')
+# Check the response status code
+elif (response.status_code == 404):
+  print('Oops, that API could not be found!')
+=> <script.py> output:
+    Oops, that API could not be found!
+
+response = requests.get('http://localhost:3000/movies')
+# Check if the response.status_code is equal to the requests.codes value for "200 OK"
+if(response.status_code == requests.codes.ok):
+  print('The server responded succesfully!')
+# Or if the request was not successful because the API did not exist
+elif (response.status_code == requests.codes.not_found):
+  print('Oops, that API could not be found!')
+=> <script.py> output:
+    Oops, that API could not be found!
+NOTE: Using the requests package, working with status-codes becomes a breeze. And it even becomes easier using the requests.codes lookup object!
+
+6) Using request and response headers
+
+Headers contain additional information about your API calls, including the desired or used response format. Using accept and content-type headers, client and server can negotiate what response format to use. In this exercise, you'll use headers to inspect response formats after making a request and make a new request specifying the desired format via the accept header.
+The requests package has been imported for your convenience.
+
+response = requests.get('http://localhost:3000/lyrics')
+# Print the response content-type header
+print(response.headers['content-type'])
+=> <script.py> output:
+    text/plain; charset=utf-8
+
+response = requests.get('http://localhost:3000/lyrics')
+# Print the response accept header
+print(response.headers['accept'])
+=> <script.py> output:
+    application/json, text/plain
+
+# Set the content type to application/json
+headers = {'accept': 'application/json'}
+response = requests.get('http://localhost:3000/lyrics', headers=headers)
+# Print the response's text
+print(response.text)
+=> <script.py> output:
+    {"artist":"AC/DC","lyric":"N' I never miss Cause I'm a problem child","track":"Problem Child"}
+NOTE: You now know how to retrieve a lyric using the JSON format!
+
+7) Handling content-types errors
+
+What happens when you ask for a response in a specific format but the server cannot satisfy that request? Say you want to receive the response in XML rather than JSON. If the server can not respond in XML, it will respond with a specific status-code indicating that it can't reply in the requested format. The status code used in this case is 406 Not Acceptable or 406 in short. The response from the server also frequently contains an accept header which includes a list of all response formats it can respond with. Use this to learn what content types the API can respond with.
+
+# Add a header to use in the request
+headers = {'accept': 'application/xml'}
+response = requests.get('http://localhost:3000/lyrics', headers=headers)
+# Check if the server did not accept the request
+if (response.status_code == 406):
+  print('The server can not respond in XML')
+  # Print the accepted content types
+  print('These are the content types the server accepts: ' + response.headers['accept'])
+else:
+  print(response.text)
+=> Output: <script.py> output:
+    The server can not respond in XML
+    These are the content types the server accepts: application/json, text/plain
+NOTE: Headers can be used for a lot of things, content negotiation is just the start!
+
+8) Basic Authentication with requests
+
+Basic Authentication is the simplest authentication method for web APIs. It works like logging into a website. To gain access, you need to send your personal username and password along with every request. Using this username and password, the API can identify you and grant you access to the requested data. Let's first learn how a server responds when authentication fails, and then let's fix it by using Basic Authentication.
+
+Good to know:
+1. The requests package has already been imported.
+2. You can use the username john@doe.com and the password Warp_ExtrapolationsForfeited2 to authenticate.
+
+response = requests.get('http://localhost:3000/albums')
+# Check if the status code on the response object matches a successful response
+if(response.status_code == 200):
+    print("Success!")
+# Check if the status code indicates a failed authentication attempt
+elif(response.status_code == 401):
+    print('Authentication failed')
+else:
+    print('Another error occurred')
+=> <script.py> output:
+    Authentication failed
+
+# Create the authentication tuple with the correct values for basic authentication
+authentication = ('john@doe.com', 'Warp_ExtrapolationsForfeited2')
+# Use the correct function argument to pass the authentication tuple to the API
+response = requests.get('http://localhost:3000/albums', auth=authentication)
+if(response.status_code == 200):
+    print("Success!")
+elif(response.status_code == 401):
+    print('Authentication failed')
+else:
+    print('Another error occurred')
+=> <script.py> output:
+    Success!
+You have now used a username and password to authenticate and were able to retrieve the list of albums!
+
+9) API key authentication with requests
+
+API key-based authentication functions similarly to Basic Authentication, but you must include a unique API key using either a request header or a URL parameter for authenticated requests. Let's explore both approaches.
+
+Good to know:
+1. The requests package has already been imported.
+2. Use the API key/token 8apDFHaNJMxy8Kt818aa6b4a0ed0514b5d3 to authenticate.
+
+# Create a dictionary containing the API key using the correct key-value combination
+params = {'access_token': '8apDFHaNJMxy8Kt818aa6b4a0ed0514b5d3'}
+# Add the dictionary to the requests.get() call using the correct function argument
+response = requests.get('http://localhost:3000/albums', params=params)
+if(response.status_code == 200):
+    print("Success!")
+elif(response.status_code == 401):
+    print('Authentication failed')
+else:
+    print('Another error occurred')
+=> <script.py> output:
+    Authentication failed
+
+# Create a headers dictionary containing and set the API key using the correct key and value 
+headers = {'Authorization': 'Bearer 8apDFHaNJMxy8Kt818aa6b4a0ed0514b5d3'}
+# Add the headers dictionary to the requests.get() call using the correct function argument
+response = requests.get('http://localhost:3000/albums', headers=headers)
+if(response.status_code == 200):
+    print("Success!")
+elif(response.status_code == 401):
+    print('Authentication failed')
+else:
+    print('Another error occurred')
+=> <script.py> output:
+    Success!
+NOTE: Now you know how to authenticate using API keys using URL parameters and headers!
+
+10) Receiving JSON with the requests package
+
+When requesting JSON data from an API, the requests library makes it really easy to decode the JSON string you received from the API back into a Python object. In this exercise you'll first need to request data in the JSON format from the API, then decode the response into a Python object to retrieve and print the album Title property.
+Note: The requests package has been imported for you, and because the albums API is protected by authentication, the correct header has already been added.
+
+headers = {
+    'Authorization': 'Bearer ' + API_TOKEN,
+    # Add a header to request JSON formatted data
+    'Accept': 'application/json'
+}
+response = requests.get('http://localhost:3000/albums/1/', headers=headers)
+# Get the JSON data as a Python object from the response object
+album = response.json()
+# Print the album title
+print(album['Title'])
+=> Output: <script.py> output:
+    For Those About To Rock We Salute You
+
+11) Sending JSON with the requests package
+
+Similar to how you can receive JSON text from an API response, you can also send JSON text to an API with POST or PUT requests. If you use the json argument for the request.post() and request.put() methods, the requests library will take care of adding all the necessary headers and encoding for you. Neat! Let's try it out! Did you know you can create multiple playlists at once using a POST request to the /playlists API? Just pass an array of playlists (each with a Name property) to the API and it will create them all at once.
+
+playlists = [{"Name":"Rock ballads"}, {"Name":"My favorite songs"}, {"Name":"Road Trip"}]
+# POST the playlists array to the API using the json argument
+requests.post('http://localhost:3000/playlists/', json=playlists)
+# Get the list of all created playlists
+response = requests.get('http://localhost:3000/playlists')
+# Print the response text to inspect the JSON text
+print(response.text)
+=> Output: <script.py> output:
+    [{"PlaylistId":1,"Name":"Classical music"},{"PlaylistId":2,"Name":"Rock ballads"},{"PlaylistId":3,"Name":"Pop"},{"PlaylistId":4,"Name":"My favorite songs"},{"PlaylistId":5,"Name":"Road Trip"},{"PlaylistId":6,"Name":"Rock ballads"},{"PlaylistId":7,"Name":"My favorite songs"},{"PlaylistId":8,"Name":"Road Trip"}]
+
+12) Handling errors with Requests
+
+When the requests library is unable to connect to an API server, it will raise an exception. This exception allows you to detect if the API is available and act accordingly. But even when the request is successfully sent, we can still encounter errors. If we send an invalid request, a 4xx Client Error is returned from the API, if the server encounters an error, a 5xx Server Error is returned. The requests package provides a set of included exceptions that can be used to handle these errors using try/except statements.
+The requests package has already been imported for your convenience.
+
+# Import the correct exception class
+from requests.exceptions import ConnectionError
+url ="http://wronghost:3000/albums"
+try: 
+    r = requests.get(url) 
+    print(r.status_code)
+# Use the imported class to intercept the connection error
+except ConnectionError as conn_err: 
+    print(f'Connection Error! {conn_err}.')
+=> <script.py> output:
+    Connection Error! HTTPConnectionPool(host='wronghost', port=3000): Max retries exceeded with url: /albums (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f025fcd4c40>: Failed to establish a new connection: [Errno -2] Name or service not known')).
+
+# Import the correct exception class
+from requests.exceptions import HTTPError
+url ="http://localhost:3000/albums/"
+try: 
+    r = requests.get(url) 
+	# Enable raising errors for all error status_codes
+    r.raise_for_status()
+    print(r.status_code)
+# Intercept the error 
+except HTTPError as http_err:
+    print(f'HTTP error occurred: {http_err}')
+=> <script.py> output:
+    HTTP error occurred: 401 Client Error: Unauthorized for url: http://localhost:3000/albums/
+
+13) Respecting API rate limits
+
+Let's put what we learned about error handling to the test. In this exercise you'll encounter a rate-limit error, which means you're sending too many requests to the server in a short amount of time. Let's fix it by implementing a workaround to circumvent the rate limit so our script doesn't fail.
+Your music library contains over 3500 music tracks, so let's try to find the longest track by checking the Length property of each track.
+But there is an issue, the /tracks API has a maximum page size of 500 items and has a rate-limit of 1 request per second. The script we've written is sending too many requests to the server in a short amount of time. Let's fix it! The requests and time packages are already imported, and we've created the following variables for you:
+longestTrackLength = 0
+longestTrackTitle = ""
+headers = {'Authorization': 'Bearer 8apDFHaNJMxy8Kt818aa6b4a0ed0514b5d3'}
+page_number = 1
+
+while True:
+    params = {'page': page_number, 'per_page': 500}
+    response = requests.get('http://localhost:3000/tracks', params=params, headers=headers)
+    response.raise_for_status()
+    response_data = response.json()
+    print(f'Fetching tracks page {page_number}')
+    if len(response_data['results']) == 0:
+        break
+    for track in response_data['results']:
+        if(track['Length'] > longestTrackLength):
+            longestTrackLength = track['Length']
+            longestTrackTitle = track['Name']
+    page_number = page_number + 1
+    # Add your fix here
+    time.sleep(3)
+print('The longest track in my music library is: ' + longestTrackTitle)
+=> Output: <script.py> output:
+    Fetching tracks page 1
+    Fetching tracks page 2
+    Fetching tracks page 3
+    Fetching tracks page 4
+    Fetching tracks page 5
+    Fetching tracks page 6
+    Fetching tracks page 7
+    Fetching tracks page 8
+    Fetching tracks page 9
+    The longest track in my music library is: Occupation / Precipice
+
+
+## CHAPTER 2: INTRO TO FASTAPI
+
+1) First application
+
+Let's run the FastAPI server for the first time! You can't run the FastAPI server directly with "Run this file" - see the instructions for how to run and stop the server from the terminal.
+
+from fastapi import FastAPI
+app = FastAPI()
+@app.get("/")
+def root():
+    return {"message": "Hello World"}
+
+2) Pydantic model
+
+You've been asked to create an API endpoint that manages items in inventory. To get started, create a Pydantic model for Items that has attributes name, quantity, and expiration.
+
+# Import date
+from datetime import date
+# Import BaseModel
+from pydantic import BaseModel
+# Define model Item
+class Item(BaseModel):
+    name: str
+    quantity: int = 0
+    expiration: date = None
+=> You've created and tested your first Pydantic model. Now you can build endpoints that accept your model as input and/or return your model as output.
+
+3) POST operation in action
+
+You've been asked to create an API endpoint that accepts a name parameter and returns a message saying "We have name". To accomplish this, create a Pydantic model for Item and root endpoint (/) that serves HTTP POST operations. The endpoint should accept the Item model as input and respond with a message including Item.name.
+You can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+# Define model Item
+class Item(BaseModel):
+    name: str
+app = FastAPI()
+@app.post("/")
+def root(item: Item):
+    name = item.name
+    return {"message": f"We have {name}"}
+=> You've created and tested your first POST endpoint. Now you can build endpoints that traditionally create new objects and can functionally accept virtually limitless input data.
+
+3) PUT operation in action
+
+You've been asked to create a PUT endpoint /items that accepts parameters name and description and updates the description based on the name in a key-value store called items.
+You can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+# Define model Item
+class Item(BaseModel):
+    name: str
+    description: str
+# Define items at application startup
+items = {"bananas": "Yellow fruit."}
+app = FastAPI()
+@app.put("/items")
+def update_item(item: Item):
+    name = item.name
+    # Update the description
+    items[name] = item.description
+    return item
+
+4) DELETE operation in action
+
+You've been asked to create a DELETE endpoint that accepts parameter name and deletes the item called name from a key store called items.
+You can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+# Define model Item
+class Item(BaseModel):
+    name: str
+# Define items at application startup
+items = {"apples", "oranges", "bananas"}
+app = FastAPI()
+@app.delete("/items")
+def delete_item(item: Item):
+    name = item.name
+    # Delete the item
+    items.remove(name)
+    return {}
+
+5) Handling a client error
+
+You've been asked to create a DELETE endpoint that accepts parameter name and deletes the item called name from a key store called items. If the item is not found, the endpoint should return an appropriate status code and detailed message.
+You can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+# Define model Item
+class Item(BaseModel):
+    name: str
+# Define items at application startup
+items = {"apples", "oranges"}
+app = FastAPI()
+@app.delete("/items")
+def delete_item(item: Item):
+    name = item.name
+    if name in items:
+        items.remove(name)
+    else:
+        # Raise HTTPException with status code for "not found"
+        raise HTTPException(status_code=404, detail="Item not found.")
+    return {}
+
+6) Asynchronous DELETE operation
+
+You've been asked to create an API endpoint that deletes items managed by your API. To accomplish this, create an endpoint /items that serves HTTP DELETE operations. Make the endpoint asynchronous, so that your application can continue to serve requests while maintaining any long-running deletion tasks.
+We can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+# Define model Item
+class Item(BaseModel):
+    name: str
+app = FastAPI()
+items = {"rock", "paper", "scissors"}
+@app.delete("/items")
+# Make asynchronous
+async def root(item: Item):
+    name = item.name
+    # Check if name is in items
+    if name not in items:
+        # Return the status code for not found
+        raise HTTPException(status_code=404, detail="Item not found.")
+    items.remove(name)
+    return {"message": "Item deleted"}
+=> You've created and tested your first asynchronous DELETE endpoint. This is the traditional operation for endpoints that delete data managed by the API, and the final operation you need to build an application with a CRUD (Create, Read, Update & Delete) API.
+
+7) System test
+
+You've built your FastAPI application and added unit tests to verify code functionality. Writing a system test for an API endpoint will ensure that the endpoint works on the running application. We can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+# Import TestClient
+from fastapi.testclient import TestClient
+from main import app
+# Create test client with application context
+client = TestClient(app)
+def test_main():
+    response = client.get("/items?name=scissors")
+    assert response.status_code == 200
+    assert response.json() == {"name": "scissors",
+                               "quantity": 100}
+
+8) Complete JSON CRUD API
+
+You've been asked to build a JSON CRUD API to manage item names and quantities. To test your API you need to create an item, read it, update it, delete, and verify it's been deleted.
+We can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+# define model Item
+class Item(BaseModel):
+    name: str
+    quantity: Optional[int] = 0
+app = FastAPI()
+items = {}
+@app.post("/items")
+def create(item: Item):
+    name = item.name
+    if name in items:
+        raise HTTPException(status_code=409, detail="Item exists")
+    items[name] = item
+    return {"message": f"Added {name} to items."}
+@app.get("/items")
+def read(name: str):
+    if name not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return items[name]  
+@app.put("/items")
+def update(item: Item):
+    name = item.name
+    if name not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    items[name] = item
+    return {"message": f"Updated {name}."}
+@app.delete("/items")
+def delete(item: Item):
+    name = item.name
+    if name not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    del items[name]
+    return {"message": f"Deleted {name}."}
+
+9) Functional test
+
+You've built your FastAPI application and added system tests to verify the functionality of each endpoint. Building a functional test for a core API workflow will ensure that the endpoints work together for the full life cycle of your data.
+We can't run the FastAPI server directly with "Run this file" - see the instructions for how to run the server and test your code from the terminal.
+
+import requests
+ENDPOINT = "http://localhost:8000/items"
+# Create item "rock" without providing quantity
+r = requests.post(ENDPOINT, json={"name": "rock"})
+assert r.status_code == 200
+assert r.json()["message"] == "Added rock to items."
+# Verify that item "rock" has quantity 0
+r = requests.get(ENDPOINT + "?name=rock")
+assert r.status_code == 200
+assert r.json()["quantity"] == 0
+# Update item "rock" with quantity 100
+r = requests.put(ENDPOINT, json={"name": "rock", "quantity": 100})
+assert r.status_code == 200
+assert r.json()["message"] == "Updated rock."
+# Verify that item "rock" has quantity 100
+r = requests.get(ENDPOINT + "?name=rock")
+assert r.status_code == 200
+assert r.json()["quantity"] == 100
+# Delete item "rock"
+r = requests.delete(ENDPOINT, json={"name": "rock"})
+assert r.status_code == 200
+assert r.json()["message"] == "Deleted rock."
+# Verify that item "rock" does not exist
+r = requests.get(ENDPOINT + "?name=rock")
+assert r.status_code == 404
+print("Test complete.")
+
+
+## FINAL PROJECT: FINDING EXCHANGE RATES FOR INTERNATIONAL SALES
+
+Description: Query the VatComply API to gather exchange rate information and incorporate into a sales orders dataset! In this project you will work with a public API and a CSV file containing online gadget store sales data. You'll use your API and data manipulation skills to find and use exchange rate information, performing calculations to convert order values into US dollars.
+
+You've been running our very successful gadget webshop 'DataGadgets' for a few years and have recently expanded into new territories. While you've been focussed on the US market for the first five years of our existence, you now are shipping our cool data gadgets to the UK and Europe, too! But now our in-house built reporting has broken! Transactions don't only come in USD, but you're also receiving transactions in EUR and GPB. To better understand the volume of transactions being made, you should convert the non-USD transactions to USD and sum up the total. To do this, however, you'll need to use the proper exchange rates.
+In this project, you'll start with a CSV file containing all e-commerce transactions made on January 21st, but in their original currencies. Your job is to calculate the total sum in USD of all transactions so you know how much USD you sold on January 21st. To do this, you'll need to convert any non-USD transactions to USD using the exchange rate from January 21st, 2024.
+To get the exchange rates from January 21st, 2024, you'll rely on VAT Comply rates API's public and free currency exchange API. You'll also use pandas to load the CSV file into a DataFrame and the requests package to make interacting with the API easier.
+You need to update the orders DataFrame so the final version has two new columns: exchange_rate and amount_usd. The final version should look as follows:
+
+amount	currency	exchange_rate	amount_usd
+43.75	  EUR	      ...	          ...
+385.5	  GBP	      ...	          ...
+495.5	  GBP	      ...	          ...
+117.99	GBP	      ...	          ...
+624	    USD	      ...	          ...
+
+Project Instructions
+Query the VAT Comply rates API 'https://api.vatcomply.com/rates', using parameters to get the exchange rates for a base currency of 'USD' and the date of '2024-01-21'.
+Using the orders DataFrame and the exchange rate from the API, calculate the total amount sold in USD, saving as a variable called total_usd_sales.
+Ensure the final version of the orders DataFrame matches the requirements detailed in the Workbook.
+*The VAT Comply rates API is free to use and doesn't require registration/authentication.
+
+*** Solutions:
+
+# Import required packages/libraries
+import pandas as pd
+import requests
+# Read the CSV file into a DataFrame
+orders = pd.read_csv('data/orders-2024-01-21.csv')
+# Get exchange rates from API
+request_url = 'https://api.vatcomply.com/rates'
+params = {
+    'date' : '2024-01-21',
+    'base': 'USD'
+} 
+response = requests.get(request_url, params=params)
+rates = response.json()['rates']
+# Apply exchange rates
+orders['exchange_rate'] = orders['currency'].map(rates)
+# Alternatively, manually create each of the exchange_rate values in the DataFrame, e.g.,
+# orders['exchange_rate'] = 0
+# orders.loc[orders['currency'] == 'EUR', 'exchange_rate'] = rates['EUR'] 
+# orders.loc[orders['currency'] == 'GBP', 'exchange_rate'] = rates['GBP']
+# orders.loc[orders['currency'] == 'USD', 'exchange_rate'] = rates['USD']
+# Calculate sales in US dollars
+orders['amount_usd'] = orders['amount'] * orders['exchange_rate']
+# Find the total amount of sales in US dollars
+total_usd_sales = orders['amount_usd'].sum()
+print(total_usd_sales)
